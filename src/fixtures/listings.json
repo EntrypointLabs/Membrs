@@ -893,10 +893,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Education and AI leaders",
-      "Leadership development cohort"
-    ]
+    "eligibility": ["Education and AI leaders", "Leadership development cohort"]
   },
   {
     "id": "o3",
@@ -951,10 +948,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Initiatives addressing indifference",
-      "Open globally"
-    ]
+    "eligibility": ["Initiatives addressing indifference", "Open globally"]
   },
   {
     "id": "o5",
@@ -980,10 +974,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Ocean and blue economy projects",
-      "Commonwealth countries"
-    ]
+    "eligibility": ["Ocean and blue economy projects", "Commonwealth countries"]
   },
   {
     "id": "o6",
@@ -1038,10 +1029,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Community youth leaders",
-      "Working on a local issue"
-    ]
+    "eligibility": ["Community youth leaders", "Working on a local issue"]
   },
   {
     "id": "o8",
@@ -1096,10 +1084,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Six online courses",
-      "Africa focused"
-    ]
+    "eligibility": ["Six online courses", "Africa focused"]
   },
   {
     "id": "o10",
@@ -1154,9 +1139,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African-owned growth-stage agribusinesses"
-    ]
+    "eligibility": ["African-owned growth-stage agribusinesses"]
   },
   {
     "id": "o12",
@@ -1182,9 +1165,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Young energy professionals"
-    ]
+    "eligibility": ["Young energy professionals"]
   },
   {
     "id": "o13",
@@ -1210,9 +1191,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Emerging young leaders in food systems"
-    ]
+    "eligibility": ["Emerging young leaders in food systems"]
   },
   {
     "id": "o14",
@@ -1238,9 +1217,7 @@
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "BSc and MSc students in computer science"
-    ]
+    "eligibility": ["BSc and MSc students in computer science"]
   },
   {
     "id": "o15",
@@ -1266,9 +1243,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African start-ups in livestock"
-    ]
+    "eligibility": ["African start-ups in livestock"]
   },
   {
     "id": "o16",
@@ -1294,9 +1269,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Researchers from the Global South"
-    ]
+    "eligibility": ["Researchers from the Global South"]
   },
   {
     "id": "o17",
@@ -1322,9 +1295,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Economists, one position"
-    ]
+    "eligibility": ["Economists, one position"]
   },
   {
     "id": "o18",
@@ -1350,9 +1321,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "EdTech ventures in Uganda"
-    ]
+    "eligibility": ["EdTech ventures in Uganda"]
   },
   {
     "id": "o19",
@@ -1378,9 +1347,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African journalists"
-    ]
+    "eligibility": ["African journalists"]
   },
   {
     "id": "o20",
@@ -1406,9 +1373,7 @@
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Doctoral students"
-    ]
+    "eligibility": ["Doctoral students"]
   },
   {
     "id": "o21",
@@ -1434,9 +1399,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Early-stage start-ups worldwide"
-    ]
+    "eligibility": ["Early-stage start-ups worldwide"]
   },
   {
     "id": "o22",
@@ -1462,9 +1425,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Real estate and urban development"
-    ]
+    "eligibility": ["Real estate and urban development"]
   },
   {
     "id": "o23",
@@ -1490,9 +1451,7 @@
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Master's applicants from partner countries"
-    ]
+    "eligibility": ["Master's applicants from partner countries"]
   },
   {
     "id": "o24",
@@ -1518,9 +1477,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Young climate leaders"
-    ]
+    "eligibility": ["Young climate leaders"]
   },
   {
     "id": "o25",
@@ -1546,9 +1503,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African universities and research centres"
-    ]
+    "eligibility": ["African universities and research centres"]
   },
   {
     "id": "o26",
@@ -1574,9 +1529,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Young social entrepreneurs"
-    ]
+    "eligibility": ["Young social entrepreneurs"]
   },
   {
     "id": "o27",
@@ -1602,8 +1555,6 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Researchers in social, economic and policy fields"
-    ]
+    "eligibility": ["Researchers in social, economic and policy fields"]
   }
 ]

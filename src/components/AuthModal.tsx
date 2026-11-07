@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { PROVIDER_NAME, signIn, type Provider } from '../lib/auth';
+import { subscribe } from '../lib/api';
+import {
+  cityStore,
+  interestsStore,
+  subscriptionStore,
+} from '../lib/preferences';
+import { useStore } from '../lib/store';
+import { CityChips, InterestPicker } from './InterestPicker';
 import { paths } from '../lib/router';
 import { closeOverlay, toast } from '../lib/ui';
 import { Icon } from './Icon';
@@ -51,6 +59,7 @@ export function AppleMark({ className = 'h-5 w-5' }: { className?: string }) {
 export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [busy, setBusy] = useState<Provider | null>(null);
+  const [signedIn, setSignedIn] = useState<Provider | null>(null);
   const card = useRef<HTMLDivElement>(null);
   const up = mode === 'up';
 
@@ -69,12 +78,15 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
   async function go(provider: Provider) {
     setBusy(provider);
     await signIn(provider);
+    setBusy(null);
+    // New accounts, and anyone without a digest yet, go straight on to pick a
+    // city and interests: that is what the account is for.
+    if (up || !subscriptionStore.get()) {
+      setSignedIn(provider);
+      return;
+    }
     closeOverlay();
-    toast(
-      up
-        ? `Account created with ${PROVIDER_NAME[provider]}. Welcome to MEMBRS.`
-        : `Signed in with ${PROVIDER_NAME[provider]}.`,
-    );
+    toast(`Signed in with ${PROVIDER_NAME[provider]}.`);
   }
 
   const button = (provider: Provider) => (
@@ -82,7 +94,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
       type="button"
       onClick={() => go(provider)}
       disabled={busy !== null}
-      className={`flex h-[54px] items-center justify-center gap-3 rounded-md border text-base font-semibold transition hover:-translate-y-px disabled:cursor-progress disabled:opacity-75 disabled:hover:translate-y-0 ${
+      className={`flex h-[50px] items-center justify-center gap-3 rounded-md border text-[15px] font-semibold transition hover:-translate-y-px disabled:cursor-progress disabled:opacity-75 disabled:hover:translate-y-0 ${
         provider === 'google'
           ? 'border-black/10 bg-white text-[#1f1f1f]'
           : 'border-white/10 bg-[#1c1c1e] text-white'
@@ -101,6 +113,8 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
     </button>
   );
 
+  if (signedIn) return <Preferences provider={signedIn} />;
+
   return (
     <div className="fixed inset-0 z-[80] grid place-items-end md:place-items-center md:p-6">
       <button
@@ -115,7 +129,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-title"
-        className="relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg bg-[#050505] p-2.5 text-[#f5f5f6] shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(600px,calc(100vh-48px))] md:w-[min(1040px,100%)] md:grid-cols-2 md:rounded-lg md:p-3"
+        className="relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg bg-[#050505] p-2.5 text-[#f5f5f6] shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(500px,calc(100vh-48px))] md:w-[min(860px,100%)] md:grid-cols-[0.9fr_1fr] md:rounded-lg md:p-3"
       >
         <div className="relative min-h-[220px] overflow-hidden rounded-md">
           <Photo
@@ -148,7 +162,12 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
           >
             <Icon name="x" className="h-[18px] w-[18px]" />
           </button>
-          <div className="w-full max-w-[380px]">
+          <div className="w-full max-w-[340px]">
+            {up && (
+              <p className="mb-3.5 text-[13px] font-semibold text-white/55">
+                Step 1 of 2
+              </p>
+            )}
             <h2
               id="auth-title"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
@@ -157,7 +176,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
             </h2>
             <p className="mt-3 mb-6 text-[15px] text-white/55 md:mb-9">
               {up
-                ? 'Save listings, set reminders and tune your Sunday digest. One tap, no password to remember.'
+                ? 'One tap, then pick your city and interests. Your Sunday digest and feeds follow what you choose.'
                 : 'Pick the account you joined with. We never see or store a password.'}
             </p>
             <div className="grid gap-3">
@@ -194,6 +213,84 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
               .
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Step 2 of sign-up: city and interests. Saving subscribes the reader to the
+ * digest with them; skipping leaves the account without a digest for now.
+ */
+function Preferences({ provider }: { provider: Provider }) {
+  const savedCity = useStore(cityStore);
+  const [city, setCity] = useState(savedCity);
+
+  async function save() {
+    await subscribe({
+      email: `${provider} account`,
+      city,
+      interests: interestsStore.get(),
+    });
+    cityStore.set(city);
+    subscriptionStore.set({ email: `${provider} account`, city });
+    closeOverlay();
+    toast(`All set. Your first digest for ${city} lands Sunday at 7 AM.`);
+  }
+
+  function skip() {
+    closeOverlay();
+    toast("You're in. Set your digest any time from the mail button.");
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-end md:place-items-center md:p-6">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={skip}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="prefs-title"
+        className="relative max-h-[94dvh] w-full overflow-auto rounded-t-lg bg-[#050505] px-5 pt-8 pb-6 text-[#f5f5f6] shadow-2xl md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
+      >
+        <p className="mb-3.5 flex items-center gap-2 text-[13px] font-semibold text-white/55">
+          <span className="bg-open grid h-5 w-5 place-items-center rounded-full text-[#04140a]">
+            <Icon name="check" className="h-3 w-3" />
+          </span>
+          Signed in with {PROVIDER_NAME[provider]} · Step 2 of 2
+        </p>
+        <h2 id="prefs-title" className="text-2xl font-semibold tracking-tight">
+          Make the Sunday Digest Yours
+        </h2>
+        <p className="mt-3 text-[14.5px] text-white/55">
+          Pick your city and what you care about. Your digest and your feeds
+          follow these, and you can change them any time.
+        </p>
+        <p className="mt-6 mb-2.5 text-sm font-bold">Your city</p>
+        <CityChips value={city} onChange={setCity} />
+        <div className="mt-6">
+          <InterestPicker compact />
+        </div>
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/15 pt-5 md:justify-end">
+          <button
+            type="button"
+            onClick={skip}
+            className="px-3 py-2.5 text-sm font-semibold text-white/60"
+          >
+            Skip for now
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            className="bg-brand hover:bg-brand-hover h-[46px] rounded-md px-5 text-[15px] font-bold text-white"
+          >
+            Save and continue
+          </button>
         </div>
       </div>
     </div>

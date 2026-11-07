@@ -111,7 +111,13 @@ export function OnboardingTour() {
   const [index, setIndex] = useState(0);
   const steps = phone ? PHONE_STEPS : WEB_STEPS;
   const done = () => tourSeenStore.set(true);
-  if (seen) return null;
+  const subscribed = useStore(subscriptionStore);
+  // Readers who set their digest while signing up skip the digest step.
+  const finished = index >= steps.length && subscribed !== null;
+  useEffect(() => {
+    if (finished) tourSeenStore.set(true);
+  }, [finished]);
+  if (seen || finished) return null;
   if (index >= steps.length)
     return <DigestStep onBack={() => setIndex(index - 1)} onDone={done} />;
   return (

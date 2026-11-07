@@ -108,11 +108,6 @@
       "Accelerators",
       "Hackathons"
     ],
-    "place": [
-      "Beaches",
-      "Parks & gardens",
-      "Museums & galleries",
-      "Libraries"
-    ]
+    "place": ["Beaches", "Parks & gardens", "Museums & galleries", "Libraries"]
   }
 }

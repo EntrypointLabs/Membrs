@@ -66,9 +66,7 @@
       "Bring a valid student ID",
       "Doors before 6:00 PM on 7 Nov"
     ],
-    "finePrint": [
-      "Valid student ID required"
-    ]
+    "finePrint": ["Valid student ID required"]
   },
   {
     "id": "pr4",
@@ -111,9 +109,7 @@
       "Register on the EWA site",
       "Arrive early at Livespot Entertarium, Lekki"
     ],
-    "finePrint": [
-      "Capacity limited"
-    ]
+    "finePrint": ["Capacity limited"]
   },
   {
     "id": "pr6",
@@ -129,10 +125,7 @@
     "host": "egotickets.com",
     "photo": "q9",
     "blurb": "Runners under 18 can enter the 10K free on 14 November. Adults pay GH₵150 to GH₵200.",
-    "steps": [
-      "Register on eGotickets",
-      "Choose the under-18 10K"
-    ],
+    "steps": ["Register on eGotickets", "Choose the under-18 10K"],
     "finePrint": [
       "Ages under 18 only",
       "Race starts 6:00 AM at Independence Square"

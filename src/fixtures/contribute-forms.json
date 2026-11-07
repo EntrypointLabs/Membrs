@@ -40,14 +40,7 @@
         "name": "city",
         "label": "City",
         "type": "select",
-        "options": [
-          "Lagos",
-          "Abuja",
-          "Accra",
-          "Nairobi",
-          "London",
-          "Lisbon"
-        ],
+        "options": ["Lagos", "Abuja", "Accra", "Nairobi", "London", "Lisbon"],
         "required": true
       },
       {
@@ -187,14 +180,7 @@
         "name": "city",
         "label": "City",
         "type": "select",
-        "options": [
-          "Lagos",
-          "Abuja",
-          "Accra",
-          "Nairobi",
-          "London",
-          "Lisbon"
-        ],
+        "options": ["Lagos", "Abuja", "Accra", "Nairobi", "London", "Lisbon"],
         "required": true
       },
       {
@@ -317,14 +303,7 @@
         "name": "city",
         "label": "City",
         "type": "select",
-        "options": [
-          "Lagos",
-          "Abuja",
-          "Accra",
-          "Nairobi",
-          "London",
-          "Lisbon"
-        ],
+        "options": ["Lagos", "Abuja", "Accra", "Nairobi", "London", "Lisbon"],
         "required": true
       },
       {

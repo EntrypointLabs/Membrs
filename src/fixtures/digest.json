@@ -8,14 +8,7 @@
     "readMinutes": 6,
     "city": "Lagos",
     "type": "City guide",
-    "listingIds": [
-      "e1",
-      "e3",
-      "e5",
-      "e2",
-      "e7",
-      "e9"
-    ],
+    "listingIds": ["e1", "e3", "e5", "e2", "e7", "e9"],
     "intro": [
       "ART X Lagos opens today and runs to Sunday. On Saturday, the Fringe has shows from ₦2,000 at J. Randle Centre, then Opera in Concert at MUSON at 6 PM.",
       "Sunday night closes the Fringe with a free performance."
@@ -31,14 +24,7 @@
     "readMinutes": 5,
     "city": "Everywhere",
     "type": "Opportunity roundup",
-    "listingIds": [
-      "o1",
-      "o6",
-      "o3",
-      "o7",
-      "o8",
-      "o24"
-    ],
+    "listingIds": ["o1", "o6", "o3", "o7", "o8", "o24"],
     "intro": [
       "November is heavy on deadlines. Start with the ones closing first and work down.",
       "Every call links to the official page. Apply there."
@@ -54,12 +40,7 @@
     "readMinutes": 5,
     "city": "Accra",
     "type": "City guide",
-    "listingIds": [
-      "e23",
-      "e25",
-      "e24",
-      "e26"
-    ],
+    "listingIds": ["e23", "e25", "e24", "e26"],
     "intro": [
       "Accra's November runs from the marathon on the 14th to Tech in Ghana on the 24th.",
       "Nubuke Foundation's new show opens on the 11th and stays up until April."
@@ -75,11 +56,7 @@
     "readMinutes": 4,
     "city": "Abuja",
     "type": "City guide",
-    "listingIds": [
-      "e20",
-      "e21",
-      "e22"
-    ],
+    "listingIds": ["e20", "e21", "e22"],
     "intro": [
       "21 November is Abuja's weekend: the Afrojazz main concert and the first day of Arewa Festival.",
       "Wizkid follows at Eagle Square on 13 December."
@@ -95,12 +72,7 @@
     "readMinutes": 5,
     "city": "Everywhere",
     "type": "City guide",
-    "listingIds": [
-      "e19",
-      "e22",
-      "e28",
-      "e29"
-    ],
+    "listingIds": ["e19", "e22", "e28", "e29"],
     "intro": [
       "The confirmed December dates so far, across Lagos, Abuja and Accra.",
       "Buy tickets only from official sellers."
@@ -116,12 +88,7 @@
     "readMinutes": 4,
     "city": "Lagos",
     "type": "City guide",
-    "listingIds": [
-      "e15",
-      "e17",
-      "e16",
-      "e18"
-    ],
+    "listingIds": ["e15", "e17", "e16", "e18"],
     "intro": [
       "EWA runs 17 to 22 November across Lekki and Victoria Island.",
       "Two nights are free. Book Jokes n Jollof and Livespot X early."

@@ -125,9 +125,5 @@
     "Bujumbura",
     "Gitega"
   ],
-  "placeCities": [
-    "Lagos",
-    "Abuja",
-    "Accra"
-  ]
+  "placeCities": ["Lagos", "Abuja", "Accra"]
 }
