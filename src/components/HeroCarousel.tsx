@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { eventTag, shortDay } from '../lib/dates';
+import { shortDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
 import { Link } from './Link';
@@ -18,7 +18,6 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
   }, [picks.length]);
   const pick = picks[index];
   if (!pick) return null;
-  const tag = pick.kind === 'event' ? eventTag(pick) : `${pick.daysLeft}d left`;
   return (
     <div>
       <Link href={paths.listing(pick.id)} className="group block">
@@ -29,14 +28,6 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
             eager
             className="aspect-[16/10] rounded-lg"
           />
-          <span className="absolute top-4 left-4 rounded-sm bg-black/55 px-2.5 py-1 text-xs font-bold tracking-wide text-white uppercase backdrop-blur">
-            {pick.category}
-          </span>
-          {tag && (
-            <span className="absolute top-4 right-4 rounded-sm bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
-              {tag}
-            </span>
-          )}
         </div>
         <p className="text-fg-3 mt-6 text-sm font-semibold tracking-wide uppercase">
           {pick.kind === 'event'
