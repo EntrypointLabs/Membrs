@@ -51,7 +51,7 @@ export function HomeScreen() {
     <div className="page">
       <MobileTop city={city} />
 
-      <section className="mt-12 hidden gap-8 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:gap-12">
+      <section className="mt-12 hidden gap-8 md:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:gap-12">
         <div className="self-start lg:sticky lg:top-6">
           <HeroCarousel picks={picks} />
         </div>

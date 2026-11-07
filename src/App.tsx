@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
+import { sessionStore } from './lib/auth';
 import { themeStore } from './lib/preferences';
 import { useRoute, type Route } from './lib/router';
 import { useStore } from './lib/store';
-import { overlayStore } from './lib/ui';
+import { openOverlay, overlayStore } from './lib/ui';
+import { AuthModal } from './components/AuthModal';
 import { CookieBanner, CookieSettings } from './components/CookieBanner';
 import { DigestFab } from './components/DigestFab';
 import { DigestModal } from './components/DigestModal';
@@ -75,6 +77,13 @@ export function App() {
       ?.setAttribute('content', theme === 'dark' ? '#0d0d0d' : '#f2f2f2');
   }, [theme]);
 
+  // Readers who are not signed in see the sign-up popup when they land on home.
+  useEffect(() => {
+    if (route.page === 'home' && !sessionStore.get()) openOverlay('auth');
+    // Only on first load, not every visit back to home in the same session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
       <Header />
@@ -86,10 +95,11 @@ export function App() {
       <MobileTabBar />
       <DigestFab />
       <CookieBanner />
-      {route.page === 'home' && <OnboardingTour />}
+      {route.page === 'home' && overlay !== 'auth' && <OnboardingTour />}
       {overlay === 'digest' && <DigestModal />}
       {overlay === 'cookies' && <CookieSettings />}
       {overlay === 'plans' && <PlansModal />}
+      {overlay === 'auth' && <AuthModal />}
       <Toast />
     </>
   );

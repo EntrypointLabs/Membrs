@@ -1,4 +1,7 @@
+import { sessionStore, signOut } from '../lib/auth';
 import { themeStore, type Theme } from '../lib/preferences';
+import { openOverlay, toast } from '../lib/ui';
+import { AppleMark } from './AuthModal';
 import { navSection, paths, useRoute } from '../lib/router';
 import { useStore } from '../lib/store';
 import { Icon } from './Icon';
@@ -23,7 +26,10 @@ export function Header() {
         >
           MEMBRS
         </Link>
-        <ThemeSwitch className="absolute right-0" />
+        <div className="absolute right-0 flex items-center gap-2">
+          <AccountButton />
+          <ThemeSwitch />
+        </div>
       </div>
       <nav
         aria-label="Sections"
@@ -89,5 +95,34 @@ export function ThemeSwitch({ className = '' }: { className?: string }) {
       {option('light', 'sun')}
       {option('dark', 'moon')}
     </div>
+  );
+}
+
+/** "Sign in" when signed out; the provider mark and "Sign out" when signed in. */
+export function AccountButton() {
+  const session = useStore(sessionStore);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!session) return openOverlay('auth');
+        signOut();
+        toast('Signed out.');
+      }}
+      className="bg-btn hover:bg-btn-hover flex h-[38px] items-center gap-2 rounded-md px-3.5 text-sm font-bold"
+    >
+      {session && (
+        <i
+          className={`grid h-[22px] w-[22px] place-items-center rounded-full text-xs font-extrabold text-white not-italic ${session.provider === 'apple' ? 'bg-black' : 'bg-brand'}`}
+        >
+          {session.provider === 'apple' ? (
+            <AppleMark className="h-[13px] w-[13px]" />
+          ) : (
+            'G'
+          )}
+        </i>
+      )}
+      {session ? 'Sign out' : 'Sign in'}
+    </button>
   );
 }

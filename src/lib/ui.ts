@@ -4,7 +4,7 @@ import { createStore } from './store';
  * Which overlay is open. One at a time, so opening the digest signup from the
  * footer closes cookie settings and the other way round.
  */
-export type Overlay = 'digest' | 'cookies' | 'plans' | null;
+export type Overlay = 'digest' | 'cookies' | 'plans' | 'auth' | null;
 
 export const overlayStore = createStore<Overlay>(null, null);
 

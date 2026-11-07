@@ -18,11 +18,11 @@ export function MostPopular({ items }: { items: Listing[] }) {
     >
       <h2
         id="most-popular"
-        className="text-fg absolute top-[-6px] right-[-14px] hidden text-[clamp(64px,5.2vw,92px)] leading-[0.82] font-black tracking-tight [writing-mode:vertical-rl] lg:block"
+        className="text-fg absolute top-[-6px] right-[-14px] hidden text-[clamp(64px,5.2vw,92px)] leading-[0.82] font-black tracking-tight [writing-mode:vertical-rl] md:block"
       >
         Most Popular
       </h2>
-      <ol className="bg-brand rounded-lg py-2 pr-[calc(clamp(64px,5.2vw,92px)*0.82+4px)] pl-6 text-white max-lg:pr-6">
+      <ol className="bg-brand rounded-lg py-2 pr-[calc(clamp(64px,5.2vw,92px)*0.82+4px)] pl-6 text-white">
         {items.map((l) => (
           <li key={l.id} className="border-b border-white/20 last:border-0">
             <Link
