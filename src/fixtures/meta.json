@@ -1,0 +1,28 @@
+{
+  "today": "2026-11-05",
+  "searchSuggestions": [
+    "something chill this weekend",
+    "free things to do in Lagos",
+    "date night under 10k",
+    "money for creatives",
+    "fun with friends tonight"
+  ],
+  "socials": [
+    {
+      "name": "X",
+      "url": "https://x.com/"
+    },
+    {
+      "name": "Instagram",
+      "url": "https://instagram.com/"
+    },
+    {
+      "name": "TikTok",
+      "url": "https://tiktok.com/"
+    },
+    {
+      "name": "LinkedIn",
+      "url": "https://linkedin.com/"
+    }
+  ]
+}

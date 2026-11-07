@@ -1,0 +1,162 @@
+@import 'tailwindcss';
+
+/*
+ * Theme switching. The <html> element carries data-theme="dark" or "light";
+ * dark is the default and the brand. `dark:` utilities follow the attribute,
+ * not the OS setting, so the toggle in the header always wins.
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Brand tokens. Every colour on the surface comes from here, so light and
+ * dark mode are one set of names with two sets of values. The "inverse"
+ * tokens are for surfaces that flip against the page: the Most Popular list
+ * text and the footer panel read white in dark mode and near-black in light.
+ * membrs blue is fixed and never flips.
+ */
+:root,
+[data-theme='dark'] {
+  --bg: #0d0d0d;
+  --fg: #f5f5f6;
+  --fg-2: #e2e2e6;
+  --fg-3: #b6b6bd;
+  --fg-4: #8a8a93;
+  --panel: #141414;
+  --soft: rgb(242 242 242 / 0.07);
+  --soft-hover: rgb(242 242 242 / 0.12);
+  --line: rgb(242 242 242 / 0.07);
+  --line-2: rgb(242 242 242 / 0.12);
+  --btn: #2a2a2d;
+  --btn-hover: #39393d;
+  --inv: #ffffff;
+  --inv-fg: #0c0c0d;
+  --inv-fg-2: #3a3a42;
+  --inv-fg-3: #62626c;
+  --inv-line: rgb(12 12 13 / 0.1);
+  --accent: #6f93ff;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #f2f2f2;
+  --fg: #0c0c0d;
+  --fg-2: #26262b;
+  --fg-3: #40404a;
+  --fg-4: #5c5c66;
+  --panel: #ffffff;
+  --soft: rgb(15 15 15 / 0.06);
+  --soft-hover: rgb(15 15 15 / 0.1);
+  --line: rgb(15 15 15 / 0.08);
+  --line-2: rgb(15 15 15 / 0.13);
+  --btn: #e7e7ea;
+  --btn-hover: #dcdcdf;
+  --inv: #111113;
+  --inv-fg: #f5f5f6;
+  --inv-fg-2: #d4d4da;
+  --inv-fg-3: #a3a3ad;
+  --inv-line: rgb(255 255 255 / 0.12);
+  --accent: #2b55ff;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-4: var(--fg-4);
+  --color-panel: var(--panel);
+  --color-soft: var(--soft);
+  --color-soft-hover: var(--soft-hover);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-btn: var(--btn);
+  --color-btn-hover: var(--btn-hover);
+  --color-inv: var(--inv);
+  --color-inv-fg: var(--inv-fg);
+  --color-inv-fg-2: var(--inv-fg-2);
+  --color-inv-fg-3: var(--inv-fg-3);
+  --color-inv-line: var(--inv-line);
+  --color-accent: var(--accent);
+}
+
+@theme {
+  /* membrs blue. Fixed in both modes. */
+  --color-brand: #2b55ff;
+  --color-brand-hover: #1f45e6;
+  /* Deadline urgency: three days or less, a week or less. */
+  --color-urgent: #ff5a4e;
+  --color-warning: #ff9f2e;
+  --color-open: #3ccf7a;
+
+  /* One radius scale: surfaces, controls, chips. */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter',
+    ui-sans-serif, 'Segoe UI', Roboto, sans-serif;
+
+  /* The content column: 81% of the viewport, capped. */
+  --container-page: min(1742px, 81vw);
+}
+
+html {
+  background-color: var(--bg);
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The page column. Full width with a gutter on phones. */
+.page {
+  width: var(--container-page);
+  margin-inline: auto;
+}
+
+@media (max-width: 760px) {
+  .page {
+    width: auto;
+    margin-inline: 16px;
+  }
+}
+
+/* Scroll rails hide their scrollbar; they are swiped, not dragged. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Category colour. A Kicker or dot sets --c (light) and --cd (dark) inline
+ * from palette.ts; this picks the right one for the mode.
+ */
+.cat-color {
+  color: var(--c, var(--fg-3));
+}
+[data-theme='dark'] .cat-color {
+  color: var(--cd, var(--fg-3));
+}
+.cat-bg {
+  background-color: var(--c, var(--fg-3));
+}
+[data-theme='dark'] .cat-bg {
+  background-color: var(--cd, var(--fg-3));
+}
+
+/* Visible keyboard focus everywhere, never on mouse click. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

@@ -1,0 +1,250 @@
+[
+  {
+    "name": "Music",
+    "kind": "event",
+    "slug": "music",
+    "count": 25,
+    "blurb": "Live sets, concerts and listening parties across the city.",
+    "photo": "p1"
+  },
+  {
+    "name": "Nightlife",
+    "kind": "event",
+    "slug": "nightlife",
+    "count": 62,
+    "blurb": "Clubs, day parties and late nights worth staying out for.",
+    "photo": "p7"
+  },
+  {
+    "name": "Tech",
+    "kind": "event",
+    "slug": "tech",
+    "count": 31,
+    "blurb": "Meetups, demo days and talks for builders and engineers.",
+    "photo": "p33"
+  },
+  {
+    "name": "Art & Design",
+    "kind": "event",
+    "slug": "art-design",
+    "count": 68,
+    "blurb": "Exhibitions, studio openings and design weeks.",
+    "photo": "p9"
+  },
+  {
+    "name": "Film",
+    "kind": "event",
+    "slug": "film",
+    "count": 37,
+    "blurb": "Screenings, film clubs and festival premieres.",
+    "photo": "p34"
+  },
+  {
+    "name": "Food & Drink",
+    "kind": "event",
+    "slug": "food-drink",
+    "count": 74,
+    "blurb": "Supper clubs, tastings, markets and pop-ups.",
+    "photo": "p4"
+  },
+  {
+    "name": "Fashion",
+    "kind": "event",
+    "slug": "fashion",
+    "count": 43,
+    "blurb": "Runway shows, sample sales and designer pop-ups.",
+    "photo": "p8"
+  },
+  {
+    "name": "Comedy",
+    "kind": "event",
+    "slug": "comedy",
+    "count": 80,
+    "blurb": "Stand-up nights, improv and open mics.",
+    "photo": "p54"
+  },
+  {
+    "name": "Sports & Fitness",
+    "kind": "event",
+    "slug": "sports-fitness",
+    "count": 49,
+    "blurb": "Run clubs, tournaments and outdoor workouts.",
+    "photo": "p6"
+  },
+  {
+    "name": "Wellness",
+    "kind": "event",
+    "slug": "wellness",
+    "count": 18,
+    "blurb": "Yoga, breathwork, retreats and quiet mornings.",
+    "photo": "p3"
+  },
+  {
+    "name": "Networking",
+    "kind": "event",
+    "slug": "networking",
+    "count": 55,
+    "blurb": "Founder nights, mixers and professional meetups.",
+    "photo": "p40"
+  },
+  {
+    "name": "Business",
+    "kind": "event",
+    "slug": "business",
+    "count": 24,
+    "blurb": "Conferences, summits and workshops for operators.",
+    "photo": "p48"
+  },
+  {
+    "name": "Faith",
+    "kind": "event",
+    "slug": "faith",
+    "count": 61,
+    "blurb": "Worship nights, retreats and community gatherings.",
+    "photo": "p13"
+  },
+  {
+    "name": "Gaming",
+    "kind": "event",
+    "slug": "gaming",
+    "count": 30,
+    "blurb": "Tournaments, game nights and viewing parties.",
+    "photo": "p41"
+  },
+  {
+    "name": "Books & Talks",
+    "kind": "event",
+    "slug": "books-talks",
+    "count": 67,
+    "blurb": "Readings, book clubs, panels and author talks.",
+    "photo": "p51"
+  },
+  {
+    "name": "Theatre",
+    "kind": "event",
+    "slug": "theatre",
+    "count": 36,
+    "blurb": "Plays, musicals and spoken word on stage.",
+    "photo": "p37"
+  },
+  {
+    "name": "Family",
+    "kind": "event",
+    "slug": "family",
+    "count": 73,
+    "blurb": "Weekend outings and events for kids and parents.",
+    "photo": "p72"
+  },
+  {
+    "name": "Festivals",
+    "kind": "event",
+    "slug": "festivals",
+    "count": 42,
+    "blurb": "Multi-day festivals, concerts and seasonal fairs.",
+    "photo": "p94"
+  },
+  {
+    "name": "Grants",
+    "kind": "opportunity",
+    "slug": "grants",
+    "count": 79,
+    "blurb": "Unrestricted and project funding for creators and builders.",
+    "photo": "p15"
+  },
+  {
+    "name": "Fellowships",
+    "kind": "opportunity",
+    "slug": "fellowships",
+    "count": 48,
+    "blurb": "Paid programmes with mentorship and real work.",
+    "photo": "p43"
+  },
+  {
+    "name": "Scholarships",
+    "kind": "opportunity",
+    "slug": "scholarships",
+    "count": 17,
+    "blurb": "Funded study at home and abroad.",
+    "photo": "p52"
+  },
+  {
+    "name": "Jobs",
+    "kind": "opportunity",
+    "slug": "jobs",
+    "count": 54,
+    "blurb": "Roles at startups and companies hiring now.",
+    "photo": "p91"
+  },
+  {
+    "name": "Internships",
+    "kind": "opportunity",
+    "slug": "internships",
+    "count": 23,
+    "blurb": "Paid internships and graduate programmes.",
+    "photo": "p0"
+  },
+  {
+    "name": "Accelerators",
+    "kind": "opportunity",
+    "slug": "accelerators",
+    "count": 60,
+    "blurb": "Funding and support for early-stage startups.",
+    "photo": "p48"
+  },
+  {
+    "name": "Hackathons",
+    "kind": "opportunity",
+    "slug": "hackathons",
+    "count": 29,
+    "blurb": "Build weekends with prizes and mentors.",
+    "photo": "p0"
+  },
+  {
+    "name": "Competitions",
+    "kind": "opportunity",
+    "slug": "competitions",
+    "count": 66,
+    "blurb": "Pitch contests, challenges and prizes.",
+    "photo": "p12"
+  },
+  {
+    "name": "Residencies",
+    "kind": "opportunity",
+    "slug": "residencies",
+    "count": 35,
+    "blurb": "Time, space and stipends to make work.",
+    "photo": "p13"
+  },
+  {
+    "name": "Bounties",
+    "kind": "opportunity",
+    "slug": "bounties",
+    "count": 72,
+    "blurb": "Paid tasks for developers, designers and writers.",
+    "photo": "p35"
+  },
+  {
+    "name": "Volunteering",
+    "kind": "opportunity",
+    "slug": "volunteering",
+    "count": 41,
+    "blurb": "Ways to give your time to causes and communities.",
+    "photo": "p3"
+  },
+  {
+    "name": "Calls for Speakers",
+    "kind": "opportunity",
+    "slug": "calls-for-speakers",
+    "count": 78,
+    "blurb": "Stages looking for talks and panels.",
+    "photo": "p51"
+  },
+  {
+    "name": "Awards",
+    "kind": "opportunity",
+    "slug": "awards",
+    "count": 47,
+    "blurb": "Recognition and prize money for your work.",
+    "photo": "p50"
+  }
+]

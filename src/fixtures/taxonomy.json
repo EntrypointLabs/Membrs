@@ -1,0 +1,118 @@
+{
+  "eventCategories": [
+    "Music",
+    "Nightlife",
+    "Tech",
+    "Art & Design",
+    "Film",
+    "Food & Drink",
+    "Fashion",
+    "Comedy",
+    "Sports & Fitness",
+    "Wellness",
+    "Networking",
+    "Business",
+    "Faith",
+    "Gaming",
+    "Books & Talks",
+    "Theatre",
+    "Family",
+    "Festivals"
+  ],
+  "opportunityCategories": [
+    "Grants",
+    "Fellowships",
+    "Scholarships",
+    "Jobs",
+    "Internships",
+    "Accelerators",
+    "Hackathons",
+    "Competitions",
+    "Residencies",
+    "Bounties",
+    "Volunteering",
+    "Calls for Speakers",
+    "Awards"
+  ],
+  "placeTypes": [
+    "Beaches",
+    "Parks & gardens",
+    "Libraries",
+    "Amusement parks",
+    "Water parks",
+    "Zoos & wildlife",
+    "Museums & galleries",
+    "Lakes & nature"
+  ],
+  "placeTypeBlurbs": {
+    "Beaches": "Sand, surf and sunsets within reach of the city.",
+    "Parks & gardens": "Green space for walks, picnics and slow Sundays.",
+    "Libraries": "Quiet floors, study desks and weekly story hours.",
+    "Amusement parks": "Rides, games and a full day out with the family.",
+    "Water parks": "Slides, wave pools and lazy rivers.",
+    "Zoos & wildlife": "Animals, keeper talks and feeding times.",
+    "Museums & galleries": "Art, history and exhibitions worth a slow walk.",
+    "Lakes & nature": "Boardwalks, boat rides and fresh air."
+  },
+  "promoCategories": [
+    "Restaurants",
+    "Shopping",
+    "Fashion & Beauty",
+    "Tech & Gadgets",
+    "Travel & Stays",
+    "Groceries",
+    "Entertainment",
+    "Services & Apps"
+  ],
+  "placeGroups": [
+    {
+      "slug": "water",
+      "label": "Beaches & Water"
+    },
+    {
+      "slug": "green",
+      "label": "Parks & Nature"
+    },
+    {
+      "slug": "culture",
+      "label": "Museums & Galleries"
+    },
+    {
+      "slug": "books",
+      "label": "Libraries"
+    },
+    {
+      "slug": "fun",
+      "label": "Family Days Out"
+    }
+  ],
+  "onboardingInterests": {
+    "event": [
+      "Music",
+      "Nightlife",
+      "Tech",
+      "Art & Design",
+      "Food & Drink",
+      "Comedy",
+      "Sports & Fitness",
+      "Wellness",
+      "Networking",
+      "Festivals"
+    ],
+    "opportunity": [
+      "Grants",
+      "Fellowships",
+      "Scholarships",
+      "Jobs",
+      "Internships",
+      "Accelerators",
+      "Hackathons"
+    ],
+    "place": [
+      "Beaches",
+      "Parks & gardens",
+      "Museums & galleries",
+      "Libraries"
+    ]
+  }
+}

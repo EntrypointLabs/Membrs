@@ -1,0 +1,359 @@
+{
+  "privacy": {
+    "title": "Privacy Policy",
+    "updated": "5 Nov 2026",
+    "intro": "membrs helps you find events, opportunities and places worth your time. We collect as little as we can to do that, and we never sell your data. This policy explains what we collect, why, and the choices you have.",
+    "sections": [
+      {
+        "heading": "Information we collect",
+        "paragraphs": [
+          "<b>Email, city and interests</b> when you subscribe to the Sunday digest, together with your consent to receive it and our promotional emails. Nothing else is required, and there is no account or password.",
+          "<b>What you search for.</b> Searches are used to rank results in the moment. Your recent searches are kept only on your own device.",
+          "<b>Approximate city</b> from your connection, so we can show listings near you. We do not store it. Precise device location is only used if you tap Use my location, and only on your device.",
+          "<b>Basic usage data</b> such as pages viewed and the device type, collected without identifying you, so we can tell what is useful."
+        ]
+      },
+      {
+        "heading": "How we use your information",
+        "paragraphs": [
+          "To send the Sunday digest and early access news for the city you chose.",
+          "To send promotional emails, such as offers and featured picks from membrs and the events, opportunities and places we list, because you agreed to this when you subscribed. You can opt out at any time.",
+          "To tune the digest to the interests you picked.",
+          "To find broken links, outdated hours and listings that need checking.",
+          "We do not sell, rent or trade your information, and we do not use it for third party advertising."
+        ]
+      },
+      {
+        "heading": "Sharing and disclosure",
+        "paragraphs": [
+          "<b>Service providers</b> that help us run membrs, such as email delivery and hosting, under contracts that limit what they can do with your data.",
+          "<b>Organisers do not get your details from us.</b> When you get a ticket or apply, you leave membrs for the organiser's own page, and their privacy policy applies there.",
+          "<b>Legal reasons</b>, if we are required to by law or to protect people from harm."
+        ]
+      },
+      {
+        "heading": "Calendars and reminders",
+        "paragraphs": [
+          "When you add something to your calendar or reminders, membrs fills in the details and hands them to the app you choose. We never read, store or sync your calendar."
+        ]
+      },
+      {
+        "heading": "Data security",
+        "paragraphs": [
+          "Data is encrypted in transit and stored with providers that meet recognised security standards. Access is limited to the people who need it to run the service.",
+          "No system is perfectly secure, so we keep what we hold to a minimum."
+        ]
+      },
+      {
+        "heading": "How long we keep it",
+        "paragraphs": [
+          "We keep your email, city and interests until you unsubscribe or ask us to delete them. After that they are removed from our systems within 30 days."
+        ]
+      },
+      {
+        "heading": "Your rights and choices",
+        "paragraphs": [
+          "Unsubscribe from any email with one click.",
+          "Ask to see, correct, export or delete the information we hold about you.",
+          "Depending on where you live, data protection laws such as the Nigeria Data Protection Act, Ghana's Data Protection Act, Kenya's Data Protection Act, the UK GDPR or the EU GDPR may give you further rights. We honour these requests wherever you are."
+        ]
+      },
+      {
+        "heading": "Cookies and similar technologies",
+        "paragraphs": [
+          "We use a small number of cookies and local storage on your device. Essential ones keep the site working and remember your choices, such as dark mode and your city. Analytics and marketing cookies are only set if you say yes. See our <a href=\"#cookies\">Cookie Policy</a> for the full list, and change your choice any time from <a href=\"#cookies\" data-cc=\"open\">Cookie settings</a>."
+        ]
+      },
+      {
+        "heading": "Legal basis for using your data",
+        "paragraphs": [
+          "<b>Consent</b> for the digest, promotional emails, analytics and marketing cookies. You can withdraw it at any time.",
+          "<b>Legitimate interests</b> for keeping membrs secure, fixing errors and understanding which listings are useful, in ways you would reasonably expect.",
+          "<b>Legal obligation</b> where the law requires us to keep or share information."
+        ]
+      },
+      {
+        "heading": "International transfers",
+        "paragraphs": [
+          "Some of our service providers store data outside the country you live in. When that happens we rely on safeguards recognised by the applicable law, such as standard contractual clauses or an adequacy decision, so your data keeps the same level of protection."
+        ]
+      },
+      {
+        "heading": "Complaints",
+        "paragraphs": [
+          "If you are unhappy with how we handle your data, contact us first and we will try to fix it. You can also complain to your data protection authority, such as the Nigeria Data Protection Commission, the Data Protection Commission of Ghana, Kenya's Office of the Data Protection Commissioner or the UK Information Commissioner's Office."
+        ]
+      },
+      {
+        "heading": "Children's privacy",
+        "paragraphs": [
+          "membrs is not intended for anyone under 16, and we do not knowingly collect information from them. If you believe a child has signed up, contact us and we will delete it."
+        ]
+      },
+      {
+        "heading": "Changes to this policy",
+        "paragraphs": [
+          "If we make a meaningful change we will update the date above and tell subscribers in the next digest before it takes effect."
+        ]
+      },
+      {
+        "heading": "Contact us",
+        "paragraphs": [
+          "Questions or requests: <a href=\"mailto:privacy@membrs.app\">privacy@membrs.app</a>. We reply within 30 days."
+        ]
+      }
+    ]
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "updated": "5 Nov 2026",
+    "intro": "These terms cover your use of membrs, including the website, the app when it opens and the Sunday digest. By using membrs you agree to them. They are written to be read, so please do.",
+    "sections": [
+      {
+        "heading": "What membrs is",
+        "paragraphs": [
+          "membrs is a discovery service. We list events, opportunities and places, and link you to the official page to get a ticket, apply or visit.",
+          "We do not sell tickets, take payments, process applications or run the venues we list. Listings belong to their organisers."
+        ]
+      },
+      {
+        "heading": "Listings and accuracy",
+        "paragraphs": [
+          "We check listings before they go live, but details change. Dates, prices, deadlines, eligibility and opening hours can be updated by the organiser at any time.",
+          "Always confirm the details on the official page before you travel, pay or apply."
+        ]
+      },
+      {
+        "heading": "Using membrs",
+        "paragraphs": [
+          "Use membrs for lawful, personal purposes.",
+          "Do not scrape, copy in bulk or access membrs with automated tools without our written permission.",
+          "Do not try to break, overload or interfere with the service, or misuse the search."
+        ]
+      },
+      {
+        "heading": "The Sunday digest and promotions",
+        "paragraphs": [
+          "The digest is free. To subscribe you agree to receive it and occasional promotional emails from membrs.",
+          "You can unsubscribe from either at any time from the link in every email.",
+          "Subscribers get early access when the app opens in their city. We cannot promise a specific date."
+        ]
+      },
+      {
+        "heading": "Third party sites",
+        "paragraphs": [
+          "Links take you to sites we do not control, such as ticketing platforms and application portals. Their terms and privacy policies apply there, and any purchase or application is between you and them."
+        ]
+      },
+      {
+        "heading": "Our content",
+        "paragraphs": [
+          "The membrs name, design, writing and digest are ours. Organisers keep the rights to their names, descriptions and images. You may share links to membrs freely."
+        ]
+      },
+      {
+        "heading": "Disclaimers",
+        "paragraphs": [
+          "membrs is provided as is. We work to keep it accurate and available but do not guarantee that it will always be either."
+        ]
+      },
+      {
+        "heading": "Limitation of liability",
+        "paragraphs": [
+          "To the extent the law allows, membrs is not liable for losses that come from relying on a listing, from an event or opportunity itself, or from a third party site. Nothing here limits rights you have that cannot be limited by law."
+        ]
+      },
+      {
+        "heading": "Submitting listings and promos",
+        "paragraphs": [
+          "If you submit an event, opportunity, place or promo, you confirm that it is accurate, that you are allowed to share it, and that you have the rights to any image you upload.",
+          "You give membrs a free, worldwide licence to show, edit for length and clarity, and share your submission on membrs and in the digest.",
+          "Submissions must follow our <a href=\"#guidelines\">Listing Guidelines</a>. We may decline, edit or remove any listing at our discretion."
+        ]
+      },
+      {
+        "heading": "Advertising and sponsored listings",
+        "paragraphs": [
+          "Some listings are paid placements. They always carry an <b>Ad</b> badge. Paid placements are reviewed to the same standard as every other listing and must follow our <a href=\"#advertising\">Advertising Policy</a>.",
+          "Paying for a placement does not buy a review, a ranking in Most Popular or a mention in the digest."
+        ]
+      },
+      {
+        "heading": "Reporting problems",
+        "paragraphs": [
+          "If a listing is wrong, misleading, unsafe or infringes your rights, email <a href=\"mailto:report@membrs.app\">report@membrs.app</a> with the link. We review reports within 2 working days and take listings down when needed."
+        ]
+      },
+      {
+        "heading": "Ending access",
+        "paragraphs": [
+          "We may suspend access for anyone who breaks these terms or puts other people at risk. You can stop using membrs and unsubscribe at any time."
+        ]
+      },
+      {
+        "heading": "Changes to these terms",
+        "paragraphs": [
+          "We may update these terms as membrs grows. If a change matters, we will update the date above and mention it in the digest before it applies."
+        ]
+      },
+      {
+        "heading": "Governing law",
+        "paragraphs": [
+          "These terms are governed by the laws of the Federal Republic of Nigeria, without affecting any consumer protections you have where you live."
+        ]
+      },
+      {
+        "heading": "Contact us",
+        "paragraphs": [
+          "Questions about these terms: <a href=\"mailto:hello@membrs.app\">hello@membrs.app</a>."
+        ]
+      }
+    ]
+  },
+  "cookies": {
+    "title": "Cookie Policy",
+    "updated": "6 Nov 2026",
+    "intro": "This policy explains the cookies and similar technologies membrs uses, what each one does and how you control them. Cookies are small files saved on your device. We also use local storage, which works in a similar way.",
+    "sections": [
+      {
+        "heading": "Our approach",
+        "paragraphs": [
+          "Only essential cookies are set when you first visit. Analytics and marketing cookies stay off until you choose to turn them on.",
+          "You can change your choice at any time from <a href=\"#cookies\" data-cc=\"open\">Cookie settings</a>, which is also linked in the footer of every page."
+        ]
+      },
+      {
+        "heading": "Essential cookies (always on)",
+        "paragraphs": [
+          "<b>membrs.theme</b> remembers dark or light mode. Kept until you clear it.",
+          "<b>membrs.cookies</b> remembers your cookie choice. Kept for 12 months.",
+          "<b>membrs.city, saved items and recent searches</b> remember your city, bookmarks and searches on your own device only. They are never sent to us.",
+          "<b>Security and load balancing</b> cookies set by our hosting provider to keep the site fast and protected. Session only."
+        ]
+      },
+      {
+        "heading": "Analytics cookies (optional)",
+        "paragraphs": [
+          "Help us understand which pages and listings are useful, using privacy friendly, aggregated measurement. They do not identify you and are never used for advertising.",
+          "Kept for up to 13 months. Only set if you turn on Analytics."
+        ]
+      },
+      {
+        "heading": "Marketing cookies (optional)",
+        "paragraphs": [
+          "Let us measure whether our own campaigns on other sites bring people to membrs, and avoid showing you ads for membrs you have already acted on.",
+          "We do not let advertisers on membrs track you across sites. Only set if you turn on Marketing."
+        ]
+      },
+      {
+        "heading": "Emails",
+        "paragraphs": [
+          "The digest may include a tracking pixel and tracked links so we can see whether emails are opened and which picks are popular. You can turn off images in your email app to block the pixel, or unsubscribe at any time."
+        ]
+      },
+      {
+        "heading": "Managing cookies in your browser",
+        "paragraphs": [
+          "Besides Cookie settings, you can block or delete cookies in your browser settings. Blocking essential cookies may stop parts of membrs from working, such as remembering your city."
+        ]
+      },
+      {
+        "heading": "Contact us",
+        "paragraphs": [
+          "Questions about cookies: <a href=\"mailto:privacy@membrs.app\">privacy@membrs.app</a>."
+        ]
+      }
+    ]
+  },
+  "guidelines": {
+    "title": "Listing Guidelines",
+    "updated": "6 Nov 2026",
+    "intro": "membrs only works if people can trust what they find here. These guidelines apply to everything listed on membrs, whether it is submitted for free or paid for as an ad.",
+    "sections": [
+      {
+        "heading": "What we list",
+        "paragraphs": [
+          "Events, opportunities, places and promos that are real, open to the public or a clear audience, and happening in a city we cover.",
+          "Every listing needs an official link where people can get a ticket, apply, book or visit."
+        ]
+      },
+      {
+        "heading": "Accuracy",
+        "paragraphs": [
+          "Dates, prices, deadlines, eligibility and locations must be correct when submitted and kept up to date.",
+          "Say clearly if something is free, paid, invite only or requires an application fee."
+        ]
+      },
+      {
+        "heading": "What we do not list",
+        "paragraphs": [
+          "Scams, pyramid or multi level marketing schemes, and opportunities that ask applicants to pay to be considered without saying so.",
+          "Anything illegal, hateful, sexually explicit or that encourages harm.",
+          "Gambling, weapons, tobacco, vapes and prescription drugs.",
+          "Copies of someone else's event or opportunity without their permission."
+        ]
+      },
+      {
+        "heading": "Images and words",
+        "paragraphs": [
+          "Use images you own or have permission to use. No misleading photos, text heavy flyers or images of people used without consent.",
+          "Write plainly. No all caps, clickbait or exaggerated claims."
+        ]
+      },
+      {
+        "heading": "Review and removal",
+        "paragraphs": [
+          "Every submission is checked by a person before it goes live, usually within 2 working days.",
+          "We may edit for clarity, ask for proof, decline or remove a listing. Repeated breaches can lead to a ban."
+        ]
+      },
+      {
+        "heading": "Report a listing",
+        "paragraphs": [
+          "Spotted something wrong or unsafe? Email <a href=\"mailto:report@membrs.app\">report@membrs.app</a> with the link."
+        ]
+      }
+    ]
+  },
+  "advertising": {
+    "title": "Advertising Policy",
+    "updated": "6 Nov 2026",
+    "intro": "membrs is free for readers because of advertisers. This policy keeps ads honest and useful for the people who see them.",
+    "sections": [
+      {
+        "heading": "How ads appear",
+        "paragraphs": [
+          "Ads appear as the first listing in a collection and always carry an <b>Ad</b> badge.",
+          "Ads look like the listings around them so they are easy to read, but they are never hidden or disguised."
+        ]
+      },
+      {
+        "heading": "What can be advertised",
+        "paragraphs": [
+          "Anything that meets our <a href=\"#guidelines\">Listing Guidelines</a>, plus extra rules for regulated areas.",
+          "Financial products must be from licensed providers and show key terms clearly. Alcohol ads are only shown to an adult audience and must follow local law.",
+          "Political and election ads are not accepted."
+        ]
+      },
+      {
+        "heading": "Independence",
+        "paragraphs": [
+          "Ads do not affect Most Popular, Closing Soon, search results or what the editors pick for the digest.",
+          "We never sell or share subscriber data with advertisers."
+        ]
+      },
+      {
+        "heading": "Payment and refunds",
+        "paragraphs": [
+          "Prices and dates are agreed before a placement goes live. If we reject or remove an ad for a reason that is not the advertiser's fault, unused days are refunded."
+        ]
+      },
+      {
+        "heading": "Contact",
+        "paragraphs": [
+          "To advertise, use the <a href=\"#organisers\">Advertise</a> form or email <a href=\"mailto:ads@membrs.app\">ads@membrs.app</a>."
+        ]
+      }
+    ]
+  }
+}

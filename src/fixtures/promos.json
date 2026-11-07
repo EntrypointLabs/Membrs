@@ -1,0 +1,141 @@
+[
+  {
+    "id": "pr1",
+    "title": "Konga Yakata Black Friday Sale",
+    "merchant": "Konga",
+    "category": "Shopping",
+    "city": "Online",
+    "where": "Online",
+    "offer": "Up to 85% off",
+    "code": null,
+    "endsInDays": 25,
+    "startsInDays": 0,
+    "host": "konga.com",
+    "photo": "p10",
+    "blurb": "Konga's month-long Black Friday sale running to 30 November, with free delivery on orders over ₦5,000.",
+    "steps": [
+      "Shop the Yakata deals on konga.com or the app",
+      "Discounts show on the product page",
+      "Free nationwide delivery over ₦5,000"
+    ],
+    "finePrint": [
+      "Category caps: electronics up to 20%, men's fashion up to 67%, beauty up to 85%",
+      "Dates from published coverage, confirm on Konga"
+    ]
+  },
+  {
+    "id": "pr2",
+    "title": "Jumia Black Friday 2026",
+    "merchant": "Jumia",
+    "category": "Shopping",
+    "city": "Online",
+    "where": "Online and in app",
+    "offer": "Flash sales",
+    "code": null,
+    "endsInDays": 25,
+    "startsInDays": 0,
+    "host": "jumia.com.ng",
+    "photo": "p8",
+    "blurb": "Jumia runs a multi-week Black Friday every November with flash sales and early-morning price drops.",
+    "steps": [
+      "Watch the Black Friday page on jumia.com.ng",
+      "Flash sales open at set times",
+      "Add to cart quickly, stock is limited"
+    ],
+    "finePrint": [
+      "2026 dates not yet announced by Jumia",
+      "Check deals against normal prices"
+    ]
+  },
+  {
+    "id": "pr3",
+    "title": "Student Tickets for Opera in Concert",
+    "merchant": "MUSON Centre",
+    "category": "Entertainment",
+    "city": "Lagos",
+    "where": "In store",
+    "offer": "₦2,000 student",
+    "code": null,
+    "endsInDays": 2,
+    "startsInDays": 0,
+    "host": "muson.org",
+    "photo": "p34",
+    "blurb": "Student tickets for Saturday's Opera in Concert at MUSON are ₦2,000 against ₦15,000 regular.",
+    "steps": [
+      "Buy a student ticket online or at MUSON",
+      "Bring a valid student ID",
+      "Doors before 6:00 PM on 7 Nov"
+    ],
+    "finePrint": [
+      "Valid student ID required"
+    ]
+  },
+  {
+    "id": "pr4",
+    "title": "Afrojazz Festival Early Bird",
+    "merchant": "Abuja International Afrojazz Festival",
+    "category": "Entertainment",
+    "city": "Abuja",
+    "where": "Online",
+    "offer": "₦5,000 early bird",
+    "code": null,
+    "endsInDays": 16,
+    "startsInDays": 0,
+    "host": "afrojazzfestivalnigeria.com",
+    "photo": "p41",
+    "blurb": "Early-bird tickets for the 21 November main concert at ₦5,000, with VIP at ₦15,000.",
+    "steps": [
+      "Buy on afrojazzfestivalnigeria.com",
+      "Choose Early Bird at checkout"
+    ],
+    "finePrint": [
+      "While early-bird stock lasts",
+      "Prices differ between listings, confirm at checkout"
+    ]
+  },
+  {
+    "id": "pr5",
+    "title": "Free Entry: EWA Opening Night",
+    "merchant": "Entertainment Week Africa",
+    "category": "Entertainment",
+    "city": "Lagos",
+    "where": "In store",
+    "offer": "Free",
+    "code": null,
+    "endsInDays": 12,
+    "startsInDays": 0,
+    "host": "entertainmentweek.africa",
+    "photo": "q20",
+    "blurb": "The 17 November opening night of Entertainment Week Africa is free to attend.",
+    "steps": [
+      "Register on the EWA site",
+      "Arrive early at Livespot Entertarium, Lekki"
+    ],
+    "finePrint": [
+      "Capacity limited"
+    ]
+  },
+  {
+    "id": "pr6",
+    "title": "Free Under-18 10K at the Accra Marathon",
+    "merchant": "FNB Accra Marathon",
+    "category": "Services & Apps",
+    "city": "Accra",
+    "where": "Online",
+    "offer": "Free entry",
+    "code": null,
+    "endsInDays": 7,
+    "startsInDays": 0,
+    "host": "egotickets.com",
+    "photo": "q9",
+    "blurb": "Runners under 18 can enter the 10K free on 14 November. Adults pay GH₵150 to GH₵200.",
+    "steps": [
+      "Register on eGotickets",
+      "Choose the under-18 10K"
+    ],
+    "finePrint": [
+      "Ages under 18 only",
+      "Race starts 6:00 AM at Independence Square"
+    ]
+  }
+]

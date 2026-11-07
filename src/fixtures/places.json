@@ -1,0 +1,887 @@
+[
+  {
+    "id": "pl1",
+    "name": "Lekki Conservation Centre",
+    "type": "Lakes & nature",
+    "city": "Lagos",
+    "area": "Lekki",
+    "entry": "₦1,000",
+    "hours": [
+      {
+        "opens": 8.5,
+        "closes": 17.0
+      },
+      {
+        "opens": 8.5,
+        "closes": 17.0
+      },
+      {
+        "opens": 8.5,
+        "closes": 17.0
+      },
+      {
+        "opens": 8.5,
+        "closes": 17.0
+      },
+      {
+        "opens": 8.5,
+        "closes": 17.0
+      },
+      {
+        "opens": 8.5,
+        "closes": 17.0
+      },
+      {
+        "opens": 8.5,
+        "closes": 17.0
+      }
+    ],
+    "goodFor": [
+      "Canopy walk",
+      "Nature",
+      "Picnics"
+    ],
+    "about": "Wetland and forest reserve with the 401m canopy walk (₦1,000 extra), monkeys, and giant board games. Children 10 and under ₦200.",
+    "photo": "q31"
+  },
+  {
+    "id": "pl2",
+    "name": "Nike Art Gallery",
+    "type": "Museums & galleries",
+    "city": "Lagos",
+    "area": "Lekki",
+    "entry": "Free",
+    "hours": [
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      }
+    ],
+    "goodFor": [
+      "Art",
+      "Photography",
+      "Gifts"
+    ],
+    "about": "Five floors of Nigerian art collected by Nike Davies-Okundaye, one of the largest galleries in West Africa.",
+    "photo": "p9"
+  },
+  {
+    "id": "pl3",
+    "name": "Freedom Park Lagos",
+    "type": "Parks & gardens",
+    "city": "Lagos",
+    "area": "Lagos Island",
+    "entry": "Free",
+    "hours": [
+      {
+        "opens": 9.0,
+        "closes": 22.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 22.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 22.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 22.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 22.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 22.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 22.0
+      }
+    ],
+    "goodFor": [
+      "Live music",
+      "Theatre",
+      "Evenings"
+    ],
+    "about": "A former colonial prison turned public park and arts venue, home to concerts, Fringe shows and food stalls.",
+    "photo": "q36"
+  },
+  {
+    "id": "pl4",
+    "name": "Tarkwa Bay Beach",
+    "type": "Beaches",
+    "city": "Lagos",
+    "area": "Lagos Island",
+    "entry": "Boat fare",
+    "hours": [
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      }
+    ],
+    "goodFor": [
+      "Swimming",
+      "Day trips",
+      "Surfing"
+    ],
+    "about": "A sheltered beach reached by boat from the Tarzan or Five Cowries jetties, calmer water than the city beaches.",
+    "photo": "q3"
+  },
+  {
+    "id": "pl5",
+    "name": "Elegushi Beach",
+    "type": "Beaches",
+    "city": "Lagos",
+    "area": "Ikate, Lekki",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      }
+    ],
+    "goodFor": [
+      "Music",
+      "Food",
+      "Groups"
+    ],
+    "about": "Lively private beach with music, food and horse rides, busiest on weekends and holidays.",
+    "photo": "q10"
+  },
+  {
+    "id": "pl6",
+    "name": "Johnson Jakande Tinubu Park",
+    "type": "Parks & gardens",
+    "city": "Lagos",
+    "area": "Ikeja",
+    "entry": "Free",
+    "hours": [
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      }
+    ],
+    "goodFor": [
+      "Walks",
+      "Families",
+      "Picnics"
+    ],
+    "about": "A landscaped public park at Alausa with fountains, lawns and walking paths.",
+    "photo": "q35"
+  },
+  {
+    "id": "pl7",
+    "name": "Omu Resort",
+    "type": "Amusement parks",
+    "city": "Lagos",
+    "area": "Bogije, Ibeju-Lekki",
+    "entry": "See site",
+    "hours": [
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 19.0
+      }
+    ],
+    "goodFor": [
+      "Rides",
+      "Zoo",
+      "Families"
+    ],
+    "about": "Amusement rides, a zoo and a beach in one, with day passes for families.",
+    "photo": "q22"
+  },
+  {
+    "id": "pl8",
+    "name": "Kalakuta Museum",
+    "type": "Museums & galleries",
+    "city": "Lagos",
+    "area": "Ikeja",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      }
+    ],
+    "goodFor": [
+      "Music history",
+      "Fela",
+      "Rooftop"
+    ],
+    "about": "Fela Anikulapo-Kuti's former home, now a museum with his rooms, outfits and a rooftop bar.",
+    "photo": "p36"
+  },
+  {
+    "id": "pl9",
+    "name": "Millennium Park",
+    "type": "Parks & gardens",
+    "city": "Abuja",
+    "area": "Maitama",
+    "entry": "Free",
+    "hours": [
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      }
+    ],
+    "goodFor": [
+      "Walks",
+      "Picnics",
+      "Families"
+    ],
+    "about": "Abuja's largest public park, with gardens, a river and wide lawns at the foot of Aso Rock.",
+    "photo": "q28"
+  },
+  {
+    "id": "pl10",
+    "name": "Jabi Lake Park",
+    "type": "Lakes & nature",
+    "city": "Abuja",
+    "area": "Jabi",
+    "entry": "Free",
+    "hours": [
+      {
+        "opens": 7.0,
+        "closes": 21.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 21.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 21.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 21.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 21.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 21.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 21.0
+      }
+    ],
+    "goodFor": [
+      "Boat rides",
+      "Sunsets",
+      "Walks"
+    ],
+    "about": "The lakeside promenade next to Jabi Lake Mall, with boat rides and food spots.",
+    "photo": "q4"
+  },
+  {
+    "id": "pl11",
+    "name": "National Children's Park and Zoo",
+    "type": "Zoos & wildlife",
+    "city": "Abuja",
+    "area": "Asokoro",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 9.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 18.0
+      }
+    ],
+    "goodFor": [
+      "Kids",
+      "Animals",
+      "Picnics"
+    ],
+    "about": "Abuja's zoo and children's park with animal enclosures and play areas.",
+    "photo": "q16"
+  },
+  {
+    "id": "pl12",
+    "name": "Wonderland Amusement Park",
+    "type": "Amusement parks",
+    "city": "Abuja",
+    "area": "Central Area",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 10.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 20.0
+      }
+    ],
+    "goodFor": [
+      "Rides",
+      "Families",
+      "Evenings"
+    ],
+    "about": "Rides and games on the airport road side of the Central Area.",
+    "photo": "q20"
+  },
+  {
+    "id": "pl13",
+    "name": "National Library of Nigeria",
+    "type": "Libraries",
+    "city": "Abuja",
+    "area": "Central Area",
+    "entry": "Free",
+    "hours": [
+      {
+        "opens": 8.0,
+        "closes": 16.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 16.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 16.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 16.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 16.0
+      },
+      null,
+      null
+    ],
+    "goodFor": [
+      "Study",
+      "Research",
+      "Quiet"
+    ],
+    "about": "The national library's Abuja headquarters, with reading rooms and research collections.",
+    "photo": "q14"
+  },
+  {
+    "id": "pl14",
+    "name": "Labadi Beach",
+    "type": "Beaches",
+    "city": "Accra",
+    "area": "La",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 20.0
+      }
+    ],
+    "goodFor": [
+      "Music",
+      "Food",
+      "Weekends"
+    ],
+    "about": "Accra's best known beach, busy with music, food and horse rides on weekends.",
+    "photo": "q1"
+  },
+  {
+    "id": "pl15",
+    "name": "Kokrobite Beach",
+    "type": "Beaches",
+    "city": "Accra",
+    "area": "Kokrobite",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      },
+      {
+        "opens": 7.0,
+        "closes": 19.0
+      }
+    ],
+    "goodFor": [
+      "Surfing",
+      "Day trips",
+      "Drumming"
+    ],
+    "about": "A laid-back surf beach west of Accra, known for drumming and simple beach bars.",
+    "photo": "q12"
+  },
+  {
+    "id": "pl16",
+    "name": "Kwame Nkrumah Memorial Park",
+    "type": "Museums & galleries",
+    "city": "Accra",
+    "area": "Accra Central",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      }
+    ],
+    "goodFor": [
+      "History",
+      "Photography",
+      "Walks"
+    ],
+    "about": "The mausoleum and museum of Ghana's first president, on the site where independence was declared.",
+    "photo": "p15"
+  },
+  {
+    "id": "pl17",
+    "name": "Aburi Botanical Gardens",
+    "type": "Parks & gardens",
+    "city": "Accra",
+    "area": "Aburi",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 8.0,
+        "closes": 18.0
+      }
+    ],
+    "goodFor": [
+      "Day trips",
+      "Walks",
+      "Cool air"
+    ],
+    "about": "Historic botanical gardens in the hills an hour from Accra, with old trees and cooler air.",
+    "photo": "q29"
+  },
+  {
+    "id": "pl18",
+    "name": "Accra Zoo",
+    "type": "Zoos & wildlife",
+    "city": "Accra",
+    "area": "Achimota",
+    "entry": "See gate",
+    "hours": [
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      }
+    ],
+    "goodFor": [
+      "Kids",
+      "Animals",
+      "Forest"
+    ],
+    "about": "The zoo inside Achimota Forest, with a forest trail around it.",
+    "photo": "q18"
+  },
+  {
+    "id": "pl19",
+    "name": "George Padmore Research Library",
+    "type": "Libraries",
+    "city": "Accra",
+    "area": "Ridge",
+    "entry": "Free",
+    "hours": [
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      {
+        "opens": 9.0,
+        "closes": 17.0
+      },
+      null,
+      null
+    ],
+    "goodFor": [
+      "Study",
+      "African history",
+      "Quiet"
+    ],
+    "about": "Ghana's research library on African affairs, open to readers on weekdays.",
+    "photo": "q27"
+  },
+  {
+    "id": "pl20",
+    "name": "Nubuke Foundation",
+    "type": "Museums & galleries",
+    "city": "Accra",
+    "area": "East Legon",
+    "entry": "Free",
+    "hours": [
+      null,
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      },
+      {
+        "opens": 10.0,
+        "closes": 18.0
+      }
+    ],
+    "goodFor": [
+      "Contemporary art",
+      "Talks",
+      "Quiet"
+    ],
+    "about": "Contemporary art centre, showing Frederick Okai's sculpture from 11 November.",
+    "photo": "p9"
+  }
+]

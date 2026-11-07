@@ -1,0 +1,353 @@
+{
+  "event": {
+    "title": "List an event",
+    "lead": "Get your event in front of people deciding what to do this week.",
+    "fields": [
+      {
+        "name": "name",
+        "label": "Event name",
+        "type": "text",
+        "placeholder": "Afro Lounge Live: Rooftop Sessions",
+        "required": true
+      },
+      {
+        "name": "cat",
+        "label": "Type",
+        "type": "select",
+        "options": [
+          "Music",
+          "Nightlife",
+          "Tech",
+          "Art & Design",
+          "Film",
+          "Food & Drink",
+          "Fashion",
+          "Comedy",
+          "Sports & Fitness",
+          "Wellness",
+          "Networking",
+          "Business",
+          "Faith",
+          "Gaming",
+          "Books & Talks",
+          "Theatre",
+          "Family",
+          "Festivals"
+        ],
+        "required": true
+      },
+      {
+        "name": "city",
+        "label": "City",
+        "type": "select",
+        "options": [
+          "Lagos",
+          "Abuja",
+          "Accra",
+          "Nairobi",
+          "London",
+          "Lisbon"
+        ],
+        "required": true
+      },
+      {
+        "name": "date",
+        "label": "Date",
+        "type": "date",
+        "placeholder": "",
+        "required": true
+      },
+      {
+        "name": "time",
+        "label": "Start time",
+        "type": "time",
+        "placeholder": "",
+        "required": false
+      },
+      {
+        "name": "venue",
+        "label": "Venue",
+        "type": "text",
+        "placeholder": "Skyline Terrace, Victoria Island",
+        "required": true
+      },
+      {
+        "name": "price",
+        "label": "Ticket price",
+        "type": "text",
+        "placeholder": "Free, or ₦15,000",
+        "required": true
+      },
+      {
+        "name": "link",
+        "label": "Ticket or RSVP link",
+        "type": "url",
+        "placeholder": "https://",
+        "required": true
+      }
+    ]
+  },
+  "opportunity": {
+    "title": "Submit an opportunity",
+    "lead": "Grants, fellowships, jobs and open calls, seen by the people you want to apply.",
+    "fields": [
+      {
+        "name": "name",
+        "label": "Opportunity name",
+        "type": "text",
+        "placeholder": "Creative Futures Grant 2027",
+        "required": true
+      },
+      {
+        "name": "cat",
+        "label": "Type",
+        "type": "select",
+        "options": [
+          "Grants",
+          "Fellowships",
+          "Scholarships",
+          "Jobs",
+          "Internships",
+          "Accelerators",
+          "Hackathons",
+          "Competitions",
+          "Residencies",
+          "Bounties",
+          "Volunteering",
+          "Calls for Speakers",
+          "Awards"
+        ],
+        "required": true
+      },
+      {
+        "name": "org",
+        "label": "Offered by",
+        "type": "text",
+        "placeholder": "Atlas Arts Fund",
+        "required": true
+      },
+      {
+        "name": "award",
+        "label": "Award or pay",
+        "type": "text",
+        "placeholder": "$10,000, or ₦250k a month",
+        "required": true
+      },
+      {
+        "name": "deadline",
+        "label": "Deadline",
+        "type": "date",
+        "placeholder": "",
+        "required": true
+      },
+      {
+        "name": "fee",
+        "label": "Cost to apply",
+        "type": "text",
+        "placeholder": "Free",
+        "required": false
+      },
+      {
+        "name": "link",
+        "label": "Application link",
+        "type": "url",
+        "placeholder": "https://",
+        "required": true
+      }
+    ]
+  },
+  "place": {
+    "title": "Add a place",
+    "lead": "Libraries, beaches, parks and venues people can visit any day you are open.",
+    "fields": [
+      {
+        "name": "name",
+        "label": "Place name",
+        "type": "text",
+        "placeholder": "Okun Cove Beach",
+        "required": true
+      },
+      {
+        "name": "cat",
+        "label": "Type",
+        "type": "select",
+        "options": [
+          "Beaches",
+          "Parks & gardens",
+          "Libraries",
+          "Amusement parks",
+          "Water parks",
+          "Zoos & wildlife",
+          "Museums & galleries",
+          "Lakes & nature"
+        ],
+        "required": true
+      },
+      {
+        "name": "city",
+        "label": "City",
+        "type": "select",
+        "options": [
+          "Lagos",
+          "Abuja",
+          "Accra",
+          "Nairobi",
+          "London",
+          "Lisbon"
+        ],
+        "required": true
+      },
+      {
+        "name": "area",
+        "label": "Area",
+        "type": "text",
+        "placeholder": "Lekki",
+        "required": true
+      },
+      {
+        "name": "hours",
+        "label": "Opening hours",
+        "type": "text",
+        "placeholder": "Mon to Sun, 7 AM to 7 PM",
+        "required": true
+      },
+      {
+        "name": "entry",
+        "label": "Entry",
+        "type": "text",
+        "placeholder": "Free, or ₦2,000",
+        "required": true
+      },
+      {
+        "name": "link",
+        "label": "Website or map link",
+        "type": "url",
+        "placeholder": "https://",
+        "required": false
+      }
+    ]
+  },
+  "promo": {
+    "title": "Feature a promo",
+    "lead": "Discounts and deals with a clear end date and a simple way to claim them.",
+    "fields": [
+      {
+        "name": "name",
+        "label": "Offer",
+        "type": "text",
+        "placeholder": "30% off everything for Black Friday",
+        "required": true
+      },
+      {
+        "name": "cat",
+        "label": "Type",
+        "type": "select",
+        "options": [
+          "Restaurants",
+          "Shopping",
+          "Fashion & Beauty",
+          "Tech & Gadgets",
+          "Travel & Stays",
+          "Groceries",
+          "Entertainment",
+          "Services & Apps"
+        ],
+        "required": true
+      },
+      {
+        "name": "biz",
+        "label": "Business",
+        "type": "text",
+        "placeholder": "Lagos Threads",
+        "required": true
+      },
+      {
+        "name": "code",
+        "label": "Promo code",
+        "type": "text",
+        "placeholder": "Leave empty if none",
+        "required": false
+      },
+      {
+        "name": "ends",
+        "label": "Ends on",
+        "type": "date",
+        "placeholder": "",
+        "required": true
+      },
+      {
+        "name": "how",
+        "label": "How to claim",
+        "type": "text",
+        "placeholder": "Enter the code at checkout",
+        "required": true
+      },
+      {
+        "name": "link",
+        "label": "Where to get it",
+        "type": "url",
+        "placeholder": "https://",
+        "required": true
+      }
+    ]
+  },
+  "ad": {
+    "title": "Advertise",
+    "lead": "Banners on the home screen and inside feeds, or a featured spot at the top of a category. Priced per thousand views.",
+    "fields": [
+      {
+        "name": "name",
+        "label": "Brand or business",
+        "type": "text",
+        "placeholder": "Your brand",
+        "required": true
+      },
+      {
+        "name": "cat",
+        "label": "Placement",
+        "type": "select",
+        "options": [
+          "Top banner, home screen",
+          "Mid-feed banner",
+          "Featured listing in a category"
+        ],
+        "required": true
+      },
+      {
+        "name": "city",
+        "label": "City",
+        "type": "select",
+        "options": [
+          "Lagos",
+          "Abuja",
+          "Accra",
+          "Nairobi",
+          "London",
+          "Lisbon"
+        ],
+        "required": true
+      },
+      {
+        "name": "date",
+        "label": "Start date",
+        "type": "date",
+        "placeholder": "",
+        "required": true
+      },
+      {
+        "name": "price",
+        "label": "Budget",
+        "type": "text",
+        "placeholder": "From ₦25,000",
+        "required": true
+      },
+      {
+        "name": "link",
+        "label": "Where the ad should go",
+        "type": "url",
+        "placeholder": "https://",
+        "required": true
+      }
+    ]
+  }
+}
