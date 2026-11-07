@@ -33,7 +33,7 @@ export function CategoryTiles({
           <Photo
             id={c.photo}
             alt=""
-            className="aspect-[4/5] transition-transform duration-500 group-hover:scale-105"
+            className="aspect-square transition-transform duration-500 group-hover:scale-105"
           />
           <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
           <span className="absolute inset-x-4 bottom-4 text-white">

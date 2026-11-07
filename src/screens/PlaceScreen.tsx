@@ -42,11 +42,11 @@ export function PlaceScreen({ id }: { id: string }) {
           [place.type, `${paths.feed('places')}?type=${slugify(place.type)}`],
         ]}
       />
-      <header className="mt-8 max-w-4xl">
-        <h1 className="text-[clamp(34px,4.4vw,72px)] leading-[1.02] font-semibold tracking-tight">
+      <header className="mt-8">
+        <h1 className="text-[clamp(34px,4vw,68px)] leading-[1.04] font-semibold tracking-tight text-pretty">
           {place.name}
         </h1>
-        <p className="text-fg-2 mt-4 max-w-2xl text-lg">{place.about}</p>
+        <p className="text-fg-2 mt-4 text-lg">{place.about}</p>
       </header>
       <Photo
         id={place.photo}
