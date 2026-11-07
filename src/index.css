@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 /*
  * Theme switching. The <html> element carries data-theme="dark" or "light";
@@ -78,6 +79,29 @@
   --color-inv-fg-3: var(--inv-fg-3);
   --color-inv-line: var(--inv-line);
   --color-accent: var(--accent);
+
+  /*
+   * shadcn/ui names, pointed at the membrs tokens so the form components in
+   * components/ui render in our colours without edits. shadcn's own
+   * "accent" (a hover fill) is mapped to soft-hover inside those files,
+   * because accent here already means the link blue.
+   */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--fg);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--fg);
+  --color-primary: #2b55ff;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--btn);
+  --color-secondary-foreground: var(--fg);
+  --color-muted: var(--soft);
+  --color-muted-foreground: var(--fg-3);
+  --color-destructive: #ff5a4e;
+  --color-border: var(--line-2);
+  --color-input: var(--line-2);
+  --color-ring: var(--accent);
 }
 
 @theme {

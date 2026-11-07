@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
   DURATIONS,
-  discountRate,
   isPlacement,
   naira,
   quote as quoteFor,
-  DAY_RATE,
   type AdQuote,
   type Placement,
 } from '../lib/ads';
@@ -18,14 +16,38 @@ import {
   payForAd,
   preloadCheckout,
 } from '../lib/payments';
-import { toast } from '../lib/ui';
-import { BachsDemo } from '../components/BachsDemo';
 import { navigate, paths } from '../lib/router';
 import { titleCase } from '../lib/text';
 import type { ContributeKind, FormField } from '../lib/types';
+import { toast } from '../lib/ui';
+import { BachsDemo } from '../components/BachsDemo';
 import { Icon } from '../components/Icon';
 import { Link } from '../components/Link';
 import { Tabs } from '../components/Tabs';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 const KINDS: { value: ContributeKind; label: string }[] = [
   { value: 'event', label: 'Event' },
@@ -35,18 +57,23 @@ const KINDS: { value: ContributeKind; label: string }[] = [
   { value: 'ad', label: 'Advertise' },
 ];
 
+/** Our controls run a little larger than shadcn's defaults, to match the type. */
+const CONTROL = 'h-11 px-3.5 text-base md:text-base';
+
+type Errors = Record<string, string>;
+
 /**
- * One page for everything people send in: listings, places, promos and ad
- * requests. Each kind is a tab; Advertise also shows the ad at true size
- * above the form so the buyer sees exactly what runs.
+ * One page for everything people send in: listings, places, promos and ads.
+ * Every form is built from the shadcn Field components. Ads add a run
+ * length, the content rule and a total, and are paid before review.
  */
 export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   const form = contributeForm(kind);
+  const isAd = kind === 'ad';
   const [values, setValues] = useState<Record<string, string>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Errors>({});
   const [photo, setPhoto] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const isAd = kind === 'ad';
   const [days, setDays] = useState(7);
   const [agreed, setAgreed] = useState(false);
   const [demo, setDemo] = useState(false);
@@ -55,12 +82,12 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     reference: string;
   } | null>(null);
 
-  // The receipt is a new page in all but URL, so it starts at the top.
+  // The confirmation replaces the form, so it starts at the top.
   useEffect(() => {
-    if (paid) window.scrollTo(0, 0);
-  }, [paid]);
+    if (paid || sent) window.scrollTo(0, 0);
+  }, [paid, sent]);
 
-  // The placement select starts on its first option, so the quote does too.
+  // The placement starts on its first option, so the quote does too.
   const firstPlacement = form.fields.find((f) => f.name === 'cat')
     ?.options?.[0] as Placement | undefined;
   const chosen = values.cat ?? '';
@@ -71,27 +98,28 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   // What gets validated and sent: the form as shown, placement included.
   const filled = isAd ? { ...values, cat: placement } : values;
 
+  const set = (name: string, value: string) => {
+    setValues((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const missing: Record<string, string> = Object.fromEntries(
+    const missing: Errors = Object.fromEntries(
       form.fields
         .filter((f) => f.required && !filled[f.name]?.trim())
-        .map((f) => [f.name, `Add the ${f.label.toLowerCase()}.`]),
+        .map((f) => [f.name, 'Fill this in to continue.']),
     );
-    if (isAd) {
-      if (values.email?.trim() && !isValidEmail(values.email))
-        missing.email = 'Add an email we can send the receipt to.';
-      if (!photo) missing.photo = 'Add the banner image.';
-      if (!agreed) missing.agreed = 'Confirm the ad is safe for work.';
-    }
+    if (filled.email?.trim() && !isValidEmail(filled.email))
+      missing.email = 'That email does not look right.';
+    if (isAd && !photo) missing.photo = 'Add the banner image.';
+    if (isAd && !agreed)
+      missing.agreed = 'Confirm the ad follows the policy to continue.';
     setErrors(missing);
-    const count = Object.keys(missing).length;
-    if (count) {
-      toast(
-        count === 1 && missing.agreed
-          ? 'Confirm the ad is safe for work to continue.'
-          : 'A few details are missing.',
-      );
+    if (Object.keys(missing).length) {
+      document
+        .querySelector('[data-invalid="true"]')
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
     if (!isAd) {
@@ -140,22 +168,18 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
 
   if (sent) {
     return (
-      <div className="page grid min-h-[50vh] place-items-center text-center">
+      <div className="page grid min-h-[50vh] place-items-center py-16 text-center">
         <div className="max-w-md">
-          <Icon name="check" className="text-open mx-auto h-10 w-10" />
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight">
-            Thanks, it&apos;s in review
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Thanks, It&apos;s in Review
           </h1>
           <p className="text-fg-3 mt-3">
             A person checks every submission, usually within 2 working days.
             We&apos;ll email you when it goes live.
           </p>
-          <Link
-            href="/"
-            className="bg-fg text-bg mt-6 inline-flex h-11 items-center rounded-md px-5 font-bold"
-          >
-            Back to home
-          </Link>
+          <Button asChild size="lg" variant="secondary" className="mt-6">
+            <Link href="/">Back to home</Link>
+          </Button>
         </div>
       </div>
     );
@@ -174,128 +198,96 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
           onChange={(k) => navigate(paths.contribute(k), { replace: true })}
         />
       </div>
-      {kind === 'ad' && <AdPreview name={values.name} photo={photo} />}
+      {isAd && <AdPreview name={values.name} photo={photo} />}
+
       <form
         onSubmit={onSubmit}
         onFocus={isAd ? preloadCheckout : undefined}
         noValidate
-        className="mt-12"
+        className="mt-12 max-w-[920px]"
       >
-        <h2 className="text-3xl font-semibold tracking-tight">
-          {titleCase(form.title)}
-        </h2>
-        <p className="text-fg-3 mt-2 max-w-xl">{form.lead}</p>
-        <div className="mt-10 grid gap-x-8 gap-y-6 md:grid-cols-2">
-          {form.fields.map((f) => (
-            <Field
-              key={f.name}
-              field={f}
-              value={filled[f.name] ?? ''}
-              error={errors[f.name]}
-              onChange={(v) => {
-                setValues((prev) => ({ ...prev, [f.name]: v }));
-                setErrors((prev) => ({ ...prev, [f.name]: '' }));
-              }}
-            />
-          ))}
-          <label
-            className={`hover:border-fg-4 flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed p-6 text-center md:col-span-2 ${errors.photo ? 'border-urgent' : 'border-line-2'}`}
-          >
-            {photo ? (
-              <img
-                src={photo}
-                alt="Your upload"
-                className="max-h-56 rounded-md"
+        <FieldSet className="gap-8">
+          <div>
+            <FieldLegend className="text-3xl font-semibold tracking-tight data-[variant=legend]:text-3xl">
+              {titleCase(form.title)}
+            </FieldLegend>
+            <FieldDescription className="text-fg-3 max-w-xl text-base">
+              {form.lead}
+            </FieldDescription>
+          </div>
+
+          <FieldGroup className="grid gap-x-6 gap-y-6 md:grid-cols-2">
+            {form.fields.map((f) => (
+              <FormControl
+                key={f.name}
+                field={f}
+                value={filled[f.name] ?? ''}
+                error={errors[f.name]}
+                onChange={(v) => set(f.name, v)}
               />
-            ) : (
-              <>
-                <Icon name="image" className="text-fg-3 h-7 w-7" />
-                <span className="font-semibold">
-                  {isAd ? 'Add the banner image' : 'Add a photo'}
-                </span>
-                <span className="text-fg-3 text-sm">
-                  {isAd
-                    ? 'JPG or PNG, 4:3, at least 1200px wide'
-                    : 'JPG or PNG, landscape works best'}
-                </span>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setPhoto(URL.createObjectURL(file));
+            ))}
+            <PhotoField
+              ad={isAd}
+              photo={photo}
+              error={errors.photo}
+              onChange={(url) => {
+                setPhoto(url);
                 setErrors((prev) => ({ ...prev, photo: '' }));
               }}
             />
-          </label>
+          </FieldGroup>
+
           {isAd && (
             <>
-              <Durations placement={placement} days={days} onChange={setDays} />
-              <SafeForWork
+              <RunLength placement={placement} days={days} onChange={setDays} />
+              <ContentPolicy
                 agreed={agreed}
-                error={Boolean(errors.agreed)}
+                error={errors.agreed}
                 onChange={(v) => {
                   setAgreed(v);
                   setErrors((prev) => ({ ...prev, agreed: '' }));
                 }}
               />
-              <Summary quote={adQuote} />
             </>
           )}
-        </div>
-        <div className="border-line mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-8">
-          <p className="text-fg-3 text-sm">
-            {isAd && (
-              <>
-                Secure payment by Bachs. Full refund if not approved.
-                <br />
-              </>
-            )}
-            Submissions follow our{' '}
-            <Link
-              href={paths.legal('guidelines')}
-              className="text-fg underline"
-            >
-              Listing Guidelines
-            </Link>
-            . Questions: {CONTACT.hello}
-          </p>
-          <button
-            type="submit"
-            className="bg-brand hover:bg-brand-hover inline-flex h-12 items-center gap-2 rounded-md px-7 font-bold text-white"
-          >
-            {isAd ? (
-              <>
-                Pay {naira(adQuote.total)} with
-                <b className="text-brand rounded-[6px] bg-white px-[7px] py-0.5 text-sm font-black tracking-tight">
-                  Bachs
-                </b>
-              </>
-            ) : (
-              'Submit for review'
-            )}
-          </button>
-        </div>
+        </FieldSet>
+
+        <Separator className="my-10" />
+
+        {isAd ? (
+          <Total quote={adQuote} />
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-fg-3 text-sm">
+              Submissions follow our{' '}
+              <Link
+                href={paths.legal('guidelines')}
+                className="text-fg underline underline-offset-2"
+              >
+                Listing Guidelines
+              </Link>
+              . Questions: {CONTACT.hello}
+            </p>
+            <Button type="submit" size="lg" className="h-12 px-7 text-base">
+              Submit for review
+            </Button>
+          </div>
+        )}
       </form>
+
       {demo && (
         <BachsDemo
           quote={adQuote}
-          email={values.email ?? ''}
           onPaid={onDemoPaid}
-          onClose={() => {
-            setDemo(false);
-            toast('Payment cancelled. Your ad is still here.');
-          }}
+          onClose={() => setDemo(false)}
         />
       )}
     </div>
   );
 }
 
-function Field({
+/** One fixture field as a shadcn control, with its label and error. */
+function FormControl({
   field,
   value,
   error,
@@ -306,39 +298,111 @@ function Field({
   error?: string;
   onChange: (v: string) => void;
 }) {
-  const box = `bg-soft h-14 w-full rounded-md border px-4 outline-none focus:border-fg ${error ? 'border-urgent' : 'border-line-2'}`;
+  const id = `f-${field.name}`;
+  const invalid = Boolean(error);
   return (
-    <label className="block">
-      <span className="mb-2 flex justify-between text-sm font-bold">
+    <Field
+      data-invalid={invalid}
+      className={field.type === 'textarea' ? 'md:col-span-2' : undefined}
+    >
+      <FieldLabel htmlFor={id} className="text-fg text-sm font-semibold">
         {field.label}
         {!field.required && (
-          <span className="text-fg-3 font-medium">Optional</span>
+          <span className="text-fg-4 ml-auto font-normal">Optional</span>
         )}
-      </span>
+      </FieldLabel>
       {field.type === 'select' ? (
-        <select
+        <Select value={value || undefined} onValueChange={onChange}>
+          <SelectTrigger
+            id={id}
+            aria-invalid={invalid}
+            className={`${CONTROL} w-full data-[size=default]:h-11`}
+          >
+            <SelectValue placeholder="Choose…" />
+          </SelectTrigger>
+          <SelectContent position="popper" className="border-input max-h-72">
+            {field.options?.map((o) => (
+              <SelectItem key={o} value={o} className="py-2 text-[15px]">
+                {o}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : field.type === 'textarea' ? (
+        <Textarea
+          id={id}
           value={value}
+          placeholder={field.placeholder}
+          aria-invalid={invalid}
           onChange={(e) => onChange(e.target.value)}
-          className={box}
-        >
-          <option value="">Choose…</option>
-          {field.options?.map((o) => (
-            <option key={o}>{o}</option>
-          ))}
-        </select>
+          className="min-h-28 px-3.5 text-base md:text-base"
+        />
       ) : (
-        <input
+        <Input
+          id={id}
           type={field.type}
           value={value}
           placeholder={field.placeholder}
+          aria-invalid={invalid}
+          autoComplete={field.type === 'email' ? 'email' : undefined}
           onChange={(e) => onChange(e.target.value)}
-          className={box}
+          className={CONTROL}
         />
       )}
-      {error && (
-        <span className="text-urgent mt-1.5 block text-sm">{error}</span>
-      )}
-    </label>
+      {error && <FieldError>{error}</FieldError>}
+    </Field>
+  );
+}
+
+function PhotoField({
+  ad,
+  photo,
+  error,
+  onChange,
+}: {
+  ad: boolean;
+  photo: string | null;
+  error?: string;
+  onChange: (url: string) => void;
+}) {
+  const invalid = Boolean(error);
+  return (
+    <Field data-invalid={invalid} className="md:col-span-2">
+      <FieldLabel htmlFor="f-photo" className="text-fg text-sm font-semibold">
+        {ad ? 'Banner image' : 'Photo'}
+        {!ad && <span className="text-fg-4 ml-auto font-normal">Optional</span>}
+      </FieldLabel>
+      <label
+        htmlFor="f-photo"
+        className={`hover:border-fg-4 flex min-h-36 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed p-6 text-center transition-colors ${invalid ? 'border-destructive' : 'border-input'}`}
+      >
+        {photo ? (
+          <img src={photo} alt="Your upload" className="max-h-56 rounded-md" />
+        ) : (
+          <>
+            <Icon name="image" className="text-fg-3 h-6 w-6" />
+            <span className="text-[15px] font-semibold">Choose a file</span>
+            <span className="text-fg-3 text-sm">
+              {ad
+                ? 'JPG or PNG, 4:3, at least 1200px wide'
+                : 'JPG or PNG, landscape works best'}
+            </span>
+          </>
+        )}
+      </label>
+      <input
+        id="f-photo"
+        type="file"
+        accept="image/*"
+        aria-invalid={invalid}
+        className="sr-only"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onChange(URL.createObjectURL(file));
+        }}
+      />
+      {error && <FieldError>{error}</FieldError>}
+    </Field>
   );
 }
 
@@ -364,8 +428,8 @@ function AdPreview({ name, photo }: { name?: string; photo: string | null }) {
   );
 }
 
-/** Run length, with each option's price so the buyer compares totals, not rates. */
-function Durations({
+/** Run length as choice cards. Each shows its own total, so nobody multiplies. */
+function RunLength({
   placement,
   days,
   onChange,
@@ -375,135 +439,132 @@ function Durations({
   onChange: (days: number) => void;
 }) {
   return (
-    <fieldset className="md:col-span-2">
-      <legend className="mb-2 text-sm font-bold">
+    <FieldSet>
+      <FieldLegend variant="label" className="text-fg mb-1 font-semibold">
         How long should it run?
-      </legend>
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+      </FieldLegend>
+      <FieldDescription className="text-fg-3">
+        Longer runs cost less per day.
+      </FieldDescription>
+      <RadioGroup
+        value={String(days)}
+        onValueChange={(v) => onChange(Number(v))}
+        className="grid grid-cols-2 gap-2.5 md:grid-cols-4"
+      >
         {DURATIONS.map((d) => {
-          const off = discountRate(d.days);
-          const on = d.days === days;
+          const q = quoteFor(placement, d.days);
           return (
-            <button
+            <FieldLabel
               key={d.days}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onChange(d.days)}
-              className={`relative flex flex-col items-start gap-1 rounded-md border-[1.5px] px-4 py-3.5 text-left ${on ? 'border-brand bg-brand/10' : 'border-line-2 bg-soft'}`}
+              htmlFor={`run-${d.days}`}
+              className="border-input has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/[0.06] rounded-md"
             >
-              <b className="text-[15px]">{d.label}</b>
-              <span className="text-fg-3 text-sm">
-                {naira(quoteFor(placement, d.days).total)}
-              </span>
-              {off > 0 && (
-                <em className="text-open absolute top-2.5 right-2.5 text-[11.5px] font-bold not-italic">
-                  {off * 100}% off
-                </em>
-              )}
-            </button>
+              <Field orientation="horizontal" className="p-3.5">
+                <FieldContent className="gap-0.5">
+                  <FieldTitle className="text-fg text-[15px]">
+                    {d.label}
+                  </FieldTitle>
+                  <FieldDescription className="text-fg-3 text-sm">
+                    {naira(q.total)}
+                    <span className="text-fg-4 block text-[13px]">
+                      {naira(Math.round(q.total / q.days))} a day
+                    </span>
+                  </FieldDescription>
+                </FieldContent>
+                <RadioGroupItem value={String(d.days)} id={`run-${d.days}`} />
+              </Field>
+            </FieldLabel>
           );
         })}
-      </div>
-      <p className="text-fg-3 mt-2 text-sm">
-        {naira(DAY_RATE[placement])} a day for this placement.
-      </p>
-    </fieldset>
+      </RadioGroup>
+    </FieldSet>
   );
 }
 
 /**
- * The content rule, said before anyone pays. Every ad is checked against the
- * Advertising Policy after payment and refused ads are refunded, so the
- * buyer confirms the rule up front rather than finding out later.
+ * The content rule, stated plainly before anyone pays. Every ad is checked
+ * after payment and refused ads are refunded, so the buyer agrees to the rule
+ * up front instead of finding out from a refund.
  */
-function SafeForWork({
+function ContentPolicy({
   agreed,
   error,
   onChange,
 }: {
   agreed: boolean;
-  error: boolean;
+  error?: string;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <section className="border-warning/35 bg-warning/[0.07] rounded-md border px-5 py-5 md:col-span-2 md:px-6">
-      <h3 className="flex items-center gap-2 text-base font-bold">
-        <Icon name="lock" className="text-warning h-[18px] w-[18px]" />
+    <FieldSet>
+      <FieldLegend variant="label" className="text-fg mb-1 font-semibold">
         Safe for work only
-      </h3>
-      <p className="text-fg-2 mt-2 text-[14.5px]">
-        Every ad is checked against our{' '}
+      </FieldLegend>
+      <FieldDescription className="text-fg-2 max-w-[640px] text-[15px] leading-relaxed">
+        membrs is read at work and at home, so we don&apos;t run adult or sexual
+        content, gambling or loan apps, weapons, drugs, tobacco or vapes,
+        get-rich-quick schemes, or anything hateful or misleading. Each ad is
+        reviewed against the{' '}
         <Link
           href={paths.legal('advertising')}
-          className="text-brand dark:text-accent font-semibold"
+          className="text-fg underline underline-offset-2"
         >
           Advertising Policy
         </Link>{' '}
-        and{' '}
-        <Link
-          href={paths.legal('guidelines')}
-          className="text-brand dark:text-accent font-semibold"
-        >
-          Listing Guidelines
-        </Link>{' '}
-        before it goes live. We do not run:
-      </p>
-      <ul className="text-fg-2 mt-2.5 mb-4 grid list-disc gap-x-6 gap-y-1 pl-5 text-sm md:grid-cols-2">
-        <li>Adult, sexual or NSFW content of any kind</li>
-        <li>Gambling, betting and loan apps</li>
-        <li>Weapons, drugs, tobacco and vapes</li>
-        <li>Scams, get-rich-quick or pyramid schemes</li>
-        <li>Hate, violence or misleading claims</li>
-      </ul>
-      <label
-        className={`bg-soft flex cursor-pointer items-start gap-2.5 rounded-[10px] px-3.5 py-3 text-[14.5px] ${error ? 'ring-urgent ring-[1.5px]' : ''}`}
-      >
-        <input
-          type="checkbox"
+        before it runs. If we turn yours down, the payment comes back to you in
+        full.
+      </FieldDescription>
+      <Field orientation="horizontal" data-invalid={Boolean(error)}>
+        <Checkbox
+          id="agreed"
           checked={agreed}
-          onChange={(e) => onChange(e.target.checked)}
-          aria-invalid={error}
-          className="accent-brand mt-[3px] h-[17px] w-[17px] shrink-0"
+          aria-invalid={Boolean(error)}
+          onCheckedChange={(v) => onChange(v === true)}
+          className="size-[18px]"
         />
-        <span>
-          I confirm this ad is safe for work and follows the Advertising Policy.
-          If it is not approved, I get a full refund.
-        </span>
-      </label>
-    </section>
+        <FieldLabel
+          htmlFor="agreed"
+          className="text-fg text-[15px] font-normal"
+        >
+          This ad is safe for work and follows the Advertising Policy.
+        </FieldLabel>
+      </Field>
+      {error && <FieldError className="-mt-3">{error}</FieldError>}
+    </FieldSet>
   );
 }
 
-function Summary({ quote }: { quote: AdQuote }) {
+/** The bill, then the button that pays it. */
+function Total({ quote }: { quote: AdQuote }) {
   return (
-    <section className="bg-soft rounded-md px-5 py-4 md:col-span-2 md:px-6">
-      <div className="text-fg-2 flex justify-between gap-4 py-1.5 text-[15px]">
-        <span>{quote.placement}</span>
-        <span>
-          {naira(quote.rate)} × {quote.days} days
-        </span>
+    <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
+      <dl className="text-fg-2 grid max-w-[460px] grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-[15px]">
+        <dt>
+          {quote.placement}, {quote.days} days
+        </dt>
+        <dd className="tabular-nums">{naira(quote.subtotal)}</dd>
+        {quote.discount > 0 && (
+          <>
+            <dt>Longer run</dt>
+            <dd className="tabular-nums">−{naira(quote.discount)}</dd>
+          </>
+        )}
+        <dt className="text-fg mt-2 font-semibold">Due now</dt>
+        <dd className="text-fg mt-2 text-xl font-semibold tabular-nums">
+          {naira(quote.total)}
+        </dd>
+      </dl>
+      <div className="grid gap-2 md:justify-items-end">
+        <Button type="submit" size="lg" className="h-12 px-7 text-base">
+          Pay {naira(quote.total)}
+        </Button>
+        <p className="text-fg-3 text-sm">Payments are handled by Bachs.</p>
       </div>
-      {quote.discount > 0 && (
-        <div className="text-fg-2 flex justify-between gap-4 py-1.5 text-[15px]">
-          <span>Longer run discount</span>
-          <span className="text-open">−{naira(quote.discount)}</span>
-        </div>
-      )}
-      <div className="border-line-2 mt-1.5 flex items-baseline justify-between gap-4 border-t pt-3">
-        <span>Total, paid now</span>
-        <b className="text-[22px] tracking-tight">{naira(quote.total)}</b>
-      </div>
-      <p className="text-fg-3 mt-2.5 flex gap-2 text-[13.5px]">
-        <Icon name="check" className="text-open mt-0.5 h-4 w-4 shrink-0" />
-        Pay now, then our reviewer checks it against the guidelines, usually
-        within minutes. Approved ads go live on your start date. Rejected ads
-        are refunded in full.
-      </p>
-    </section>
+    </div>
   );
 }
 
-/** After payment: what was paid, where review is, and when it goes live. */
+/** After payment: the receipt, and what happens next. */
 function AdPaid({
   quote,
   reference,
@@ -517,62 +578,49 @@ function AdPaid({
   start?: string;
   onAgain: () => void;
 }) {
-  const live = start
-    ? `From ${new Date(`${start}T12:00:00`).toLocaleDateString('en-GB', {
+  const from = start
+    ? new Date(`${start}T12:00:00`).toLocaleDateString('en-GB', {
         weekday: 'short',
         day: 'numeric',
         month: 'short',
-      })}`
-    : 'On your start date';
-  const steps = [
-    { title: 'Paid', body: `Ref ${reference}`, tone: 'border-open' },
-    {
-      title: 'Review',
-      body: 'Checked against the guidelines, usually within minutes',
-      tone: 'border-brand',
-    },
-    { title: 'Live', body: live, tone: 'border-transparent' },
+      })
+    : 'your start date';
+  const rows: [string, string][] = [
+    ['Reference', reference],
+    ['Paid', naira(quote.total)],
+    ['Placement', `${quote.placement}, ${quote.days} days`],
+    ['Starts', from],
+    ['Status', 'In review'],
   ];
   return (
-    <div className="page grid min-h-[60vh] place-items-center py-16 text-center">
-      <div className="max-w-2xl">
-        <Icon name="check" className="text-open mx-auto h-10 w-10" />
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
-          Paid. Your Ad Is in Review.
+    <div className="page pt-10 pb-16 md:pt-20">
+      <div className="max-w-[560px]">
+        <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
+          Payment Received
         </h1>
-        <p className="text-fg-3 mt-3">
-          {naira(quote.total)} received for {quote.placement.toLowerCase()},{' '}
-          {quote.days} days. Receipt and updates go to {email}.
+        <p className="text-fg-3 mt-4 text-[17px]">
+          Your ad is with our reviewers now. We&apos;ll email {email} when
+          it&apos;s approved, and it starts running on {from}. If it isn&apos;t
+          approved, you get the full {naira(quote.total)} back.
         </p>
-        <ol className="my-8 grid gap-2.5 text-left md:grid-cols-3">
-          {steps.map((s) => (
-            <li
-              key={s.title}
-              className={`bg-soft grid gap-1 rounded-md border-[1.5px] p-3.5 ${s.tone}`}
+        <dl className="border-line-2 mt-8 grid grid-cols-[auto_1fr] gap-x-8 border-t text-[15px]">
+          {rows.map(([k, v]) => (
+            <div
+              key={k}
+              className="border-line col-span-2 grid grid-cols-subgrid border-b py-3"
             >
-              <b className="text-[15px]">{s.title}</b>
-              <span className="text-fg-3 text-[13px]">{s.body}</span>
-            </li>
+              <dt className="text-fg-3">{k}</dt>
+              <dd className="text-fg font-medium">{v}</dd>
+            </div>
           ))}
-        </ol>
-        <p className="text-fg-3 text-sm">
-          If it is not approved, you get a full refund to the same payment
-          method.
-        </p>
-        <div className="mt-6 flex justify-center gap-2.5">
-          <button
-            type="button"
-            onClick={onAgain}
-            className="bg-btn hover:bg-btn-hover h-11 rounded-md px-5 font-bold"
-          >
+        </dl>
+        <div className="mt-8 flex flex-wrap gap-2.5">
+          <Button size="lg" variant="secondary" onClick={onAgain}>
             Create another ad
-          </button>
-          <Link
-            href="/"
-            className="bg-btn hover:bg-btn-hover inline-flex h-11 items-center rounded-md px-5 font-bold"
-          >
-            Back to home
-          </Link>
+          </Button>
+          <Button asChild size="lg" variant="ghost">
+            <Link href="/">Back to home</Link>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,146 +1,72 @@
 import { useEffect, useState } from 'react';
 import { naira, type AdQuote } from '../lib/ads';
-import { Icon } from './Icon';
-
-const METHODS = ['Card', 'Bank transfer', 'USSD'] as const;
+import { Button } from '@/components/ui/button';
 
 /**
- * A stand-in for Bachs' checkout window, used only while there is no backend
- * to create a real session. It is labelled as a demo and takes no input: in
- * production Bachs opens its own secure overlay and no card details ever
- * touch membrs.
+ * Stands in for the Bachs checkout window while no payment server is
+ * connected (VITE_API_BASE is empty). It does not imitate Bachs: it says
+ * plainly that it is a test and charges nothing. With a server, Bachs opens
+ * its own window instead and this never renders.
  */
 export function BachsDemo({
   quote,
-  email,
   onPaid,
   onClose,
 }: {
   quote: AdQuote;
-  email: string;
   onPaid: () => void;
   onClose: () => void;
 }) {
-  const [method, setMethod] = useState<(typeof METHODS)[number]>('Card');
-  const [stage, setStage] = useState<'idle' | 'paying' | 'done'>('idle');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (stage === 'paying') {
-      const t = setTimeout(() => setStage('done'), 1300);
-      return () => clearTimeout(t);
-    }
-    if (stage === 'done') {
-      const t = setTimeout(onPaid, 1100);
-      return () => clearTimeout(t);
-    }
-    return undefined;
-  }, [stage, onPaid]);
+    if (!busy) return undefined;
+    const t = setTimeout(onPaid, 900);
+    return () => clearTimeout(t);
+  }, [busy, onPaid]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) =>
-      e.key === 'Escape' && stage === 'idle' && onClose();
+      e.key === 'Escape' && !busy && onClose();
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [stage, onClose]);
-
-  const input =
-    'h-11 w-full rounded-[9px] border-[1.5px] border-[#e4e4e7] bg-[#fafafa] px-3 text-[15px] text-[#111]';
+  }, [busy, onClose]);
 
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center p-4">
+    <div className="fixed inset-0 z-[90] grid place-items-end p-4 sm:place-items-center">
       <button
         type="button"
-        aria-label="Cancel payment"
-        onClick={() => stage === 'idle' && onClose()}
-        className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+        aria-label="Cancel"
+        onClick={() => !busy && onClose()}
+        className="absolute inset-0 bg-black/60"
       />
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Pay with Bachs"
-        className="relative w-[min(400px,calc(100vw-32px))] rounded-lg bg-white p-[22px] text-[#111] shadow-2xl"
+        aria-labelledby="test-checkout"
+        className="bg-panel border-line-2 relative w-full max-w-[420px] rounded-lg border p-6 shadow-2xl"
       >
-        {stage === 'done' ? (
-          <div className="grid place-items-center gap-2 py-8 text-center">
-            <Icon name="check" className="h-11 w-11 text-[#12b76a]" />
-            <b className="text-[19px]">Payment received</b>
-            <span className="text-sm text-[#666]">
-              {naira(quote.total)} · receipt sent to {email}
-            </span>
-          </div>
-        ) : (
-          <>
-            <div className="mb-[18px] flex items-center gap-2.5">
-              <b className="text-xl font-black tracking-tight">Bachs</b>
-              <span className="flex-1 text-[12.5px] text-[#666]">
-                Secure checkout · Demo
-              </span>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={stage !== 'idle'}
-                aria-label="Close"
-                className="grid h-8 w-8 place-items-center rounded-sm bg-[#f2f2f2]"
-              >
-                <Icon name="x" className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="text-[13px] text-[#666]">
-              MEMBRS · {quote.placement}, {quote.days} days
-            </p>
-            <p className="mb-[18px] text-[30px] font-bold tracking-tight">
-              {naira(quote.total)}
-            </p>
-            <div className="mb-3.5 flex gap-1.5">
-              {METHODS.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMethod(m)}
-                  aria-pressed={method === m}
-                  className={`h-[38px] flex-1 rounded-[9px] border-[1.5px] bg-white text-[13.5px] font-semibold ${method === m ? 'border-[#111]' : 'border-[#e4e4e7]'}`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-            <div className="grid gap-2.5 text-[12.5px] text-[#555]">
-              <label className="grid gap-1.5">
-                Card number
-                <input readOnly value="4242 4242 4242 4242" className={input} />
-              </label>
-              <div className="grid grid-cols-2 gap-2.5">
-                <label className="grid gap-1.5">
-                  Expiry
-                  <input readOnly value="12 / 28" className={input} />
-                </label>
-                <label className="grid gap-1.5">
-                  CVC
-                  <input readOnly value="•••" className={input} />
-                </label>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setStage('paying')}
-              disabled={stage !== 'idle'}
-              className="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-[11px] bg-[#111] text-base font-bold text-white disabled:opacity-80"
-            >
-              {stage === 'paying' ? (
-                <>
-                  <i className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                  Processing…
-                </>
-              ) : (
-                `Pay ${naira(quote.total)}`
-              )}
-            </button>
-            <p className="mt-3 text-center text-xs text-[#777]">
-              A demo of the Bachs overlay. In production Bachs opens its own
-              secure window and no card details touch membrs.
-            </p>
-          </>
-        )}
+        <h2 id="test-checkout" className="text-xl font-semibold">
+          Test checkout
+        </h2>
+        <p className="text-fg-3 mt-2 text-[15px] leading-relaxed">
+          No payment server is connected yet, so this stands in for the Bachs
+          window. Nothing is charged.
+        </p>
+        <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">
+          {naira(quote.total)}
+        </p>
+        <p className="text-fg-3 text-sm">
+          {quote.placement}, {quote.days} days
+        </p>
+        <div className="mt-6 flex justify-end gap-2.5">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button onClick={() => setBusy(true)} disabled={busy}>
+            {busy ? 'Completing…' : 'Complete test payment'}
+          </Button>
+        </div>
       </div>
     </div>
   );

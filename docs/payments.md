@@ -73,9 +73,9 @@ through Bachs and the advertiser gets an email with the reason.
 
 ## Frontend settings
 
-| Variable        | Effect                                                    |
-| --------------- | --------------------------------------------------------- |
-| `VITE_API_BASE` | Set: real checkout through the API. Empty: labelled demo. |
+| Variable        | Effect                                                                                          |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE` | Set: real checkout through the API. Empty: a plain "Test checkout" dialog that charges nothing. |
 
 The Bachs script (`https://checkout.bachs.io/bachs.js`) loads on first focus
 inside the ad form, not on page load. If a Content Security Policy is added,
