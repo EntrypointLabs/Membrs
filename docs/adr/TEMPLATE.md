@@ -18,9 +18,9 @@
 
 ## Considered Options
 
-1. **{Option 1 title}** — {one-line summary}
-2. **{Option 2 title}** — {one-line summary}
-3. **{Option 3 title}** — {one-line summary}
+1. **{Option 1 title}**: {one-line summary}
+2. **{Option 2 title}**: {one-line summary}
+3. **{Option 3 title}**: {one-line summary}
 
 ## Decision Outcome
 
@@ -30,7 +30,7 @@ Chosen option: **"{Option N title}"**, because {one or two sentences on the deci
 
 - ✅ **Good:** {what improves}
 - ✅ **Good:** {what improves}
-- ⚠️ **Bad:** {what gets worse — be honest}
+- ⚠️ **Bad:** {what gets worse: be honest}
 - ⚠️ **Bad:** {what gets worse}
 
 ## Pros and Cons of the Options
@@ -62,5 +62,5 @@ Chosen option: **"{Option N title}"**, because {one or two sentences on the deci
 <!--
 ## Update YYYY-MM-DD (optional, for clarifying notes after acceptance)
 
-{Add clarifying notes here. Do not rewrite history — supersede with a new ADR if the decision changes.}
+{Add clarifying notes here. Do not rewrite history: supersede with a new ADR if the decision changes.}
 -->

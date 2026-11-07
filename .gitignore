@@ -3,3 +3,5 @@ dist
 .env
 .DS_Store
 *.log
+# Built by scripts/optimize-images.mjs from assets/photos.
+public/images

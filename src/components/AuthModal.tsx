@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { PROVIDER_NAME, signIn, type Provider } from '../lib/auth';
+import {
+  PROVIDER_NAME,
+  sessionStore,
+  signIn,
+  type Provider,
+} from '../lib/auth';
 import { subscribe } from '../lib/api';
 import {
   cityStore,
@@ -9,7 +14,7 @@ import {
 import { useStore } from '../lib/store';
 import { CityChips, InterestPicker } from './InterestPicker';
 import { paths } from '../lib/router';
-import { closeOverlay, toast } from '../lib/ui';
+import { closeOverlay, openOverlay, toast } from '../lib/ui';
 import { Icon } from './Icon';
 import { Link } from './Link';
 import { Photo } from './Photo';
@@ -53,13 +58,50 @@ export function AppleMark({ className = 'h-5 w-5' }: { className?: string }) {
 }
 
 /**
+ * The Google and Apple buttons. Shared by the sign-up card and the footer so
+ * the two never drift apart.
+ */
+export function ProviderButton({
+  provider,
+  busy,
+  onClick,
+}: {
+  provider: Provider;
+  busy: Provider | null;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy !== null}
+      className={`flex h-[50px] items-center justify-center gap-3 rounded-md border px-4 text-[15px] font-semibold transition hover:-translate-y-px disabled:cursor-progress disabled:opacity-75 disabled:hover:translate-y-0 ${
+        provider === 'google'
+          ? 'border-black/10 bg-white text-[#1f1f1f]'
+          : 'border-white/10 bg-[#1c1c1e] text-white'
+      }`}
+    >
+      {busy === provider ? (
+        <i className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-current border-r-transparent" />
+      ) : provider === 'google' ? (
+        <GoogleMark />
+      ) : (
+        <AppleMark />
+      )}
+      {busy === provider
+        ? `Connecting to ${PROVIDER_NAME[provider]}…`
+        : `Continue with ${PROVIDER_NAME[provider]}`}
+    </button>
+  );
+}
+
+/**
  * Create an account or sign in, with Google or Apple and nothing else. A photo
  * panel on the left, the two buttons on the right; a bottom sheet on phones.
  */
 export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [busy, setBusy] = useState<Provider | null>(null);
-  const [signedIn, setSignedIn] = useState<Provider | null>(null);
   const card = useRef<HTMLDivElement>(null);
   const up = mode === 'up';
 
@@ -82,7 +124,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
     // New accounts, and anyone without a digest yet, go straight on to pick a
     // city and interests: that is what the account is for.
     if (up || !subscriptionStore.get()) {
-      setSignedIn(provider);
+      openOverlay('prefs');
       return;
     }
     closeOverlay();
@@ -90,30 +132,12 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
   }
 
   const button = (provider: Provider) => (
-    <button
-      type="button"
+    <ProviderButton
+      provider={provider}
+      busy={busy}
       onClick={() => go(provider)}
-      disabled={busy !== null}
-      className={`flex h-[50px] items-center justify-center gap-3 rounded-md border text-[15px] font-semibold transition hover:-translate-y-px disabled:cursor-progress disabled:opacity-75 disabled:hover:translate-y-0 ${
-        provider === 'google'
-          ? 'border-black/10 bg-white text-[#1f1f1f]'
-          : 'border-white/10 bg-[#1c1c1e] text-white'
-      }`}
-    >
-      {busy === provider ? (
-        <i className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-current border-r-transparent" />
-      ) : provider === 'google' ? (
-        <GoogleMark />
-      ) : (
-        <AppleMark />
-      )}
-      {busy === provider
-        ? `Connecting to ${PROVIDER_NAME[provider]}…`
-        : `Continue with ${PROVIDER_NAME[provider]}`}
-    </button>
+    />
   );
-
-  if (signedIn) return <Preferences provider={signedIn} />;
 
   return (
     <div className="fixed inset-0 z-[80] grid place-items-end md:place-items-center md:p-6">
@@ -133,6 +157,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
       >
         <div className="relative min-h-[220px] overflow-hidden rounded-md">
           <Photo
+            size="hero"
             id="p1"
             alt="Friends at a live event"
             className="absolute inset-0 h-full w-full"
@@ -220,12 +245,30 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
 }
 
 /**
- * Step 2 of sign-up: city and interests. Saving subscribes the reader to the
- * digest with them; skipping leaves the account without a digest for now.
+ * City and interests. Step 2 of sign-up, and the same card again whenever a
+ * signed-in reader opens the digest from the footer, the mail button or the
+ * digest page. Saving subscribes the account to the Sunday Digest.
  */
-function Preferences({ provider }: { provider: Provider }) {
+export function PreferencesModal() {
+  const session = useStore(sessionStore);
+  const joined = useStore(subscriptionStore);
   const savedCity = useStore(cityStore);
   const [city, setCity] = useState(savedCity);
+  const card = useRef<HTMLDivElement>(null);
+  const editing = joined !== null;
+  const provider = session?.provider ?? 'google';
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeOverlay();
+    document.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    card.current?.focus();
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, []);
 
   async function save() {
     await subscribe({
@@ -236,12 +279,17 @@ function Preferences({ provider }: { provider: Provider }) {
     cityStore.set(city);
     subscriptionStore.set({ email: `${provider} account`, city });
     closeOverlay();
-    toast(`All set. Your first digest for ${city} lands Sunday at 7 AM.`);
+    toast(
+      editing
+        ? `Saved. Your digest now follows ${city}.`
+        : `All set. Your first digest for ${city} lands Sunday at 7 AM.`,
+    );
   }
 
   function skip() {
     closeOverlay();
-    toast("You're in. Set your digest any time from the mail button.");
+    if (!editing)
+      toast("You're in. Set up your digest any time from the mail button.");
   }
 
   return (
@@ -253,19 +301,22 @@ function Preferences({ provider }: { provider: Provider }) {
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
       />
       <div
+        ref={card}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="prefs-title"
-        className="relative max-h-[94dvh] w-full overflow-auto rounded-t-lg bg-[#050505] px-5 pt-8 pb-6 text-[#f5f5f6] shadow-2xl md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
+        className="relative max-h-[94dvh] w-full overflow-auto rounded-t-lg bg-[#050505] px-5 pt-8 pb-6 text-[#f5f5f6] shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
       >
         <p className="mb-3.5 flex items-center gap-2 text-[13px] font-semibold text-white/55">
           <span className="bg-open grid h-5 w-5 place-items-center rounded-full text-[#04140a]">
             <Icon name="check" className="h-3 w-3" />
           </span>
-          Signed in with {PROVIDER_NAME[provider]} · Step 2 of 2
+          Signed in with {PROVIDER_NAME[provider]}
+          {!editing && ' · Step 2 of 2'}
         </p>
         <h2 id="prefs-title" className="text-2xl font-semibold tracking-tight">
-          Make the Sunday Digest Yours
+          {editing ? 'Edit Your Sunday Digest' : 'Make the Sunday Digest Yours'}
         </h2>
         <p className="mt-3 text-[14.5px] text-white/55">
           Pick your city and what you care about. Your digest and your feeds
@@ -282,14 +333,14 @@ function Preferences({ provider }: { provider: Provider }) {
             onClick={skip}
             className="px-3 py-2.5 text-sm font-semibold text-white/60"
           >
-            Skip for now
+            {editing ? 'Cancel' : 'Skip for now'}
           </button>
           <button
             type="button"
             onClick={save}
             className="bg-brand hover:bg-brand-hover h-[46px] rounded-md px-5 text-[15px] font-bold text-white"
           >
-            Save and continue
+            {editing ? 'Save changes' : 'Save and continue'}
           </button>
         </div>
       </div>

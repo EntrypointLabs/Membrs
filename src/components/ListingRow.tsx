@@ -20,6 +20,7 @@ export function ListingRow({ listing }: { listing: Listing }) {
       className="group border-line flex items-center gap-4 border-b py-6 md:gap-8 md:py-10"
     >
       <Photo
+        size="row"
         id={listing.photo}
         alt={listing.title}
         className="aspect-square w-20 shrink-0 rounded-md md:aspect-[3/2] md:w-[22%]"

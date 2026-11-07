@@ -11,5 +11,16 @@ export default defineConfig({
   server: { port: 5173, strictPort: true },
   build: {
     target: 'es2022',
+    // React changes far less often than our code, so it gets its own chunk
+    // and stays cached across deploys.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id))
+            return 'react';
+          return undefined;
+        },
+      },
+    },
   },
 });

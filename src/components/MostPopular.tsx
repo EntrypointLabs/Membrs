@@ -30,6 +30,7 @@ export function MostPopular({ items }: { items: Listing[] }) {
               className="group flex items-center gap-4 py-4"
             >
               <Photo
+                size="thumb"
                 id={l.photo}
                 alt=""
                 className="h-[72px] w-[72px] shrink-0 rounded-md"

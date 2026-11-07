@@ -18,7 +18,6 @@ import placesFixture from '../fixtures/places.json';
 import promosFixture from '../fixtures/promos.json';
 import digestFixture from '../fixtures/digest.json';
 import categoriesFixture from '../fixtures/categories.json';
-import legalFixture from '../fixtures/legal.json';
 import formsFixture from '../fixtures/contribute-forms.json';
 import taxonomyFixture from '../fixtures/taxonomy.json';
 import citiesFixture from '../fixtures/cities.json';
@@ -38,7 +37,6 @@ const fixtures = {
   promos: promosFixture as Promo[],
   digest: digestFixture as DigestIssue[],
   categories: categoriesFixture as Category[],
-  legal: legalFixture as Record<LegalSlug, LegalDocument>,
   forms: formsFixture as Record<ContributeKind, ContributeForm>,
   taxonomy: taxonomyFixture as Taxonomy,
   cities: citiesFixture as {
@@ -93,8 +91,17 @@ export function categories(): Category[] {
   return fixtures.categories;
 }
 
-export function legalDocument(slug: LegalSlug): LegalDocument {
-  return fixtures.legal[slug];
+let legal: Promise<Record<LegalSlug, LegalDocument>> | undefined;
+
+/**
+ * The legal text is the largest fixture and almost nobody reads it, so it
+ * loads on demand in its own chunk. The promise is cached so React's `use()`
+ * sees the same one on every render.
+ */
+export function legalDocuments(): Promise<Record<LegalSlug, LegalDocument>> {
+  return (legal ??= import('../fixtures/legal.json').then(
+    (m) => m.default as Record<LegalSlug, LegalDocument>,
+  ));
 }
 
 export function contributeForm(kind: ContributeKind): ContributeForm {

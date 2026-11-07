@@ -1,15 +1,26 @@
+import { sessionStore } from './auth';
 import { createStore } from './store';
 
 /**
- * Which overlay is open. One at a time, so opening the digest signup from the
- * footer closes cookie settings and the other way round.
+ * Which overlay is open. One at a time, so opening the digest from the footer
+ * closes cookie settings and the other way round. 'auth' is the sign-up and
+ * sign-in card; 'prefs' is its second step, city and interests.
  */
-export type Overlay = 'digest' | 'cookies' | 'plans' | 'auth' | null;
+export type Overlay = 'auth' | 'prefs' | 'cookies' | 'plans' | null;
 
 export const overlayStore = createStore<Overlay>(null, null);
 
 export function openOverlay(overlay: Exclude<Overlay, null>): void {
   overlayStore.set(overlay);
+}
+
+/**
+ * The single way into the Sunday Digest. There is no email form: the digest
+ * belongs to an account, so readers who are signed out sign up first and
+ * readers who are signed in go straight to their city and interests.
+ */
+export function openDigest(): void {
+  overlayStore.set(sessionStore.get() ? 'prefs' : 'auth');
 }
 
 export function closeOverlay(): void {

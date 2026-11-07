@@ -279,7 +279,7 @@
   },
   "ad": {
     "title": "Advertise",
-    "lead": "Banners on the home screen and inside feeds, or a featured spot at the top of a category. Priced per thousand views.",
+    "lead": "Banners on the home screen and inside feeds, or a featured spot at the top of a category. Priced per day, paid upfront.",
     "fields": [
       {
         "name": "name",
@@ -314,17 +314,17 @@
         "required": true
       },
       {
-        "name": "price",
-        "label": "Budget",
-        "type": "text",
-        "placeholder": "From ₦25,000",
-        "required": true
-      },
-      {
         "name": "link",
         "label": "Where the ad should go",
         "type": "url",
         "placeholder": "https://",
+        "required": true
+      },
+      {
+        "name": "email",
+        "label": "Email for the receipt",
+        "type": "email",
+        "placeholder": "you@brand.com",
         "required": true
       }
     ]

@@ -61,9 +61,10 @@ export function ListingScreen({ id }: { id: string }) {
         <p className="text-fg-2 mt-4 text-lg">{listing.blurb}</p>
       </header>
       <Photo
+        size="wide"
         id={listing.photo}
         alt={listing.title}
-        eager
+        priority
         className="mt-10 aspect-[2/1] rounded-lg"
       />
 

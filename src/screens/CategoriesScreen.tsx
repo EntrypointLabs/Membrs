@@ -31,6 +31,7 @@ export function CategoryTiles({
           className="group relative block overflow-hidden rounded-lg"
         >
           <Photo
+            size="tile"
             id={c.photo}
             alt=""
             className="aspect-square transition-transform duration-500 group-hover:scale-105"

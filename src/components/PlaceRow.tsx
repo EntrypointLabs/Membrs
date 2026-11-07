@@ -29,6 +29,7 @@ export function PlaceRow({ place }: { place: Place }) {
       className="group border-line flex items-center gap-4 border-b py-6 md:gap-8 md:py-10"
     >
       <Photo
+        size="row"
         id={place.photo}
         alt={place.name}
         className="aspect-square w-20 shrink-0 rounded-md md:aspect-[3/2] md:w-[22%]"

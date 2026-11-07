@@ -49,9 +49,10 @@ export function PlaceScreen({ id }: { id: string }) {
         <p className="text-fg-2 mt-4 text-lg">{place.about}</p>
       </header>
       <Photo
+        size="wide"
         id={place.photo}
         alt={place.name}
-        eager
+        priority
         className="mt-10 aspect-[2/1] rounded-lg"
       />
       <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-16">

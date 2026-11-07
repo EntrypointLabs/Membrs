@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes, MouseEvent } from 'react';
 import { navigate } from '../lib/router';
+import { preloadPath } from '../screens/lazy';
 
 /**
  * An anchor that routes in-app without a reload. External links, new-tab
@@ -27,5 +28,16 @@ export function Link({
     e.preventDefault();
     navigate(href);
   };
-  return <a href={href} onClick={handle} {...rest} />;
+  // Start loading the next screen's code on hover or touch, before the click.
+  const warm = () => href.startsWith('/') && preloadPath(href);
+  return (
+    <a
+      href={href}
+      onClick={handle}
+      onMouseEnter={warm}
+      onTouchStart={warm}
+      onFocus={warm}
+      {...rest}
+    />
+  );
 }

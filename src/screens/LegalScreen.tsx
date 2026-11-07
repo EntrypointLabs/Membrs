@@ -1,4 +1,5 @@
-import { legalDocument } from '../lib/api';
+import { use } from 'react';
+import { legalDocuments } from '../lib/api';
 import { CONTACT } from '../lib/config';
 import { navigate, paths } from '../lib/router';
 import type { LegalSlug } from '../lib/types';
@@ -19,7 +20,7 @@ const DOCS: { value: LegalSlug; label: string }[] = [
  * readable 640px column even though the text is centred.
  */
 export function LegalScreen({ doc }: { doc: LegalSlug }) {
-  const d = legalDocument(doc);
+  const d = use(legalDocuments())[doc];
   return (
     <article className="page mx-auto max-w-[860px] pt-10 pb-10 text-center md:pt-20">
       <p className="text-fg-3 flex justify-center gap-2.5 font-medium">

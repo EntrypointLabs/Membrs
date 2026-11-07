@@ -1,7 +1,7 @@
 import { digestById, digestIssues, listingById } from '../lib/api';
 import { paths } from '../lib/router';
 import { titleCase } from '../lib/text';
-import { openOverlay } from '../lib/ui';
+import { openDigest } from '../lib/ui';
 import type { Listing } from '../lib/types';
 import { DigestCard } from '../components/DigestCard';
 import { Kicker } from '../components/Kicker';
@@ -31,7 +31,7 @@ export function DigestScreen() {
         </div>
         <button
           type="button"
-          onClick={() => openOverlay('digest')}
+          onClick={openDigest}
           className="bg-brand hover:bg-brand-hover h-12 rounded-md px-6 font-bold text-white"
         >
           Get the digest
@@ -78,6 +78,7 @@ export function IssueScreen({ id }: { id: string }) {
             <li key={l.id}>
               <Link href={paths.listing(l.id)} className="group block">
                 <Photo
+                  size="hero"
                   id={l.photo}
                   alt={l.title}
                   className="aspect-[16/9] rounded-lg"

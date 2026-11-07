@@ -23,9 +23,10 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
       <Link href={paths.listing(pick.id)} className="group block">
         <div className="relative">
           <Photo
+            size="hero"
             id={pick.photo}
             alt={pick.title}
-            eager
+            priority
             className="aspect-[16/10] rounded-lg"
           />
         </div>
