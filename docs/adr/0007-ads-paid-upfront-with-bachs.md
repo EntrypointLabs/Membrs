@@ -19,7 +19,10 @@ checked, and anything not safe for work must never run.
 
 ## Decision Outcome
 
-Chosen option: **"Pay upfront with Bachs"**. Placements have fixed day rates
+Chosen option: **"Pay upfront with Bachs"**. An ad is not a banner: it runs
+as the first listing in the feed the buyer picks (Home, Events,
+Opportunities, Places or Promos), in the same card as every other listing.
+Each feed has a fixed day rate
 (`src/lib/ads.ts`) with 10% off two weeks and 20% off thirty days. The form
 states the safe-for-work rule and the buyer confirms it before paying. Our
 server creates the Bachs session and fulfils from the signed webhook; an AI

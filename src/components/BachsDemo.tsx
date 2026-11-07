@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { naira, type AdQuote } from '../lib/ads';
+import { naira, placementLabel, type AdQuote } from '../lib/ads';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -57,7 +57,7 @@ export function BachsDemo({
           {naira(quote.total)}
         </p>
         <p className="text-fg-3 text-sm">
-          {quote.placement}, {quote.days} days
+          {placementLabel(quote.placement)}, {quote.days} days
         </p>
         <div className="mt-6 flex justify-end gap-2.5">
           <Button variant="ghost" onClick={onClose} disabled={busy}>

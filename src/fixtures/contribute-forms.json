@@ -279,7 +279,7 @@
   },
   "ad": {
     "title": "Advertise",
-    "lead": "Banners on the home screen and inside feeds, or a featured spot at the top of a category. Priced per day, paid upfront.",
+    "lead": "Your ad runs as the first listing in the feed you choose, in the same card as everything else, with your photo, headline and link. Priced per day, paid upfront.",
     "fields": [
       {
         "name": "name",
@@ -289,14 +289,17 @@
         "required": true
       },
       {
+        "name": "title",
+        "label": "Headline",
+        "type": "text",
+        "placeholder": "Fresh roast every Saturday at Kola",
+        "required": true
+      },
+      {
         "name": "cat",
-        "label": "Placement",
+        "label": "Feed",
         "type": "select",
-        "options": [
-          "Top banner, home screen",
-          "Mid-feed banner",
-          "Featured listing in a category"
-        ],
+        "options": ["Home", "Events", "Opportunities", "Places", "Promos"],
         "required": true
       },
       {

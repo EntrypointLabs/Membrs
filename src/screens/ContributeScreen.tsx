@@ -3,11 +3,12 @@ import {
   DURATIONS,
   isPlacement,
   naira,
+  placementLabel,
   quote as quoteFor,
   type AdQuote,
   type Placement,
 } from '../lib/ads';
-import { contributeForm, submitContribution } from '../lib/api';
+import { contributeForm, feed, submitContribution } from '../lib/api';
 import { CONTACT } from '../lib/config';
 import { isValidEmail } from '../lib/email';
 import {
@@ -22,6 +23,7 @@ import type { ContributeKind, FormField } from '../lib/types';
 import { toast } from '../lib/ui';
 import { BachsDemo } from '../components/BachsDemo';
 import { Icon } from '../components/Icon';
+import { ListingCard } from '../components/ListingCard';
 import { Link } from '../components/Link';
 import { Tabs } from '../components/Tabs';
 import { Button } from '@/components/ui/button';
@@ -93,7 +95,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   const chosen = values.cat ?? '';
   const placement: Placement = isPlacement(chosen)
     ? chosen
-    : (firstPlacement ?? 'Featured listing in a category');
+    : (firstPlacement ?? 'Home');
   const adQuote = quoteFor(placement, days);
   // What gets validated and sent: the form as shown, placement included.
   const filled = isAd ? { ...values, cat: placement } : values;
@@ -112,7 +114,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     );
     if (filled.email?.trim() && !isValidEmail(filled.email))
       missing.email = 'That email does not look right.';
-    if (isAd && !photo) missing.photo = 'Add the banner image.';
+    if (isAd && !photo) missing.photo = 'Add the photo for your listing.';
     if (isAd && !agreed)
       missing.agreed = 'Confirm the ad follows the policy to continue.';
     setErrors(missing);
@@ -198,7 +200,15 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
           onChange={(k) => navigate(paths.contribute(k), { replace: true })}
         />
       </div>
-      {isAd && <AdPreview name={values.name} photo={photo} />}
+      {isAd && (
+        <AdPreview
+          placement={placement}
+          title={values.title}
+          brand={values.name}
+          city={values.city}
+          photo={photo}
+        />
+      )}
 
       <form
         onSubmit={onSubmit}
@@ -369,7 +379,7 @@ function PhotoField({
   return (
     <Field data-invalid={invalid} className="md:col-span-2">
       <FieldLabel htmlFor="f-photo" className="text-fg text-sm font-semibold">
-        {ad ? 'Banner image' : 'Photo'}
+        {ad ? 'Listing photo' : 'Photo'}
         {!ad && <span className="text-fg-4 ml-auto font-normal">Optional</span>}
       </FieldLabel>
       <label
@@ -384,7 +394,7 @@ function PhotoField({
             <span className="text-[15px] font-semibold">Choose a file</span>
             <span className="text-fg-3 text-sm">
               {ad
-                ? 'JPG or PNG, 4:3, at least 1200px wide'
+                ? 'JPG or PNG, 4:3 like every listing, at least 1200px wide'
                 : 'JPG or PNG, landscape works best'}
             </span>
           </>
@@ -406,23 +416,59 @@ function PhotoField({
   );
 }
 
-/** The ad at the size it runs: a featured card in a feed, 4:3 photo. */
-function AdPreview({ name, photo }: { name?: string; photo: string | null }) {
+/**
+ * The ad where it runs: the first card in a feed, followed by real listings,
+ * so the buyer sees it sits among them and is not a banner above them.
+ */
+function AdPreview({
+  placement,
+  title,
+  brand,
+  city,
+  photo,
+}: {
+  placement: Placement;
+  title?: string;
+  brand?: string;
+  city?: string;
+  photo: string | null;
+}) {
+  const after = feed(
+    placement === 'Opportunities' ? 'opportunity' : 'event',
+  ).slice(0, 2);
   return (
-    <section className="bg-soft mt-10 rounded-lg p-6 md:p-10">
-      <p className="text-fg-3 mb-5 text-sm font-semibold">Preview, true size</p>
-      <div className="w-full max-w-[420px]">
-        <div className="bg-btn grid aspect-[4/3] place-items-center overflow-hidden rounded-md">
-          {photo ? (
-            <img src={photo} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <Icon name="image" className="text-fg-4 h-8 w-8" />
-          )}
+    <section className="bg-soft mt-10 rounded-lg p-5 md:p-10">
+      <p className="text-fg-3 mb-5 text-sm font-semibold">
+        Preview: your ad is the first listing
+      </p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 md:gap-x-7">
+        <div className="flex flex-col">
+          <div className="bg-btn ring-primary grid aspect-[4/3] place-items-center overflow-hidden rounded-md ring-2 ring-offset-4 ring-offset-[var(--soft)]">
+            {photo ? (
+              <img src={photo} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Icon name="image" className="text-fg-4 h-8 w-8" />
+            )}
+          </div>
+          <p className="text-fg-3 mt-3 text-[13px] md:mt-5 md:text-[15px]">
+            {brand || 'Your brand'}
+          </p>
+          <h3 className="mt-1 line-clamp-2 text-base leading-snug font-semibold tracking-tight md:mt-2.5 md:text-[23px] md:leading-tight">
+            {title || 'Your headline'}
+          </h3>
+          <p className="text-fg-3 mt-auto pt-2 text-[13px] md:pt-3 md:text-[15px]">
+            {city || 'Your city'}
+          </p>
         </div>
-        <p className="text-fg-3 mt-5 text-[15px]">Featured · Lagos</p>
-        <h3 className="mt-2 text-[23px] font-semibold tracking-tight">
-          {name || 'Your brand'}
-        </h3>
+        {after.map((l, i) => (
+          <div
+            key={l.id}
+            aria-hidden="true"
+            className={`pointer-events-none opacity-40 ${i ? 'max-md:hidden' : ''}`}
+          >
+            <ListingCard listing={l} />
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -540,7 +586,7 @@ function Total({ quote }: { quote: AdQuote }) {
     <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
       <dl className="text-fg-2 grid max-w-[460px] grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-[15px]">
         <dt>
-          {quote.placement}, {quote.days} days
+          {placementLabel(quote.placement)}, {quote.days} days
         </dt>
         <dd className="tabular-nums">{naira(quote.subtotal)}</dd>
         {quote.discount > 0 && (
@@ -588,7 +634,7 @@ function AdPaid({
   const rows: [string, string][] = [
     ['Reference', reference],
     ['Paid', naira(quote.total)],
-    ['Placement', `${quote.placement}, ${quote.days} days`],
+    ['Placement', `${placementLabel(quote.placement)}, ${quote.days} days`],
     ['Starts', from],
     ['Status', 'In review'],
   ];

@@ -1,6 +1,7 @@
 # Ad payments with Bachs
 
-Advertisers pay for the whole run before their ad is reviewed. Bachs
+Advertisers pay for the whole run before their ad is reviewed. An ad runs as
+the first listing in the feed they pick, in the same card as other listings. Bachs
 (https://docs.bachs.io) takes the payment; membrs never sees card details.
 
 ## Flow
@@ -31,7 +32,8 @@ The ad is fulfilled from the signed webhook, never from the browser.
 
 `POST /v1/ads/checkout` is the one endpoint the frontend calls. It must:
 
-1. Validate the fields and that `placement` is one of the day-rate keys.
+1. Validate the fields and that `placement` is one of the day-rate keys:
+   `Home`, `Events`, `Opportunities`, `Places` or `Promos`.
 2. Recompute the total with the same table as `src/lib/ads.ts`. Never trust
    a total sent by the browser.
 3. Save the ad with status `awaiting_payment` and a reference like `AD-7KQ2XM`.

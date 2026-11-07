@@ -1,19 +1,25 @@
 /**
- * Ad pricing. Every placement has a day rate in naira and the buyer pays the
- * whole run upfront. Longer runs are cheaper per day. The server recomputes
+ * Ad pricing. An ad is not a banner: it runs as the first listing in the
+ * feed the buyer picks, in the same card as every other listing. Each feed
+ * has a day rate in naira and the buyer pays the whole run upfront. Longer runs are cheaper per day. The server recomputes
  * the total from the same table before it opens a checkout, so a tampered
  * total in the browser never reaches Bachs.
  */
 export type Placement =
-  | 'Top banner, home screen'
-  | 'Mid-feed banner'
-  | 'Featured listing in a category';
+  'Home' | 'Events' | 'Opportunities' | 'Places' | 'Promos';
 
 export const DAY_RATE: Record<Placement, number> = {
-  'Top banner, home screen': 15000,
-  'Mid-feed banner': 8000,
-  'Featured listing in a category': 5000,
+  Home: 15000,
+  Events: 8000,
+  Opportunities: 8000,
+  Places: 5000,
+  Promos: 5000,
 };
+
+/** "First listing on Events", for the bill and the receipt. */
+export function placementLabel(placement: Placement): string {
+  return `First listing on ${placement}`;
+}
 
 export const DURATIONS = [
   { days: 3, label: '3 days' },
