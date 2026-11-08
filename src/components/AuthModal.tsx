@@ -174,21 +174,6 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
             alt="Friends at a live event"
             className="absolute inset-0 h-full w-full"
           />
-          <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-          <div className="absolute inset-x-0 bottom-6 px-5 text-center text-white md:bottom-11 md:px-8">
-            <p className="text-[17px] leading-snug font-medium tracking-tight md:text-[clamp(19px,1.6vw,23px)]">
-              {up
-                ? 'Every Sunday, the best of your city.'
-                : "Welcome back to the city's best."}
-              <br />
-              {up
-                ? 'Join the people who never miss what matters.'
-                : 'Your picks and plans are where you left them.'}
-            </p>
-            <p className="mt-2 text-[13px] text-white/65 md:mt-3.5 md:text-sm">
-              MEMBRS · Events, opportunities, places and promos
-            </p>
-          </div>
         </div>
         <div className="relative grid place-items-center px-3.5 py-7 md:px-[clamp(28px,5vw,72px)] md:py-12">
           <button
@@ -202,15 +187,10 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
           <div className="w-full max-w-[360px]">
             <h2
               id="auth-title"
-              className="text-2xl font-semibold tracking-tight md:text-3xl"
+              className="mb-8 text-2xl font-semibold tracking-tight md:mb-11 md:text-3xl"
             >
               {up ? 'Create Your Account' : 'Sign In to MEMBRS'}
             </h2>
-            <p className="text-fg-3 mt-4 mb-7 text-[15.5px] leading-relaxed md:mb-10">
-              {up
-                ? 'One tap, then pick your city and interests. Your Sunday digest and feeds follow what you choose.'
-                : 'Pick the account you joined with. We never see or store a password.'}
-            </p>
             <div className="grid gap-3.5">
               {button('google')}
               {button('apple')}
