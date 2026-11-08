@@ -65,9 +65,10 @@ export function DigestForm() {
       </div>
     );
 
+  // The buttons take the note's width, and the block centres in its column.
   return (
-    <div>
-      <div className="grid max-w-[400px] gap-2.5">
+    <div className="grid w-max max-w-full gap-3 lg:justify-self-center">
+      <div className="grid gap-2.5">
         <ProviderButton
           provider="google"
           busy={busy}
@@ -79,7 +80,7 @@ export function DigestForm() {
           onClick={() => go('apple')}
         />
       </div>
-      <p className="text-inv-fg-2 mt-3 text-sm">
+      <p className="text-inv-fg-2 text-sm whitespace-nowrap">
         Free. No password to remember. Unsubscribe anytime.
       </p>
     </div>

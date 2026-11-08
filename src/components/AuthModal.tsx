@@ -199,28 +199,23 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
           >
             <Icon name="x" className="h-[18px] w-[18px]" />
           </button>
-          <div className="w-full max-w-[340px]">
-            {up && (
-              <p className="text-fg-3 mb-3.5 text-[13px] font-semibold">
-                Step 1 of 2
-              </p>
-            )}
+          <div className="w-full max-w-[360px]">
             <h2
               id="auth-title"
               className="text-2xl font-semibold tracking-tight md:text-3xl"
             >
               {up ? 'Create Your Account' : 'Sign In to MEMBRS'}
             </h2>
-            <p className="text-fg-3 mt-3 mb-6 text-[15px] md:mb-9">
+            <p className="text-fg-3 mt-4 mb-7 text-[15.5px] leading-relaxed md:mb-10">
               {up
                 ? 'One tap, then pick your city and interests. Your Sunday digest and feeds follow what you choose.'
                 : 'Pick the account you joined with. We never see or store a password.'}
             </p>
-            <div className="grid gap-3">
+            <div className="grid gap-3.5">
               {button('google')}
               {button('apple')}
             </div>
-            <p className="text-fg-3 mt-7 text-center text-[15px]">
+            <p className="text-fg-3 mt-8 text-center text-[15px] md:mt-9">
               {up ? 'Already have an account?' : 'New to MEMBRS?'}{' '}
               <button
                 type="button"
@@ -230,7 +225,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
                 {up ? 'Sign in' : 'Create one'}
               </button>
             </p>
-            <p className="text-fg-4 mt-7 text-center text-[13px] md:mt-14">
+            <p className="text-fg-4 mt-8 text-center text-[13px] md:mt-14">
               By continuing, you agree to our{' '}
               <Link
                 href={paths.legal('terms')}
@@ -327,7 +322,6 @@ export function PreferencesModal() {
             <Icon name="check" className="h-3 w-3" />
           </span>
           Signed in with {PROVIDER_NAME[provider]}
-          {!editing && ' · Step 2 of 2'}
         </p>
         <h2 id="prefs-title" className="text-2xl font-semibold tracking-tight">
           {editing ? 'Edit Your Sunday Digest' : 'Make the Sunday Digest Yours'}
