@@ -10,8 +10,18 @@ import {
   cityStore,
   interestsStore,
   subscriptionStore,
+  themeStore,
 } from '../lib/preferences';
 import { useStore } from '../lib/store';
+
+/**
+ * The sign-up cards contrast the page: white over dark mode, near-black over
+ * light mode, like the footer. Setting the opposite theme on the card flips
+ * every token inside it, chips and links included.
+ */
+function useInverseTheme(): 'light' | 'dark' {
+  return useStore(themeStore) === 'dark' ? 'light' : 'dark';
+}
 import { CityChips, InterestPicker } from './InterestPicker';
 import { paths } from '../lib/router';
 import { closeOverlay, openOverlay, toast } from '../lib/ui';
@@ -100,6 +110,7 @@ export function ProviderButton({
  * panel on the left, the two buttons on the right; a bottom sheet on phones.
  */
 export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
+  const inverse = useInverseTheme();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [busy, setBusy] = useState<Provider | null>(null);
   const card = useRef<HTMLDivElement>(null);
@@ -150,10 +161,11 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
       <div
         ref={card}
         tabIndex={-1}
+        data-theme={inverse}
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-title"
-        className="relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg bg-[#050505] p-2.5 text-[#f5f5f6] shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(500px,calc(100vh-48px))] md:w-[min(860px,100%)] md:grid-cols-[0.9fr_1fr] md:rounded-lg md:p-3"
+        className="bg-panel text-fg relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg p-2.5 shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(500px,calc(100vh-48px))] md:w-[min(860px,100%)] md:grid-cols-[0.9fr_1fr] md:rounded-lg md:p-3"
       >
         <div className="relative min-h-[220px] overflow-hidden rounded-md">
           <Photo
@@ -183,13 +195,13 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
             type="button"
             onClick={closeOverlay}
             aria-label="Close"
-            className="absolute top-[-218px] right-1.5 grid h-[38px] w-[38px] place-items-center rounded-md bg-black/45 text-white backdrop-blur md:top-2 md:right-2 md:bg-transparent md:opacity-60 md:hover:opacity-100"
+            className="md:text-fg absolute top-[-218px] right-1.5 grid h-[38px] w-[38px] place-items-center rounded-md bg-black/45 text-white backdrop-blur md:top-2 md:right-2 md:bg-transparent md:opacity-60 md:hover:opacity-100"
           >
             <Icon name="x" className="h-[18px] w-[18px]" />
           </button>
           <div className="w-full max-w-[340px]">
             {up && (
-              <p className="mb-3.5 text-[13px] font-semibold text-white/55">
+              <p className="text-fg-3 mb-3.5 text-[13px] font-semibold">
                 Step 1 of 2
               </p>
             )}
@@ -199,7 +211,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
             >
               {up ? 'Create Your Account' : 'Sign In to MEMBRS'}
             </h2>
-            <p className="mt-3 mb-6 text-[15px] text-white/55 md:mb-9">
+            <p className="text-fg-3 mt-3 mb-6 text-[15px] md:mb-9">
               {up
                 ? 'One tap, then pick your city and interests. Your Sunday digest and feeds follow what you choose.'
                 : 'Pick the account you joined with. We never see or store a password.'}
@@ -208,7 +220,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
               {button('google')}
               {button('apple')}
             </div>
-            <p className="mt-7 text-center text-[15px] text-white/55">
+            <p className="text-fg-3 mt-7 text-center text-[15px]">
               {up ? 'Already have an account?' : 'New to MEMBRS?'}{' '}
               <button
                 type="button"
@@ -218,7 +230,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
                 {up ? 'Sign in' : 'Create one'}
               </button>
             </p>
-            <p className="mt-7 text-center text-[13px] text-white/45 md:mt-14">
+            <p className="text-fg-4 mt-7 text-center text-[13px] md:mt-14">
               By continuing, you agree to our{' '}
               <Link
                 href={paths.legal('terms')}
@@ -250,6 +262,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
  * digest page. Saving subscribes the account to the Sunday Digest.
  */
 export function PreferencesModal() {
+  const inverse = useInverseTheme();
   const session = useStore(sessionStore);
   const joined = useStore(subscriptionStore);
   const savedCity = useStore(cityStore);
@@ -303,12 +316,13 @@ export function PreferencesModal() {
       <div
         ref={card}
         tabIndex={-1}
+        data-theme={inverse}
         role="dialog"
         aria-modal="true"
         aria-labelledby="prefs-title"
-        className="relative max-h-[94dvh] w-full overflow-auto rounded-t-lg bg-[#050505] px-5 pt-8 pb-6 text-[#f5f5f6] shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
+        className="bg-panel text-fg relative max-h-[94dvh] w-full overflow-auto rounded-t-lg px-5 pt-8 pb-6 shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
       >
-        <p className="mb-3.5 flex items-center gap-2 text-[13px] font-semibold text-white/55">
+        <p className="text-fg-3 mb-3.5 flex items-center gap-2 text-[13px] font-semibold">
           <span className="bg-open grid h-5 w-5 place-items-center rounded-full text-[#04140a]">
             <Icon name="check" className="h-3 w-3" />
           </span>
@@ -318,7 +332,7 @@ export function PreferencesModal() {
         <h2 id="prefs-title" className="text-2xl font-semibold tracking-tight">
           {editing ? 'Edit Your Sunday Digest' : 'Make the Sunday Digest Yours'}
         </h2>
-        <p className="mt-3 text-[14.5px] text-white/55">
+        <p className="text-fg-3 mt-3 text-[14.5px]">
           Pick your city and what you care about. Your digest and your feeds
           follow these, and you can change them any time.
         </p>
@@ -327,11 +341,11 @@ export function PreferencesModal() {
         <div className="mt-6">
           <InterestPicker compact />
         </div>
-        <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/15 pt-5 md:justify-end">
+        <div className="border-line-2 mt-6 flex items-center justify-between gap-3 border-t pt-5 md:justify-end">
           <button
             type="button"
             onClick={skip}
-            className="px-3 py-2.5 text-sm font-semibold text-white/60"
+            className="text-fg-3 px-3 py-2.5 text-sm font-semibold"
           >
             {editing ? 'Cancel' : 'Skip for now'}
           </button>

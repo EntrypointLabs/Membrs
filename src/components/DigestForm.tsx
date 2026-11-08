@@ -67,7 +67,7 @@ export function DigestForm() {
 
   return (
     <div>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid max-w-[400px] gap-2.5">
         <ProviderButton
           provider="google"
           busy={busy}

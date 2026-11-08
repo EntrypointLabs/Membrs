@@ -145,26 +145,3 @@ export function Footer() {
     </footer>
   );
 }
-
-/**
- * Phones have no footer. The legal links sit once, at the end of the home
- * page, rather than repeating under every screen.
- */
-export function MobileLegal() {
-  return (
-    <nav
-      aria-label="Legal"
-      className="text-fg-3 flex flex-wrap justify-center gap-x-4 gap-y-2 px-4 pt-9 pb-32 text-[13px] md:hidden"
-    >
-      <p className="w-full text-center">© 2026 MEMBRS</p>
-      <Link href={paths.legal('terms')}>Terms</Link>
-      <Link href={paths.legal('privacy')}>Privacy</Link>
-      <Link href={paths.legal('cookies')}>Cookies</Link>
-      <Link href={paths.legal('guidelines')}>Guidelines</Link>
-      <Link href={paths.legal('advertising')}>Advertising</Link>
-      <button type="button" onClick={() => openOverlay('cookies')}>
-        Cookie settings
-      </button>
-    </nav>
-  );
-}

@@ -7,7 +7,7 @@ import { openOverlay, overlayStore } from './lib/ui';
 import { AuthModal, PreferencesModal } from './components/AuthModal';
 import { CookieBanner, CookieSettings } from './components/CookieBanner';
 import { DigestFab } from './components/DigestFab';
-import { Footer, MobileLegal } from './components/Footer';
+import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { MobileTabBar } from './components/MobileTabBar';
 import { OnboardingTour } from './components/OnboardingTour';
@@ -96,7 +96,6 @@ export function App() {
         </Suspense>
       </main>
       <Footer />
-      {route.page === 'home' && <MobileLegal />}
       <MobileTabBar />
       <DigestFab />
       <CookieBanner />
