@@ -187,7 +187,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
           <div className="w-full max-w-[360px]">
             <h2
               id="auth-title"
-              className="mb-8 text-2xl font-semibold tracking-tight md:mb-11 md:text-3xl"
+              className="mb-8 text-center text-2xl font-semibold tracking-tight md:mb-11 md:text-3xl"
             >
               {up ? 'Create Your Account' : 'Sign In to MEMBRS'}
             </h2>

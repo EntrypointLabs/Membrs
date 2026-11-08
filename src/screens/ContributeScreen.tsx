@@ -484,18 +484,31 @@ function RunLength({
   days: number;
   onChange: (days: number) => void;
 }) {
+  // Any run from 1 to 90 days. The presets cover most buyers; Custom covers the rest.
+  const preset = DURATIONS.some((d) => d.days === days);
+  const [custom, setCustom] = useState(!preset);
+  const [draft, setDraft] = useState(String(days));
+  const choose = (v: string) => {
+    if (v === 'custom') {
+      setCustom(true);
+      onChange(Math.max(1, Math.min(90, Number(draft) || 10)));
+      return;
+    }
+    setCustom(false);
+    onChange(Number(v));
+  };
   return (
     <FieldSet>
       <FieldLegend variant="label" className="text-fg mb-1 font-semibold">
         How long should it run?
       </FieldLegend>
       <FieldDescription className="text-fg-3">
-        Longer runs cost less per day.
+        Longer runs cost less per day: 10% off from 14 days, 20% off from 30.
       </FieldDescription>
       <RadioGroup
-        value={String(days)}
-        onValueChange={(v) => onChange(Number(v))}
-        className="grid grid-cols-2 gap-2.5 md:grid-cols-4"
+        value={custom ? 'custom' : String(days)}
+        onValueChange={choose}
+        className="grid grid-cols-2 gap-2.5 md:grid-cols-5"
       >
         {DURATIONS.map((d) => {
           const q = quoteFor(placement, d.days);
@@ -522,6 +535,42 @@ function RunLength({
             </FieldLabel>
           );
         })}
+        <FieldLabel
+          htmlFor="run-custom"
+          className="border-input has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/[0.06] col-span-2 rounded-md md:col-span-1"
+        >
+          <Field orientation="horizontal" className="p-3.5">
+            <FieldContent className="gap-1">
+              <FieldTitle className="text-fg text-[15px]">Custom</FieldTitle>
+              {custom ? (
+                <span className="text-fg-3 flex items-center gap-2 text-sm">
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={90}
+                    value={draft}
+                    aria-label="Number of days"
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      setDraft(e.target.value);
+                      const n = Number(e.target.value);
+                      if (n >= 1) onChange(Math.min(90, Math.round(n)));
+                    }}
+                    className="h-8 w-16 px-2 text-sm md:text-sm"
+                  />
+                  days
+                </span>
+              ) : (
+                <FieldDescription className="text-fg-3 text-sm">
+                  Pick the days
+                </FieldDescription>
+              )}
+            </FieldContent>
+            <RadioGroupItem value="custom" id="run-custom" />
+          </Field>
+        </FieldLabel>
       </RadioGroup>
     </FieldSet>
   );
@@ -586,7 +635,8 @@ function Total({ quote }: { quote: AdQuote }) {
     <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
       <dl className="text-fg-2 grid max-w-[460px] grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-[15px]">
         <dt>
-          {placementLabel(quote.placement)}, {quote.days} days
+          {placementLabel(quote.placement)}, {quote.days}{' '}
+          {quote.days === 1 ? 'day' : 'days'}
         </dt>
         <dd className="tabular-nums">{naira(quote.subtotal)}</dd>
         {quote.discount > 0 && (
@@ -634,7 +684,10 @@ function AdPaid({
   const rows: [string, string][] = [
     ['Reference', reference],
     ['Paid', naira(quote.total)],
-    ['Placement', `${placementLabel(quote.placement)}, ${quote.days} days`],
+    [
+      'Placement',
+      `${placementLabel(quote.placement)}, ${quote.days} {quote.days === 1 ? 'day' : 'days'}`,
+    ],
     ['Starts', from],
     ['Status', 'In review'],
   ];

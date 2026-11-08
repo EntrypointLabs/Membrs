@@ -65,9 +65,9 @@ export function DigestForm() {
       </div>
     );
 
-  // The buttons take the note's width, and the block centres in its column.
+  // The buttons take the note's width, and the block sits at the right edge, over the socials.
   return (
-    <div className="grid w-max max-w-full gap-3 lg:justify-self-center">
+    <div className="grid w-max max-w-full gap-3 lg:justify-self-end">
       <div className="grid gap-2.5">
         <ProviderButton
           provider="google"
