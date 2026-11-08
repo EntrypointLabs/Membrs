@@ -65,9 +65,9 @@ export function DigestForm() {
       </div>
     );
 
-  // The buttons take the note's width, and the block sits at the right edge, over the socials.
+  // The block fills the Contact column it sits in, edge to edge.
   return (
-    <div className="grid w-max max-w-full gap-3 lg:justify-self-end">
+    <div className="grid w-full gap-3">
       <div className="grid gap-2.5">
         <ProviderButton
           provider="google"
@@ -80,8 +80,8 @@ export function DigestForm() {
           onClick={() => go('apple')}
         />
       </div>
-      <p className="text-inv-fg-2 text-sm whitespace-nowrap">
-        Free. No password to remember. Unsubscribe anytime.
+      <p className="text-inv-fg-2 text-sm">
+        Free every Sunday. No password, no spam.
       </p>
     </div>
   );

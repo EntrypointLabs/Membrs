@@ -58,8 +58,9 @@ export function Footer() {
   return (
     <footer className="mx-auto mt-[clamp(120px,9vw,180px)] w-[min(120%,calc(100vw-32px))] max-w-[calc(var(--container-page)*1.2)] max-md:hidden">
       <div className="bg-inv text-inv-fg rounded-t-lg px-[clamp(40px,7vw,140px)] pt-[clamp(64px,5.5vw,104px)] pb-10 shadow-[0_-24px_60px_rgb(0_0_0/0.18)]">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-[clamp(40px,6vw,120px)]">
-          <h2 className="text-[clamp(26px,2.3vw,38px)] leading-tight font-medium tracking-tight">
+        {/* Same four columns as the links below, so the sign-up sits exactly in the Contact column. */}
+        <div className="grid items-center gap-10 md:grid-cols-2 lg:grid-cols-4">
+          <h2 className="text-[clamp(26px,2.3vw,38px)] leading-tight font-medium tracking-tight lg:col-span-3">
             {/* One headline, broken before "in" so it reads as two lines. */}
             {titleCase(`Get the best of ${city} in your inbox every Sunday.`)
               .split(' in ')
