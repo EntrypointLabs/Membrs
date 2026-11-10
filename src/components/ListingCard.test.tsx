@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { listingById } from '../lib/api';
+import { feed, listingById } from '../lib/api';
 import type { OpportunityListing } from '../lib/types';
 import { ListingCard } from './ListingCard';
 
 describe('ListingCard', () => {
-  const event = listingById('e2')!;
+  const event = feed('event')[0]!;
   const opportunity = listingById('o1') as OpportunityListing;
 
   it('links to the listing and shows its price', () => {
     const html = renderToStaticMarkup(<ListingCard listing={event} />);
-    expect(html).toContain('href="/listing/e2"');
+    expect(html).toContain(`href="/listing/${event.id}"`);
     expect(html).toContain(event.title);
-    expect(html).toContain('₦15,000');
+    expect(html).toContain(event.kind === 'event' ? event.price : '');
   });
 
   it('shows the deadline and award for an opportunity', () => {

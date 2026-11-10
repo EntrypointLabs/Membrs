@@ -30,20 +30,20 @@
     "category": "Shopping",
     "city": "Online",
     "where": "Online and in app",
-    "offer": "Flash sales",
+    "offer": "Up to 60% off",
     "code": null,
     "endsInDays": 25,
     "startsInDays": 0,
     "host": "jumia.com.ng",
     "photo": "p8",
-    "blurb": "Jumia runs a multi-week Black Friday every November with flash sales and early-morning price drops.",
+    "blurb": "Jumia's No Manage Am Black Friday runs 30 October to 30 November, with up to 60% off on Explosion Fridays (6, 13, 20 and 27 November) and free shipping on Sundays.",
     "steps": [
-      "Watch the Black Friday page on jumia.com.ng",
-      "Flash sales open at set times",
-      "Add to cart quickly, stock is limited"
+      "Shop the Black Friday page on jumia.com.ng or the app",
+      "Explosion Fridays carry the deepest cuts",
+      "Check the 10k Store and Half Price Deals sections"
     ],
     "finePrint": [
-      "2026 dates not yet announced by Jumia",
+      "Ends with Cyber Monday on 30 November",
       "Check deals against normal prices"
     ]
   },
@@ -66,7 +66,9 @@
       "Bring a valid student ID",
       "Doors before 6:00 PM on 7 Nov"
     ],
-    "finePrint": ["Valid student ID required"]
+    "finePrint": [
+      "Valid student ID required"
+    ]
   },
   {
     "id": "pr4",
@@ -109,7 +111,9 @@
       "Register on the EWA site",
       "Arrive early at Livespot Entertarium, Lekki"
     ],
-    "finePrint": ["Capacity limited"]
+    "finePrint": [
+      "Capacity limited"
+    ]
   },
   {
     "id": "pr6",
@@ -125,10 +129,62 @@
     "host": "egotickets.com",
     "photo": "q9",
     "blurb": "Runners under 18 can enter the 10K free on 14 November. Adults pay GH₵150 to GH₵200.",
-    "steps": ["Register on eGotickets", "Choose the under-18 10K"],
+    "steps": [
+      "Register on eGotickets",
+      "Choose the under-18 10K"
+    ],
     "finePrint": [
       "Ages under 18 only",
       "Race starts 6:00 AM at Independence Square"
+    ]
+  },
+  {
+    "id": "pr7",
+    "title": "Jumia 11.11: Eleven Hours of Deals",
+    "merchant": "Jumia",
+    "category": "Tech & Gadgets",
+    "city": "Online",
+    "where": "Online and in app",
+    "offer": "Hidden freebies",
+    "code": null,
+    "endsInDays": 3,
+    "startsInDays": 3,
+    "host": "jumia.com.ng",
+    "photo": "p43",
+    "blurb": "On 11 November, Jumia runs deals from 8:00 AM to 6:00 PM with hidden freebies, inside its month-long Black Friday.",
+    "steps": [
+      "Open the Jumia app on 11 November from 8:00 AM",
+      "Look for the hidden freebies across categories",
+      "Pay before stock runs out"
+    ],
+    "finePrint": [
+      "One day only, 8:00 AM to 6:00 PM",
+      "Freebies are limited"
+    ]
+  },
+  {
+    "id": "pr8",
+    "title": "20% Off a Lagos City Break",
+    "merchant": "Radisson Blu Anchorage Lagos",
+    "category": "Travel & Stays",
+    "city": "Lagos",
+    "where": "In store",
+    "offer": "20% off",
+    "code": null,
+    "endsInDays": 68,
+    "startsInDays": 0,
+    "host": "radissonhotels.com",
+    "photo": "q13",
+    "blurb": "20% off flexible room rates for stays of two nights or more, plus 15% off food and drinks at the hotel, for stays until 15 January 2027.",
+    "steps": [
+      "Book a flexible rate of two nights or more on radissonhotels.com",
+      "Or contact the hotel on Victoria Island directly",
+      "Food and drink discount applies during your stay"
+    ],
+    "finePrint": [
+      "Minimum two nights",
+      "Subject to availability, blackout dates may apply",
+      "Cannot be combined with other offers"
     ]
   }
 ]

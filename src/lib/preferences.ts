@@ -41,3 +41,12 @@ export function toggleInterest(name: string): void {
     prev.includes(name) ? prev.filter((i) => i !== name) : [...prev, name],
   );
 }
+
+/**
+ * Answers to the follow-up questions some interests ask (Scholarships asks
+ * the level, Jobs the field), keyed by the interest.
+ */
+export const followUpsStore = createStore<Record<string, string[]>>(
+  'membrs.followups',
+  {},
+);

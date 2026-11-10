@@ -6,7 +6,6 @@ import { useStore } from './lib/store';
 import { openOverlay, overlayStore } from './lib/ui';
 import { AuthModal, PreferencesModal } from './components/AuthModal';
 import { CookieBanner, CookieSettings } from './components/CookieBanner';
-import { DigestFab } from './components/DigestFab';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { MobileTabBar } from './components/MobileTabBar';
@@ -18,9 +17,7 @@ import {
   CategoriesScreen,
   CategoryScreen,
   ContributeScreen,
-  DigestScreen,
   FeedScreen,
-  IssueScreen,
   LegalScreen,
   ListingScreen,
   NotFoundScreen,
@@ -52,10 +49,6 @@ function Screen({ route }: { route: Route }) {
       return <PlaceScreen key={route.id} id={route.id} />;
     case 'promo':
       return <PromoScreen key={route.id} id={route.id} />;
-    case 'digest':
-      return <DigestScreen />;
-    case 'issue':
-      return <IssueScreen key={route.id} id={route.id} />;
     case 'contribute':
       return <ContributeScreen key={route.kind} kind={route.kind} />;
     case 'search':
@@ -97,7 +90,6 @@ export function App() {
       </main>
       <Footer />
       <MobileTabBar />
-      <DigestFab />
       <CookieBanner />
       {route.page === 'home' && overlay !== 'auth' && <OnboardingTour />}
       {overlay === 'cookies' && <CookieSettings />}

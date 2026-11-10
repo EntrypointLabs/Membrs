@@ -1,35 +1,30 @@
-import type { CSSProperties } from 'react';
-import { eventTag } from '../lib/dates';
 import type { Listing } from '../lib/types';
-import { CategoryLabel } from './CategoryLabel';
+import { listingTags, Tags } from './Tags';
 
 /**
- * The line above a listing title: the time tag, the category in its colour,
- * and the city. Tags are plain coloured text, never a filled pill, so a row
- * of cards stays calm.
+ * The tags above a listing title. On mixed feeds (home) the section comes
+ * first, so "Event" and "Music" sit side by side; on a section's own page the
+ * section is implied and only the category (and an opportunity's sector)
+ * shows. The time and city live in the meta line under the title, not here.
  */
 export function Kicker({
   listing,
+  mixed = false,
+  plain = false,
   className = '',
 }: {
   listing: Listing;
+  mixed?: boolean;
+  plain?: boolean;
   className?: string;
 }) {
-  const tag = listing.kind === 'event' ? eventTag(listing) : '';
   return (
-    <p
-      className={`flex flex-wrap items-center gap-x-1.5 text-[15px] ${className}`}
-    >
-      {tag && (
-        <span
-          className="cat-color font-medium"
-          style={{ '--c': '#d24d42', '--cd': '#fda296' } as CSSProperties}
-        >
-          {tag}
-        </span>
-      )}
-      <CategoryLabel name={listing.category} dot={Boolean(tag)} />
-      <span className="text-fg-3">· {listing.city}</span>
+    <p className={`flex ${className}`}>
+      <Tags
+        section={mixed ? listing.kind : undefined}
+        names={listingTags(listing)}
+        plain={plain}
+      />
     </p>
   );
 }

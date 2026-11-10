@@ -90,6 +90,31 @@ export function Block({
   );
 }
 
+/**
+ * The description, right under the photo on every detail page: a heading,
+ * then one paragraph per string.
+ */
+export function AboutBlock({
+  title,
+  paragraphs,
+}: {
+  title: string;
+  paragraphs: string[];
+}) {
+  return (
+    <section className="mt-10 max-w-3xl md:mt-14">
+      <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+        {titleCase(title)}
+      </h2>
+      {paragraphs.map((p) => (
+        <p key={p} className="text-fg-2 mt-4 text-[17px] leading-relaxed">
+          {p}
+        </p>
+      ))}
+    </section>
+  );
+}
+
 /** The sticky action card in the right column. */
 export function ActionCard({ children }: { children: ReactNode }) {
   return (

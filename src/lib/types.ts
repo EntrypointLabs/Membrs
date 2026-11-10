@@ -23,7 +23,12 @@ interface ListingBase {
   blurb: string;
   /** Lower ranks were listed first. Ties break on what happens soonest. */
   listedRank: number;
+  /** A stock photo id from assets/photos, always present. */
   photo: string;
+  /** The organiser's own cover image. Shown first; the stock photo stands in if it fails. */
+  photoUrl?: string;
+  /** The longer description, one string per paragraph. Falls back to the blurb. */
+  about?: string[];
 }
 
 export interface EventListing extends ListingBase {
@@ -51,6 +56,8 @@ export interface OpportunityListing extends ListingBase {
   remote: boolean;
   mode: 'In person' | 'Remote';
   eligibility: string[];
+  /** The field it belongs to (Technology, Climate…), shown as a second tag. */
+  sector?: string;
 }
 
 export type Listing = EventListing | OpportunityListing;
@@ -92,20 +99,6 @@ export interface Promo {
   blurb: string;
   steps: string[];
   finePrint: string[];
-}
-
-export interface DigestIssue {
-  id: string;
-  number: number;
-  title: string;
-  dek: string;
-  date: string;
-  readMinutes: number;
-  city: string;
-  type: string;
-  listingIds: string[];
-  intro: string[];
-  photo: string;
 }
 
 export interface Category {

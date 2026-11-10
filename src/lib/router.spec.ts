@@ -10,8 +10,7 @@ describe('parseRoute', () => {
     ['/listing/e2', { page: 'listing', id: 'e2' }],
     ['/place/pl1', { page: 'place', id: 'pl1' }],
     ['/promo/pr1', { page: 'promo', id: 'pr1' }],
-    ['/digest', { page: 'digest' }],
-    ['/digest/d1', { page: 'issue', id: 'd1' }],
+    ['/digest', { page: 'not-found' }],
     ['/search?q=jazz%20night', { page: 'search', query: 'jazz night' }],
     ['/cookies', { page: 'legal', doc: 'cookies' }],
     ['/contribute?kind=ad', { page: 'contribute', kind: 'ad' }],
@@ -32,7 +31,6 @@ describe('parseRoute', () => {
   });
 
   it('round-trips every path builder', () => {
-    expect(parseRoute(paths.issue('d3'))).toEqual({ page: 'issue', id: 'd3' });
     expect(parseRoute(paths.search('a&b'))).toEqual({
       page: 'search',
       query: 'a&b',
@@ -47,7 +45,7 @@ describe('parseRoute', () => {
 describe('navSection', () => {
   it('lights the right tab', () => {
     expect(navSection(parseRoute('/places/categories'))).toBe('places');
-    expect(navSection(parseRoute('/digest/d1'))).toBe('digest');
+    expect(navSection(parseRoute('/opportunities'))).toBe('opportunities');
     expect(navSection(parseRoute('/privacy'))).toBeNull();
   });
 });

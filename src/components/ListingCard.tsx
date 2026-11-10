@@ -13,13 +13,15 @@ export function priceOf(listing: Listing): string {
 
 interface ListingCardProps {
   listing: Listing;
+  /** On a mixed feed (home) the section tag leads: Event, Opportunity. */
+  mixed?: boolean;
 }
 
 /**
  * The grid card. A flex column, so the date row sits at the bottom of every
  * card and a row of cards lines up no matter how long each title runs.
  */
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, mixed = false }: ListingCardProps) {
   return (
     <Link
       href={paths.listing(listing.id)}
@@ -28,19 +30,21 @@ export function ListingCard({ listing }: ListingCardProps) {
       <div className="relative">
         <Photo
           id={listing.photo}
+          src={listing.photoUrl}
           alt={listing.title}
           className="aspect-[4/3] rounded-md"
         />
       </div>
       <Kicker
         listing={listing}
+        mixed={mixed}
         className="mt-3 text-[13px] md:mt-5 md:text-[15px]"
       />
       <h3 className="group-hover:text-accent mt-1 line-clamp-2 text-base leading-snug font-semibold tracking-tight md:mt-2.5 md:text-[23px] md:leading-tight">
         {listing.title}
       </h3>
-      <div className="text-fg-3 mt-auto flex flex-col items-start gap-1 pt-2 text-[13px] md:flex-row md:items-center md:justify-between md:gap-3 md:pt-3 md:text-[15px]">
-        <span className="flex min-w-0 flex-col gap-1 md:flex-row md:items-center md:gap-3">
+      <div className="mt-auto flex flex-col items-start gap-1.5 pt-2 text-[13px] md:pt-3 md:text-[15px]">
+        <span className="text-fg-3 flex max-w-full min-w-0 flex-col gap-1 md:flex-row md:items-center md:gap-4">
           {listing.kind === 'event' ? (
             <>
               <Meta icon="cal">{shortDay(listing.date)}</Meta>
@@ -53,7 +57,7 @@ export function ListingCard({ listing }: ListingCardProps) {
             </>
           )}
         </span>
-        <span className="text-fg shrink-0 font-medium">{priceOf(listing)}</span>
+        <span className="text-fg font-medium">{priceOf(listing)}</span>
       </div>
     </Link>
   );

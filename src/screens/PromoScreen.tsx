@@ -7,6 +7,7 @@ import { PromoCard, promoEnds } from '../components/PromoCard';
 import { Rail } from '../components/Rail';
 import { SectionHeader } from '../components/SectionHeader';
 import {
+  AboutBlock,
   ActionCard,
   Block,
   Crumbs,
@@ -40,7 +41,6 @@ export function PromoScreen({ id }: { id: string }) {
         <h1 className="text-[clamp(34px,4vw,68px)] leading-[1.04] font-semibold tracking-tight text-pretty">
           {promo.title}
         </h1>
-        <p className="text-fg-2 mt-4 text-lg">{promo.blurb}</p>
       </header>
       <Photo
         size="wide"
@@ -49,6 +49,7 @@ export function PromoScreen({ id }: { id: string }) {
         priority
         className="mt-10 aspect-[2/1] rounded-lg"
       />
+      <AboutBlock title="About This Deal" paragraphs={[promo.blurb]} />
       <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-16">
         <div>
           <dl className="border-line border-t">

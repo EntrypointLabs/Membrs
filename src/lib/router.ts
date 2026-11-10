@@ -52,8 +52,6 @@ export type Route =
   | { page: 'listing'; id: string }
   | { page: 'place'; id: string }
   | { page: 'promo'; id: string }
-  | { page: 'digest' }
-  | { page: 'issue'; id: string }
   | { page: 'contribute'; kind: ContributeKind }
   | { page: 'search'; query: string }
   | { page: 'legal'; doc: LegalSlug }
@@ -106,10 +104,8 @@ export function parseRoute(location: string): Route {
     if (first === 'listing') return { page: 'listing', id: second };
     if (first === 'place') return { page: 'place', id: second };
     if (first === 'promo') return { page: 'promo', id: second };
-    if (first === 'digest') return { page: 'issue', id: second };
   }
   if (parts.length === 1) {
-    if (first === 'digest') return { page: 'digest' };
     if (first === 'search')
       return { page: 'search', query: params.get('q') ?? '' };
     if (first === 'contribute') {
@@ -150,7 +146,7 @@ export function useRoute(): Route {
 /** Which top-level nav item a route belongs to, for the active state. */
 export function navSection(
   route: Route,
-): FeedKind | 'home' | 'digest' | 'contribute' | null {
+): FeedKind | 'home' | 'contribute' | null {
   switch (route.page) {
     case 'home':
       return 'home';
@@ -163,9 +159,6 @@ export function navSection(
       return 'places';
     case 'promo':
       return 'promos';
-    case 'digest':
-    case 'issue':
-      return 'digest';
     case 'contribute':
       return 'contribute';
     default:
@@ -182,8 +175,6 @@ export const paths = {
   listing: (id: string) => `/listing/${id}`,
   place: (id: string) => `/place/${id}`,
   promo: (id: string) => `/promo/${id}`,
-  digest: () => '/digest',
-  issue: (id: string) => `/digest/${id}`,
   contribute: (kind: ContributeKind = 'event') =>
     kind === 'event' ? '/contribute' : `/contribute?kind=${kind}`,
   search: (query = '') =>

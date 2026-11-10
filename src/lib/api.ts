@@ -4,7 +4,6 @@ import type {
   Category,
   ContributeForm,
   ContributeKind,
-  DigestIssue,
   LaunchCity,
   LegalDocument,
   LegalSlug,
@@ -16,7 +15,6 @@ import type {
 import listingsFixture from '../fixtures/listings.json';
 import placesFixture from '../fixtures/places.json';
 import promosFixture from '../fixtures/promos.json';
-import digestFixture from '../fixtures/digest.json';
 import categoriesFixture from '../fixtures/categories.json';
 import formsFixture from '../fixtures/contribute-forms.json';
 import taxonomyFixture from '../fixtures/taxonomy.json';
@@ -35,7 +33,6 @@ const fixtures = {
   listings: listingsFixture as Listing[],
   places: placesFixture as Place[],
   promos: promosFixture as Promo[],
-  digest: digestFixture as DigestIssue[],
   categories: categoriesFixture as Category[],
   forms: formsFixture as Record<ContributeKind, ContributeForm>,
   taxonomy: taxonomyFixture as Taxonomy,
@@ -81,10 +78,6 @@ export function places(): Place[] {
 
 export function promos(): Promo[] {
   return fixtures.promos;
-}
-
-export function digestIssues(): DigestIssue[] {
-  return fixtures.digest;
 }
 
 export function categories(): Category[] {
@@ -136,10 +129,6 @@ export function placeById(id: string): Place | undefined {
 
 export function promoById(id: string): Promo | undefined {
   return fixtures.promos.find((p) => p.id === id);
-}
-
-export function digestById(id: string): DigestIssue | undefined {
-  return fixtures.digest.find((d) => d.id === id);
 }
 
 export function categoryBySlug(slug: string): Category | undefined {

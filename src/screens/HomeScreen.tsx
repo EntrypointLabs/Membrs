@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   closingSoon,
-  digestIssues,
   feed,
   launchCities,
   listings,
@@ -10,14 +9,12 @@ import {
   promos,
   within,
 } from '../lib/api';
-import { PAGE_SIZE } from '../lib/config';
 import { cityStore } from '../lib/preferences';
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
 import { openOverlay } from '../lib/ui';
 import type { Listing, OpportunityListing } from '../lib/types';
 import { DeadlineRow } from '../components/DeadlineRow';
-import { DigestCard } from '../components/DigestCard';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { Icon } from '../components/Icon';
 import { Link } from '../components/Link';
@@ -33,6 +30,11 @@ import { Tabs } from '../components/Tabs';
 import { CategoryTiles } from './CategoriesScreen';
 
 type Range = 'week' | 'month';
+
+/** Closing Soon lists ten deadlines a page. */
+const CLOSING_PAGE = 10;
+/** Near You, Places and Promos show three by two cards a page on web. */
+const GRID_PAGE = 6;
 type KindFilter = 'all' | Listing['kind'];
 
 /**
@@ -43,7 +45,7 @@ export function HomeScreen() {
   const city = useStore(cityStore);
   const picks = useMemo(() => feed('event').slice(0, 3), []);
   const popular = useMemo(
-    () => mostPopular(7, new Set(picks.map((p) => p.id))),
+    () => mostPopular(10, new Set(picks.map((p) => p.id))),
     [picks],
   );
 
@@ -51,10 +53,8 @@ export function HomeScreen() {
     <div className="page">
       <MobileTop city={city} />
 
-      <section className="mt-12 hidden gap-8 md:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:gap-12">
-        <div className="self-start lg:sticky lg:top-6">
-          <HeroCarousel picks={picks} />
-        </div>
+      <section className="mt-12 hidden gap-12 md:grid">
+        <HeroCarousel picks={picks} />
         <MostPopular items={popular} />
       </section>
 
@@ -64,7 +64,6 @@ export function HomeScreen() {
       <PlacesToGo />
       <PromosSection />
       <CategoriesSection />
-      <LatestDigest />
     </div>
   );
 }
@@ -167,7 +166,7 @@ function ThisWeek({ city }: { city: string }) {
       <div data-tour="week">
         <Rail>
           {pageOf(items, page, 6).map((l) => (
-            <ListingCard key={l.id} listing={l} />
+            <ListingCard key={l.id} listing={l} mixed />
           ))}
         </Rail>
       </div>
@@ -186,7 +185,7 @@ function ThisWeek({ city }: { city: string }) {
 function ClosingSoon() {
   const [page, setPage] = useState(1);
   const items = closingSoon() as OpportunityListing[];
-  const pages = Math.ceil(items.length / 7);
+  const pages = Math.ceil(items.length / CLOSING_PAGE);
   return (
     <section className="mt-16 grid gap-10 md:mt-[clamp(140px,11vw,200px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-[clamp(64px,7vw,128px)]">
       <div className="self-start lg:sticky lg:top-6">
@@ -206,7 +205,7 @@ function ClosingSoon() {
       </div>
       <div data-tour="closing">
         <div className="border-line border-t">
-          {pageOf(items, page, 7).map((l) => (
+          {pageOf(items, page, CLOSING_PAGE).map((l) => (
             <DeadlineRow key={l.id} listing={l} />
           ))}
         </div>
@@ -222,9 +221,8 @@ function ClosingSoon() {
 }
 
 function NearYou({ city }: { city: string }) {
-  const items = listings()
-    .filter((l) => l.kind === 'event' && l.city === city)
-    .slice(0, PAGE_SIZE / 2);
+  const [page, setPage] = useState(1);
+  const items = listings().filter((l) => l.kind === 'event' && l.city === city);
   return (
     <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
       <SectionHeader
@@ -249,16 +247,18 @@ function NearYou({ city }: { city: string }) {
           </>
         }
       />
-      <Rail>
-        {items.map((l) => (
-          <ListingCard key={l.id} listing={l} />
-        ))}
-      </Rail>
+      <PagedGrid
+        items={items}
+        page={page}
+        onPage={setPage}
+        render={(l) => <ListingCard key={l.id} listing={l} mixed />}
+      />
     </section>
   );
 }
 
 function PlacesToGo() {
+  const [page, setPage] = useState(1);
   return (
     <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
       <SectionHeader
@@ -266,18 +266,18 @@ function PlacesToGo() {
         body="Beaches, parks, museums and libraries, with today's hours."
         actions={<SeeAll href={paths.feed('places')}>All places</SeeAll>}
       />
-      <Rail>
-        {places()
-          .slice(0, 6)
-          .map((p) => (
-            <PlaceCard key={p.id} place={p} />
-          ))}
-      </Rail>
+      <PagedGrid
+        items={places()}
+        page={page}
+        onPage={setPage}
+        render={(p) => <PlaceCard key={p.id} place={p} mixed />}
+      />
     </section>
   );
 }
 
 function PromosSection() {
+  const [page, setPage] = useState(1);
   return (
     <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
       <SectionHeader
@@ -285,13 +285,12 @@ function PromosSection() {
         body="Deals worth leaving the house for, and how to claim them."
         actions={<SeeAll href={paths.feed('promos')}>All promos</SeeAll>}
       />
-      <Rail>
-        {promos()
-          .slice(0, 6)
-          .map((p) => (
-            <PromoCard key={p.id} promo={p} />
-          ))}
-      </Rail>
+      <PagedGrid
+        items={promos()}
+        page={page}
+        onPage={setPage}
+        render={(p) => <PromoCard key={p.id} promo={p} mixed />}
+      />
     </section>
   );
 }
@@ -319,22 +318,34 @@ function CategoriesSection() {
   );
 }
 
-function LatestDigest() {
+/**
+ * Three by two cards a page on web with the shared pager under them; on
+ * phones the same page scrolls sideways as a rail.
+ */
+function PagedGrid<T>({
+  items,
+  page,
+  onPage,
+  render,
+}: {
+  items: T[];
+  page: number;
+  onPage: (page: number) => void;
+  render: (item: T) => ReactNode;
+}) {
+  const pages = Math.ceil(items.length / GRID_PAGE);
   return (
-    <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
-      <SectionHeader
-        title="Latest on membrs"
-        body="The Sunday Digest and city guides, written for the week ahead."
-        actions={<SeeAll href={paths.digest()}>All issues</SeeAll>}
-      />
-      <Rail>
-        {digestIssues()
-          .slice(0, 3)
-          .map((d) => (
-            <DigestCard key={d.id} issue={d} />
-          ))}
-      </Rail>
-    </section>
+    <>
+      <Rail>{pageOf(items, page, GRID_PAGE).map(render)}</Rail>
+      <div className="hidden md:block">
+        <Pager
+          page={page}
+          pages={pages}
+          total={items.length}
+          onChange={onPage}
+        />
+      </div>
+    </>
   );
 }
 

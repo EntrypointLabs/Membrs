@@ -1,7 +1,6 @@
 import { deadlineUrgency } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { OpportunityListing } from '../lib/types';
-import { CategoryLabel } from './CategoryLabel';
 import { Link } from './Link';
 
 const URGENCY_COLOR = {
@@ -33,7 +32,7 @@ export function DeadlineRow({ listing }: { listing: OpportunityListing }) {
           {listing.title}
         </span>
         <span className="text-fg-3 mt-1 block text-sm">
-          {listing.organiser} · <CategoryLabel name={listing.category} dot />
+          {listing.organiser} · {listing.category}
         </span>
       </span>
       <span className="hidden text-right md:block">

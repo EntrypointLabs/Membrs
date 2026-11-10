@@ -56,3 +56,44 @@ export const CATEGORY_COLORS: Record<string, readonly [string, string]> = {
   Entertainment: ['#796ce0', '#b6b4ff'],
   'Services & Apps': ['#059488', '#37d8c9'],
 };
+
+/**
+ * Opportunity sectors, the second tag on an opportunity. Pastel fills only,
+ * because a sector only ever appears as a filled tag.
+ */
+export const SECTOR_COLORS: Record<string, string> = {
+  Health: '#ff9fb0',
+  Education: '#8ec9ff',
+  Research: '#c3a6ff',
+  Agriculture: '#a8d977',
+  Climate: '#7fe0c0',
+  Finance: '#f5c76b',
+  Entrepreneurship: '#ffa98a',
+  Governance: '#a9b8ff',
+  Career: '#ffd27a',
+  Design: '#e6a6f0',
+  Technology: '#7fb2ff',
+  Business: '#a4bbff',
+};
+
+/** What each section is called on a tag, and whose colour it borrows. */
+export const SECTION_TAGS = {
+  event: ['Event', 'Events'],
+  opportunity: ['Opportunity', 'Opportunities'],
+  place: ['Place', 'Places'],
+  promo: ['Promo', 'Promos'],
+} as const;
+
+/**
+ * The fill for a tag. Categories use the light half of their pair, sectors
+ * their own pastel, and anything unknown a stable pastel from its name.
+ */
+export function tagFill(name: string): string {
+  const section = Object.values(SECTION_TAGS).find(([label]) => label === name);
+  const pair = CATEGORY_COLORS[section ? section[1] : name];
+  if (pair) return pair[1];
+  if (SECTOR_COLORS[name]) return SECTOR_COLORS[name];
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `hsl(${h} 80% 78%)`;
+}

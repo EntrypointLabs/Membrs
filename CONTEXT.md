@@ -51,7 +51,7 @@ The weekly email, 7 AM every Sunday, tuned to a city and interests.
 _Avoid_: newsletter (in copy), mailing list
 
 **Issue**:
-One edition of the digest, also published on the site under `/digest`.
+One edition of the digest, sent by email. It is no longer published on the site.
 
 **Interests**:
 The categories and types a reader picks for their digest.

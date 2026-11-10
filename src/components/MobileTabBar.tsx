@@ -3,7 +3,7 @@ import { Icon } from './Icon';
 import { Link } from './Link';
 import { NAV } from './nav';
 
-const TABS = NAV.filter((n) => !['digest', 'contribute'].includes(n.key));
+const TABS = NAV.filter((n) => n.key !== 'contribute');
 
 /**
  * The phone tab bar: a floating pill of sections plus a round search button.
@@ -18,7 +18,7 @@ export function MobileTabBar() {
       className="fixed inset-x-3 z-40 flex items-center gap-2 md:hidden"
       style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
     >
-      <ul className="border-line-2 bg-panel/90 flex flex-1 items-center justify-between rounded-full border p-1.5 shadow-xl backdrop-blur-xl">
+      <ul className="border-line-2 bg-panel/90 flex flex-1 items-center justify-between rounded-lg border p-1.5 shadow-xl backdrop-blur-xl">
         {TABS.map((tab) => {
           const on = active === tab.key;
           return (
@@ -27,7 +27,7 @@ export function MobileTabBar() {
                 href={tab.href}
                 aria-label={tab.label}
                 aria-current={on ? 'page' : undefined}
-                className={`flex h-11 items-center gap-2 rounded-full px-3 text-[15px] font-semibold ${
+                className={`flex h-11 items-center gap-2 rounded-md px-3 text-[15px] font-semibold ${
                   on ? 'bg-soft-hover text-fg' : ''
                 }`}
               >
@@ -41,7 +41,7 @@ export function MobileTabBar() {
       <Link
         href={paths.search()}
         aria-label="Search"
-        className="border-line-2 bg-panel/90 grid h-14 w-14 place-items-center rounded-full border shadow-xl backdrop-blur-xl"
+        className="border-line-2 bg-panel/90 grid h-14 w-14 place-items-center rounded-lg border shadow-xl backdrop-blur-xl"
       >
         <Icon name="search" className="h-5 w-5" />
       </Link>

@@ -8,6 +8,7 @@ import {
 import { subscribe } from '../lib/api';
 import {
   cityStore,
+  followUpsStore,
   interestsStore,
   subscriptionStore,
   themeStore,
@@ -22,7 +23,8 @@ import { useStore } from '../lib/store';
 function useInverseTheme(): 'light' | 'dark' {
   return useStore(themeStore) === 'dark' ? 'light' : 'dark';
 }
-import { CityChips, InterestPicker } from './InterestPicker';
+import { PreferenceAccordions } from './InterestPicker';
+import { missingFollowUps } from '../lib/followups';
 import { paths } from '../lib/router';
 import { closeOverlay, openOverlay, toast } from '../lib/ui';
 import { Icon } from './Icon';
@@ -242,6 +244,10 @@ export function PreferencesModal() {
   const joined = useStore(subscriptionStore);
   const savedCity = useStore(cityStore);
   const [city, setCity] = useState(savedCity);
+  const [open, setOpen] = useState<'city' | 'event' | 'opportunity' | 'place'>(
+    savedCity ? 'event' : 'city',
+  );
+  const [missing, setMissing] = useState<string[]>([]);
   const card = useRef<HTMLDivElement>(null);
   const editing = joined !== null;
   const provider = session?.provider ?? 'google';
@@ -259,6 +265,19 @@ export function PreferencesModal() {
   }, []);
 
   async function save() {
+    // Types like Scholarships need their follow-up answered before we can
+    // match well, so saving stops, opens Opportunities and marks the gaps.
+    const gaps = missingFollowUps(interestsStore.get(), followUpsStore.get());
+    if (gaps.length) {
+      setMissing(gaps);
+      setOpen('opportunity');
+      requestAnimationFrame(() =>
+        card.current
+          ?.querySelector(`[data-followup="${gaps[0]}"]`)
+          ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+      );
+      return;
+    }
     await subscribe({
       email: `${provider} account`,
       city,
@@ -297,36 +316,33 @@ export function PreferencesModal() {
         aria-labelledby="prefs-title"
         className="bg-panel text-fg relative max-h-[94dvh] w-full overflow-auto rounded-t-lg px-5 pt-8 pb-6 shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
       >
-        <p className="text-fg-3 mb-3.5 flex items-center gap-2 text-[13px] font-semibold">
-          <span className="bg-open grid h-5 w-5 place-items-center rounded-full text-[#04140a]">
-            <Icon name="check" className="h-3 w-3" />
-          </span>
-          Signed in with {PROVIDER_NAME[provider]}
-        </p>
-        <h2 id="prefs-title" className="text-2xl font-semibold tracking-tight">
-          {editing ? 'Edit Your Sunday Digest' : 'Make the Sunday Digest Yours'}
+        <h2
+          id="prefs-title"
+          className="pr-8 text-center text-2xl font-semibold tracking-tight md:text-3xl"
+        >
+          {editing ? 'Your Picks' : 'Pick What You Care About'}
         </h2>
-        <p className="text-fg-3 mt-3 text-[14.5px]">
-          Pick your city and what you care about. Your digest and your feeds
-          follow these, and you can change them any time.
-        </p>
-        <p className="mt-6 mb-2.5 text-sm font-bold">Your city</p>
-        <CityChips value={city} onChange={setCity} />
-        <div className="mt-6">
-          <InterestPicker compact />
+        <div className="mt-8">
+          <PreferenceAccordions
+            city={city}
+            onCity={setCity}
+            missing={missing}
+            open={open}
+            onOpen={setOpen}
+          />
         </div>
-        <div className="border-line-2 mt-6 flex items-center justify-between gap-3 border-t pt-5 md:justify-end">
+        <div className="mt-8 flex items-center justify-between gap-3 md:justify-end">
           <button
             type="button"
             onClick={skip}
-            className="text-fg-3 px-3 py-2.5 text-sm font-semibold"
+            className="text-fg-3 h-12 px-4 text-base font-semibold"
           >
             {editing ? 'Cancel' : 'Skip for now'}
           </button>
           <button
             type="button"
             onClick={save}
-            className="bg-brand hover:bg-brand-hover h-[46px] rounded-md px-5 text-[15px] font-bold text-white"
+            className="bg-brand hover:bg-brand-hover h-12 rounded-md px-[18px] text-base font-bold text-white"
           >
             {editing ? 'Save changes' : 'Save and continue'}
           </button>

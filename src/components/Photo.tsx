@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import photos from '../generated/photos.json';
 
 interface PhotoMeta {
@@ -36,6 +37,11 @@ interface PhotoProps {
    * loads eagerly with high fetch priority; everything else is lazy.
    */
   priority?: boolean;
+  /**
+   * The organiser's own image, when there is one. It is tried first and the
+   * stock photo takes over if it fails to load.
+   */
+  src?: string;
 }
 
 function srcSet(id: string, widths: number[], format: 'avif' | 'webp'): string {
@@ -53,8 +59,27 @@ export function Photo({
   className = '',
   size = 'card',
   priority = false,
+  src,
 }: PhotoProps) {
+  const [failed, setFailed] = useState(false);
   const meta = MANIFEST[id];
+  if (src && !failed)
+    return (
+      <div
+        className={`bg-soft overflow-hidden bg-cover bg-center ${className}`}
+        style={meta ? { backgroundImage: `url(${meta.blur})` } : undefined}
+      >
+        <img
+          src={src}
+          alt={alt}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
   if (!meta)
     return (
       <div className={`bg-soft ${className}`} role="img" aria-label={alt} />

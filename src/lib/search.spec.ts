@@ -6,9 +6,9 @@ const data = { listings: listings(), places: places(), promos: promos() };
 
 describe('search', () => {
   it('finds a listing by title', () => {
-    const [top] = search('opera', data);
+    const [top] = search('devfest', data);
     expect(top?.kind).toBe('listing');
-    expect(top && 'title' in top.item ? top.item.title : '').toMatch(/Opera/);
+    expect(top && 'title' in top.item ? top.item.title : '').toMatch(/DevFest/);
   });
 
   it('needs every word to match', () => {

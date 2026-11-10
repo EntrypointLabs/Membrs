@@ -1,10 +1,10 @@
 import { openStateNow } from '../lib/hours';
 import { paths } from '../lib/router';
 import type { Place } from '../lib/types';
-import { CategoryLabel } from './CategoryLabel';
 import { Icon } from './Icon';
 import { Link } from './Link';
 import { Photo } from './Photo';
+import { Tags } from './Tags';
 
 export function OpenDot({ place }: { place: Place }) {
   const state = openStateNow(place);
@@ -37,8 +37,7 @@ export function PlaceRow({ place }: { place: Place }) {
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-x-1.5 text-[15px]">
           <OpenDot place={place} />
-          <CategoryLabel name={place.type} dot />
-          <span className="text-fg-3">· {place.city}</span>
+          <Tags names={[place.type]} />
         </p>
         <h3 className="group-hover:text-accent mt-1.5 text-lg font-semibold tracking-tight md:text-[26px]">
           {place.name}

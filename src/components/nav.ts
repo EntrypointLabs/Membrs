@@ -2,7 +2,7 @@ import type { IconName } from './Icon';
 import type { FeedKind } from '../lib/router';
 
 export interface NavItem {
-  key: FeedKind | 'home' | 'digest' | 'contribute';
+  key: FeedKind | 'home' | 'contribute';
   label: string;
   /** What the phone tab bar shows when the tab is active. */
   short?: string;
@@ -56,14 +56,6 @@ export const NAV: NavItem[] = [
     icon: 'tag',
     color: 'text-[#f47fb0]',
     bar: 'bg-[#f47fb0]',
-  },
-  {
-    key: 'digest',
-    label: 'Digest',
-    href: '/digest',
-    icon: 'news',
-    color: 'text-fg-3',
-    bar: 'bg-fg',
   },
   {
     key: 'contribute',

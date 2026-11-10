@@ -51,14 +51,6 @@ export const PromoScreen = lazyScreen(
   () => import('./PromoScreen'),
   'PromoScreen',
 );
-export const DigestScreen = lazyScreen(
-  () => import('./DigestScreen'),
-  'DigestScreen',
-);
-export const IssueScreen = lazyScreen(
-  () => import('./DigestScreen'),
-  'IssueScreen',
-);
 export const ContributeScreen = lazyScreen(
   () => import('./ContributeScreen'),
   'ContributeScreen',
@@ -88,7 +80,6 @@ export function preloadPath(path: string): void {
     listing: ListingScreen.preload,
     place: PlaceScreen.preload,
     promo: PromoScreen.preload,
-    digest: DigestScreen.preload,
     contribute: ContributeScreen.preload,
     search: SearchScreen.preload,
     terms: LegalScreen.preload,

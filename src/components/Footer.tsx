@@ -23,7 +23,6 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
       ['Opportunities', paths.feed('opportunities')],
       ['Places', paths.feed('places')],
       ['Promos', paths.feed('promos')],
-      ['The Digest', paths.digest()],
     ],
   },
   {
@@ -51,7 +50,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
 /**
  * The footer: one panel that flips against the page (white in dark mode,
  * near-black in light), rising from the bottom of the page. Digest signup on
- * top, the wordmark, four link columns, then the copyright and socials.
+ * top, the wordmark with the copyright and socials, then four link columns.
  */
 export function Footer() {
   const city = useStore(cityStore);
@@ -73,14 +72,37 @@ export function Footer() {
           <DigestForm />
         </div>
 
-        <Link
-          href="/"
-          className="mt-[clamp(56px,5vw,88px)] mb-[clamp(40px,3.5vw,60px)] inline-block text-[clamp(34px,2.6vw,44px)] leading-none font-black tracking-[-0.05em]"
-        >
-          MEMBRS
-        </Link>
+        {/* Copyright and socials share the wordmark's row, so the footer needs no bottom bar. */}
+        <div className="mt-[clamp(56px,5vw,88px)] mb-[clamp(40px,3.5vw,56px)] flex flex-wrap items-end justify-between gap-5">
+          <div className="flex flex-col gap-2.5">
+            <Link
+              href="/"
+              className="text-[clamp(34px,2.6vw,44px)] leading-none font-black tracking-[-0.05em]"
+            >
+              MEMBRS
+            </Link>
+            <p className="text-inv-fg-2 text-[15px]">
+              © 2026 MEMBRS. All rights reserved.
+            </p>
+          </div>
+          <ul className="flex gap-2">
+            {SOCIALS.map((s) => (
+              <li key={s.name}>
+                <a
+                  href={s.href}
+                  aria-label={s.name}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-inv-fg grid h-[42px] w-[42px] place-items-center rounded-sm bg-[color-mix(in_srgb,var(--inv-fg)_6%,var(--inv))] transition-transform hover:-translate-y-0.5"
+                >
+                  <Icon name={s.icon} className="h-[17px] w-[17px]" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-        <div className="border-inv-line grid grid-cols-2 gap-10 border-b pb-[clamp(40px,3.5vw,56px)] lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-10 pb-[clamp(32px,3vw,48px)] lg:grid-cols-4">
           {COLUMNS.map((col) => (
             <div key={col.title} className="flex flex-col items-start gap-2">
               <h3 className="mb-2 text-[17px] font-bold">{col.title}</h3>
@@ -120,27 +142,6 @@ export function Footer() {
               </a>
             ))}
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-5 pt-7">
-          <p className="text-inv-fg-2 text-[15px]">
-            © 2026 MEMBRS. All rights reserved.
-          </p>
-          <ul className="flex gap-2">
-            {SOCIALS.map((s) => (
-              <li key={s.name}>
-                <a
-                  href={s.href}
-                  aria-label={s.name}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-inv-fg grid h-[42px] w-[42px] place-items-center rounded-sm bg-[color-mix(in_srgb,var(--inv-fg)_6%,var(--inv))] transition-transform hover:-translate-y-0.5"
-                >
-                  <Icon name={s.icon} className="h-[17px] w-[17px]" />
-                </a>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </footer>

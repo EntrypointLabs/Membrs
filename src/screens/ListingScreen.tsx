@@ -10,6 +10,7 @@ import { Photo } from '../components/Photo';
 import { Rail } from '../components/Rail';
 import { SectionHeader } from '../components/SectionHeader';
 import {
+  AboutBlock,
   ActionCard,
   Block,
   Crumbs,
@@ -58,14 +59,23 @@ export function ListingScreen({ id }: { id: string }) {
         <h1 className="text-[clamp(34px,4vw,68px)] leading-[1.04] font-semibold tracking-tight text-pretty">
           {listing.title}
         </h1>
-        <p className="text-fg-2 mt-4 text-lg">{listing.blurb}</p>
       </header>
       <Photo
         size="wide"
         id={listing.photo}
+        src={listing.photoUrl}
         alt={listing.title}
         priority
         className="mt-10 aspect-[2/1] rounded-lg"
+      />
+
+      <AboutBlock
+        title={
+          listing.kind === 'event'
+            ? 'About This Event'
+            : 'About This Opportunity'
+        }
+        paragraphs={listing.about ?? [listing.blurb]}
       />
 
       <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-16">
@@ -89,11 +99,7 @@ export function ListingScreen({ id }: { id: string }) {
               </ul>
             </Block>
           )}
-          <p className="text-fg-3 mt-10 text-[15px]">
-            Listed on <b className="text-fg">{listing.source}</b> · from public
-            listings, confirm with the organiser
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-10 flex flex-wrap gap-2">
             {[
               listing.category,
               listing.city,

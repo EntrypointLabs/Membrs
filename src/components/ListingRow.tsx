@@ -22,12 +22,13 @@ export function ListingRow({ listing }: { listing: Listing }) {
       <Photo
         size="row"
         id={listing.photo}
+        src={listing.photoUrl}
         alt={listing.title}
         className="aspect-square w-20 shrink-0 rounded-md md:aspect-[3/2] md:w-[22%]"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <Kicker listing={listing} className="text-[13px] md:text-[15px]" />
+          <Kicker listing={listing} />
         </div>
         <h3 className="group-hover:text-accent mt-1.5 text-lg leading-snug font-semibold tracking-tight md:text-[26px]">
           {listing.title}
@@ -59,10 +60,6 @@ export function ListingRow({ listing }: { listing: Listing }) {
           {event ? (listing.free ? 'Entry' : 'From') : 'Award'}
         </p>
         <p className="text-xl font-semibold">{priceOf(listing)}</p>
-        <p className="text-fg-3 group-hover:text-fg mt-1 flex items-center justify-end gap-1 text-sm">
-          View {event ? 'event' : 'opportunity'}{' '}
-          <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
-        </p>
       </div>
     </Link>
   );

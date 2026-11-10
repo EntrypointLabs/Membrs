@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   categories,
   closingSoon,
-  digestIssues,
   feed,
-  listingById,
   listings,
   mostPopular,
   places,
@@ -22,12 +20,6 @@ describe('fixtures', () => {
 
   it('give every place seven days of hours', () => {
     for (const p of places()) expect(p.hours).toHaveLength(7);
-  });
-
-  it('only reference listings that exist from the digest', () => {
-    for (const d of digestIssues()) {
-      for (const id of d.listingIds) expect(listingById(id)).toBeDefined();
-    }
   });
 
   it('carry promos and categories', () => {

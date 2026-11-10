@@ -1,21 +1,28 @@
 import { useMemo, useState } from 'react';
 import { places } from '../lib/api';
 import { isFreeEntry, openStateNow } from '../lib/hours';
-import { useSearchParam } from '../lib/router';
+import { cityStore } from '../lib/preferences';
+import { setSearchParams, useSearchParam } from '../lib/router';
+import { useStore } from '../lib/store';
 import { slugify } from '../lib/text';
 import { PLACE_VIEWS, findView } from '../lib/views';
 import { countBy, FeedPicker } from '../components/FeedPicker';
 import { PlaceRow } from '../components/PlaceRow';
 import { Select } from '../components/Select';
-import { FeedBody, FeedHeader, FilterRow } from './FeedLayout';
+import { PlaceCard } from '../components/PlaceCard';
+import { FeedBody, FilterLine, MoreFilters } from './FeedLayout';
 
 type Entry = 'any' | 'free';
 
-/** Places: open ones first, then by name. */
+/**
+ * Places: open ones first, then by name. Type and City on the filter line
+ * (City starts on the reader's own city); Open and Entry under Filters.
+ */
 export function PlacesScreen() {
   const viewId = useSearchParam('view');
   const typeSlug = useSearchParam('type');
-  const [city, setCity] = useState('all');
+  const home = useStore(cityStore);
+  const [city, setCity] = useState(home);
   const [entry, setEntry] = useState<Entry>('any');
   const all = useMemo(
     () =>
@@ -35,9 +42,13 @@ export function PlacesScreen() {
       (entry === 'any' || isFreeEntry(p)),
   );
   const cities = [...new Set(all.map((p) => p.city))];
+  const filtered = Boolean(
+    view || typeSlug || entry !== 'any' || (city !== 'all' && city !== home),
+  );
+  const types = countBy(all, (p) => p.type);
   return (
     <div className="page pt-6 md:pt-14">
-      <FeedHeader>
+      <div className="md:hidden">
         <FeedPicker
           title="Places"
           sheetTitle="Place types"
@@ -47,19 +58,51 @@ export function PlacesScreen() {
             label: v.label,
             count: all.filter(v.test).length,
           })).filter((v) => v.count)}
-          types={countBy(all, (p) => p.type)}
+          types={types}
           view={view ? view.id : null}
           type={typeSlug}
           total={all.length}
         />
-        <FilterRow>
+      </div>
+      <FilterLine
+        count={items.length}
+        noun={['place', 'places']}
+        onClear={
+          filtered
+            ? () => {
+                setSearchParams({ view: null, type: null, page: null });
+                setEntry('any');
+                setCity(home);
+              }
+            : undefined
+        }
+      >
+        <Select
+          label="Type"
+          value={typeSlug ?? 'all'}
+          onChange={(t) => setSearchParams({ type: t, page: null })}
+          options={[
+            { value: 'all', label: 'All' },
+            ...types.map((t) => ({ value: t.value, label: t.label })),
+          ]}
+        />
+        <Select
+          label="City"
+          value={city}
+          onChange={setCity}
+          options={[
+            { value: 'all', label: 'All' },
+            ...cities.map((c) => ({ value: c, label: c })),
+          ]}
+        />
+        <MoreFilters active={Number(Boolean(view)) + Number(entry !== 'any')}>
           <Select
-            label="City"
-            value={city}
-            onChange={setCity}
+            label="Open"
+            value={view?.id ?? 'all'}
+            onChange={(v) => setSearchParams({ view: v, page: null })}
             options={[
-              { value: 'all', label: 'All' },
-              ...cities.map((c) => ({ value: c, label: c })),
+              { value: 'all', label: 'Any time' },
+              ...PLACE_VIEWS.map((v) => ({ value: v.id, label: v.label })),
             ]}
           />
           <Select
@@ -71,17 +114,17 @@ export function PlacesScreen() {
               { value: 'free', label: 'Free' },
             ]}
           />
-        </FilterRow>
-      </FeedHeader>
+        </MoreFilters>
+      </FilterLine>
       <FeedBody
         items={items}
         views={PLACE_VIEWS}
-        filtered={Boolean(
-          view || typeSlug || city !== 'all' || entry !== 'any',
-        )}
+        filtered={filtered}
         noun={['place', 'places']}
         keyOf={(p) => p.id}
         row={(p) => <PlaceRow place={p} />}
+        rail={{ title: 'Trending Places', items: items.slice(0, 8) }}
+        card={(p) => <PlaceCard key={p.id} place={p} />}
       />
     </div>
   );

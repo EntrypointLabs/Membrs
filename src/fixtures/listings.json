@@ -1,179 +1,5 @@
 [
   {
-    "id": "e1",
-    "title": "ART X Lagos 2026",
-    "category": "Art & Design",
-    "city": "Lagos",
-    "organiser": "ART X Lagos",
-    "source": "artxlagos.com",
-    "url": "https://artxlagos.com",
-    "trending": true,
-    "blurb": "West Africa's leading contemporary art fair runs Thursday to Sunday, with galleries, artists and collectors from across the continent.",
-    "listedRank": 3,
-    "photo": "p9",
-    "kind": "event",
-    "area": "Lagos",
-    "venue": "Venue TBA",
-    "date": {
-      "weekday": "Thu",
-      "day": 5,
-      "month": "Nov"
-    },
-    "time": "Times TBA",
-    "price": "See site",
-    "free": false,
-    "mode": "In person",
-    "inDays": 0,
-    "host": "ART X Lagos",
-    "startsAt": "2026-11-05T09:00:00Z",
-    "endsAt": "2026-11-05T12:00:00Z"
-  },
-  {
-    "id": "e2",
-    "title": "Opera in Concert Lagos",
-    "category": "Music",
-    "city": "Lagos",
-    "organiser": "MUSON Centre",
-    "source": "MUSON",
-    "url": "https://muson.org",
-    "trending": true,
-    "blurb": "A classical evening of opera on the concert stage, conducted by John Lucien Eclou. Student tickets ₦2,000, members ₦7,500, VIP ₦30,000.",
-    "listedRank": 1,
-    "photo": "p1",
-    "kind": "event",
-    "area": "Onikan",
-    "venue": "Agip Recital Hall, MUSON Centre",
-    "date": {
-      "weekday": "Sat",
-      "day": 7,
-      "month": "Nov"
-    },
-    "time": "6:00 PM",
-    "price": "₦15,000",
-    "free": false,
-    "mode": "In person",
-    "inDays": 2,
-    "host": "MUSON Centre",
-    "startsAt": "2026-11-07T17:00:00Z",
-    "endsAt": "2026-11-07T20:00:00Z"
-  },
-  {
-    "id": "e3",
-    "title": "The Marriage of Anansewa",
-    "category": "Theatre",
-    "city": "Lagos",
-    "organiser": "Lagos Fringe",
-    "source": "Lagos Fringe",
-    "url": "https://lagosfringe.com",
-    "trending": true,
-    "blurb": "Lagos Fringe stages Efua Sutherland's West African classic, one of the best-value tickets of the festival.",
-    "listedRank": 1,
-    "photo": "p37",
-    "kind": "event",
-    "area": "Onikan",
-    "venue": "J. Randle Centre",
-    "date": {
-      "weekday": "Sat",
-      "day": 7,
-      "month": "Nov"
-    },
-    "time": "4:30 PM",
-    "price": "₦2,000",
-    "free": false,
-    "mode": "In person",
-    "inDays": 2,
-    "host": "Lagos Fringe",
-    "startsAt": "2026-11-07T15:30:00Z",
-    "endsAt": "2026-11-07T18:30:00Z"
-  },
-  {
-    "id": "e4",
-    "title": "Mentality: What Men Don't Say",
-    "category": "Theatre",
-    "city": "Lagos",
-    "organiser": "Lagos Fringe",
-    "source": "Lagos Fringe",
-    "url": "https://lagosfringe.com",
-    "trending": false,
-    "blurb": "A Fringe afternoon show about the things men keep to themselves.",
-    "listedRank": 1,
-    "photo": "p34",
-    "kind": "event",
-    "area": "Onikan",
-    "venue": "J. Randle Centre",
-    "date": {
-      "weekday": "Sat",
-      "day": 7,
-      "month": "Nov"
-    },
-    "time": "3:00 PM",
-    "price": "₦5,000",
-    "free": false,
-    "mode": "In person",
-    "inDays": 2,
-    "host": "Lagos Fringe",
-    "startsAt": "2026-11-07T14:00:00Z",
-    "endsAt": "2026-11-07T17:00:00Z"
-  },
-  {
-    "id": "e5",
-    "title": "The Lottery Ticket",
-    "category": "Theatre",
-    "city": "Lagos",
-    "organiser": "Lagos Fringe",
-    "source": "Lagos Fringe",
-    "url": "https://lagosfringe.com",
-    "trending": false,
-    "blurb": "An open-air Fringe performance under the trees at Freedom Park.",
-    "listedRank": 1,
-    "photo": "p54",
-    "kind": "event",
-    "area": "Lagos Island",
-    "venue": "Freedom Park Amphitheatre",
-    "date": {
-      "weekday": "Sat",
-      "day": 7,
-      "month": "Nov"
-    },
-    "time": "5:30 PM",
-    "price": "₦7,000",
-    "free": false,
-    "mode": "In person",
-    "inDays": 2,
-    "host": "Lagos Fringe",
-    "startsAt": "2026-11-07T16:30:00Z",
-    "endsAt": "2026-11-07T19:30:00Z"
-  },
-  {
-    "id": "e6",
-    "title": "Kissing: Love, Desire and Other Confessions",
-    "category": "Books & Talks",
-    "city": "Lagos",
-    "organiser": "Lagos Fringe",
-    "source": "Lagos Fringe",
-    "url": "https://lagosfringe.com",
-    "trending": false,
-    "blurb": "Spoken word on intimacy and relationships, part of the Lagos Fringe programme.",
-    "listedRank": 2,
-    "photo": "p51",
-    "kind": "event",
-    "area": "Onikan",
-    "venue": "J. Randle Centre",
-    "date": {
-      "weekday": "Fri",
-      "day": 6,
-      "month": "Nov"
-    },
-    "time": "7:00 PM",
-    "price": "₦15,000",
-    "free": false,
-    "mode": "In person",
-    "inDays": 1,
-    "host": "Lagos Fringe",
-    "startsAt": "2026-11-06T18:00:00Z",
-    "endsAt": "2026-11-06T21:00:00Z"
-  },
-  {
     "id": "e7",
     "title": "The Blacc Canvas: Fringe Closing Night",
     "category": "Theatre",
@@ -183,7 +9,7 @@
     "url": "https://lagosfringe.com",
     "trending": false,
     "blurb": "The free closing performance of Lagos Fringe 2026.",
-    "listedRank": 0,
+    "listedRank": 3,
     "photo": "p37",
     "kind": "event",
     "area": "Onikan",
@@ -197,7 +23,7 @@
     "price": "Free",
     "free": true,
     "mode": "In person",
-    "inDays": 3,
+    "inDays": 0,
     "host": "Lagos Fringe",
     "startsAt": "2026-11-08T19:00:00Z",
     "endsAt": "2026-11-08T22:00:00Z"
@@ -212,7 +38,7 @@
     "url": "https://lagosfringe.com",
     "trending": false,
     "blurb": "The headline production of this year's Fringe.",
-    "listedRank": 0,
+    "listedRank": 3,
     "photo": "p34",
     "kind": "event",
     "area": "Onikan",
@@ -226,39 +52,10 @@
     "price": "₦30,000",
     "free": false,
     "mode": "In person",
-    "inDays": 3,
+    "inDays": 0,
     "host": "Lagos Fringe",
     "startsAt": "2026-11-08T18:00:00Z",
     "endsAt": "2026-11-08T21:00:00Z"
-  },
-  {
-    "id": "e9",
-    "title": "CANEX WKND 2026",
-    "category": "Business",
-    "city": "Lagos",
-    "organiser": "Afreximbank",
-    "source": "Afreximbank",
-    "url": "https://www.afreximbank.com",
-    "trending": true,
-    "blurb": "Afreximbank's creative economy weekend: culture, business and networking for African creatives, Thursday to Sunday.",
-    "listedRank": 3,
-    "photo": "p48",
-    "kind": "event",
-    "area": "Lagos",
-    "venue": "Wole Soyinka Centre for Culture and the Creative Arts",
-    "date": {
-      "weekday": "Thu",
-      "day": 5,
-      "month": "Nov"
-    },
-    "time": "Times TBA",
-    "price": "Free with registration",
-    "free": true,
-    "mode": "In person",
-    "inDays": 0,
-    "host": "Afreximbank",
-    "startsAt": "2026-11-05T09:00:00Z",
-    "endsAt": "2026-11-05T12:00:00Z"
   },
   {
     "id": "e10",
@@ -271,7 +68,11 @@
     "trending": false,
     "blurb": "Nigeria's entertainment and creative economy conference. Student ₦5,000, individual ₦15,000, duo pass ₦25,000.",
     "listedRank": 0,
-    "photo": "p52",
+    "photo": "p48",
+    "about": [
+      "NECLive is Nigeria's conference on the entertainment and creative economy. This year's theme is Home Advantage: what it takes to build creative businesses that win at home first.",
+      "Student ₦5,000, individual ₦15,000, duo pass ₦25,000. Doors open at 8 AM at Alliance Française, Mike Adenuga Centre, Ikoyi."
+    ],
     "kind": "event",
     "area": "Ikoyi",
     "venue": "Alliance Française, Mike Adenuga Centre",
@@ -284,7 +85,7 @@
     "price": "₦15,000",
     "free": false,
     "mode": "In person",
-    "inDays": 7,
+    "inDays": 4,
     "host": "Nigerian Entertainment Conference",
     "startsAt": "2026-11-12T07:00:00Z",
     "endsAt": "2026-11-12T10:00:00Z"
@@ -301,6 +102,10 @@
     "blurb": "Two days of workshops, talks and networking from the Google developer community. ₦8,000 a day or ₦16,000 for both.",
     "listedRank": 0,
     "photo": "p33",
+    "about": [
+      "DevFest Lagos is the Google Developer Groups community's biggest event of the year: two days of talks, workshops and hands-on sessions on Android, web, cloud, AI and more.",
+      "Tickets are ₦8,000 a day or ₦16,000 for both days. The venue is announced to ticket holders."
+    ],
     "kind": "event",
     "area": "Lagos",
     "venue": "Venue TBA",
@@ -313,7 +118,7 @@
     "price": "₦8,000",
     "free": false,
     "mode": "In person",
-    "inDays": 8,
+    "inDays": 5,
     "host": "GDG Lagos",
     "startsAt": "2026-11-13T09:00:00Z",
     "endsAt": "2026-11-13T12:00:00Z"
@@ -342,7 +147,7 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 9,
+    "inDays": 6,
     "host": "LITF",
     "startsAt": "2026-11-14T09:00:00Z",
     "endsAt": "2026-11-14T12:00:00Z"
@@ -358,7 +163,11 @@
     "trending": false,
     "blurb": "The fourth Lagos employment summit, \"Lagos Works\", for job seekers and employers. A career fair runs on 16 Nov.",
     "listedRank": 0,
-    "photo": "p50",
+    "photo": "p52",
+    "about": [
+      "Lagos Works, the fourth Lagos State Employment Summit, brings job seekers, employers and training partners together at the Landmark Event Centre, with a career fair alongside the main sessions.",
+      "Entry is free with registration on the Lagos State site."
+    ],
     "kind": "event",
     "area": "Victoria Island",
     "venue": "Landmark Event Centre",
@@ -371,39 +180,10 @@
     "price": "Free with registration",
     "free": true,
     "mode": "In person",
-    "inDays": 14,
+    "inDays": 11,
     "host": "Lagos State Government",
     "startsAt": "2026-11-19T09:00:00Z",
     "endsAt": "2026-11-19T12:00:00Z"
-  },
-  {
-    "id": "e14",
-    "title": "Lagos International Trade Fair 2026",
-    "category": "Business",
-    "city": "Lagos",
-    "organiser": "LCCI",
-    "source": "LCCI",
-    "url": "https://lagostradefair.com",
-    "trending": false,
-    "blurb": "West Africa's largest trade exhibition, running 6 to 15 November.",
-    "listedRank": 2,
-    "photo": "p35",
-    "kind": "event",
-    "area": "Lagos Island",
-    "venue": "Tafawa Balewa Square",
-    "date": {
-      "weekday": "Fri",
-      "day": 6,
-      "month": "Nov"
-    },
-    "time": "Times TBA",
-    "price": "See site",
-    "free": false,
-    "mode": "In person",
-    "inDays": 1,
-    "host": "LCCI",
-    "startsAt": "2026-11-06T09:00:00Z",
-    "endsAt": "2026-11-06T12:00:00Z"
   },
   {
     "id": "e15",
@@ -417,6 +197,9 @@
     "blurb": "Entertainment Week Africa opens its fifth edition, \"Closing The Gap\", across music, film, fashion and tech.",
     "listedRank": 0,
     "photo": "p40",
+    "about": [
+      "Entertainment Week Africa opens its fifth edition, Closing The Gap, with a free opening night at the Livespot Entertarium in Ikate. The week runs across music, film, fashion and tech."
+    ],
     "kind": "event",
     "area": "Ikate, Lekki",
     "venue": "Livespot Entertarium",
@@ -429,7 +212,7 @@
     "price": "Free",
     "free": true,
     "mode": "In person",
-    "inDays": 12,
+    "inDays": 9,
     "host": "Livespot360",
     "startsAt": "2026-11-17T09:00:00Z",
     "endsAt": "2026-11-17T12:00:00Z"
@@ -458,7 +241,7 @@
     "price": "₦25,000",
     "free": false,
     "mode": "In person",
-    "inDays": 13,
+    "inDays": 10,
     "host": "Livespot360",
     "startsAt": "2026-11-18T09:00:00Z",
     "endsAt": "2026-11-18T12:00:00Z"
@@ -487,7 +270,7 @@
     "price": "Free",
     "free": true,
     "mode": "In person",
-    "inDays": 14,
+    "inDays": 11,
     "host": "Livespot360",
     "startsAt": "2026-11-19T09:00:00Z",
     "endsAt": "2026-11-19T12:00:00Z"
@@ -503,7 +286,10 @@
     "trending": true,
     "blurb": "The concert that closes Entertainment Week Africa. Early bird ₦20,000, general ₦50,000, VIP up to ₦200,000.",
     "listedRank": 0,
-    "photo": "p12",
+    "photo": "p1",
+    "about": [
+      "The concert that closes Entertainment Week Africa. Early bird ₦20,000, general ₦50,000, VIP up to ₦200,000."
+    ],
     "kind": "event",
     "area": "Lagos",
     "venue": "Venue TBA",
@@ -516,7 +302,7 @@
     "price": "₦20,000",
     "free": false,
     "mode": "In person",
-    "inDays": 17,
+    "inDays": 14,
     "host": "Livespot360",
     "startsAt": "2026-11-22T09:00:00Z",
     "endsAt": "2026-11-22T12:00:00Z"
@@ -533,6 +319,10 @@
     "blurb": "Wizkid opens the 13-day, two-stage Detty December Fest, running 18 to 30 December.",
     "listedRank": 0,
     "photo": "p94",
+    "about": [
+      "Detty December Fest runs for 13 days, 18 to 30 December, across two stages. Wizkid opens it.",
+      "Tickets are on the official site; buy only from official sellers."
+    ],
     "kind": "event",
     "area": "Lagos",
     "venue": "Venue TBA",
@@ -545,7 +335,7 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 43,
+    "inDays": 40,
     "host": "Detty December Fest",
     "startsAt": "2026-12-18T09:00:00Z",
     "endsAt": "2026-12-18T12:00:00Z"
@@ -561,7 +351,7 @@
     "trending": true,
     "blurb": "The main concert of a week of African rhythms and jazz, after masterclasses from 16 November. Early bird ₦5,000, VIP ₦15,000.",
     "listedRank": 0,
-    "photo": "p41",
+    "photo": "p12",
     "kind": "event",
     "area": "Jabi",
     "venue": "Jabi Lake (to be confirmed)",
@@ -574,7 +364,7 @@
     "price": "₦5,000",
     "free": false,
     "mode": "In person",
-    "inDays": 16,
+    "inDays": 13,
     "host": "Afrojazz Festival Nigeria",
     "startsAt": "2026-11-21T09:00:00Z",
     "endsAt": "2026-11-21T12:00:00Z"
@@ -603,7 +393,7 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 16,
+    "inDays": 13,
     "host": "Tripoint Academy",
     "startsAt": "2026-11-21T09:00:00Z",
     "endsAt": "2026-11-21T12:00:00Z"
@@ -619,7 +409,7 @@
     "trending": true,
     "blurb": "Wizkid's Abuja homecoming show at Eagle Square.",
     "listedRank": 0,
-    "photo": "p94",
+    "photo": "p41",
     "kind": "event",
     "area": "Central Area",
     "venue": "Eagle Square",
@@ -632,7 +422,7 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 38,
+    "inDays": 35,
     "host": "Wizkid",
     "startsAt": "2026-12-13T09:00:00Z",
     "endsAt": "2026-12-13T12:00:00Z"
@@ -661,7 +451,7 @@
     "price": "GH₵150",
     "free": false,
     "mode": "In person",
-    "inDays": 9,
+    "inDays": 6,
     "host": "First National Bank Ghana",
     "startsAt": "2026-11-14T06:00:00Z",
     "endsAt": "2026-11-14T09:00:00Z"
@@ -690,7 +480,7 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 19,
+    "inDays": 16,
     "host": "Tech in Ghana",
     "startsAt": "2026-11-24T10:00:00Z",
     "endsAt": "2026-11-24T13:00:00Z"
@@ -706,7 +496,7 @@
     "trending": false,
     "blurb": "Sculptor Frederick Okai's solo show opens, running until April 2027.",
     "listedRank": 0,
-    "photo": "p15",
+    "photo": "p9",
     "kind": "event",
     "area": "East Legon",
     "venue": "Nubuke Foundation",
@@ -719,7 +509,7 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 6,
+    "inDays": 3,
     "host": "Nubuke Foundation",
     "startsAt": "2026-11-11T10:00:00Z",
     "endsAt": "2026-11-11T13:00:00Z"
@@ -735,7 +525,7 @@
     "trending": false,
     "blurb": "A one-day trade expo with delegates and exhibitors from Africa and Asia.",
     "listedRank": 0,
-    "photo": "p48",
+    "photo": "p50",
     "kind": "event",
     "area": "Legon",
     "venue": "Cedi Conference Centre, University of Ghana",
@@ -748,39 +538,10 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 23,
+    "inDays": 20,
     "host": "Asia-Ghana Trade and Investment",
     "startsAt": "2026-11-28T09:00:00Z",
     "endsAt": "2026-11-28T12:00:00Z"
-  },
-  {
-    "id": "e27",
-    "title": "New Africa Capital Forum 2026",
-    "category": "Business",
-    "city": "Accra",
-    "organiser": "New Africa Capital",
-    "source": "nacapitalforum.com",
-    "url": "https://nacapitalforum.com",
-    "trending": false,
-    "blurb": "Founders, fund managers and development banks under the theme \"Infinite Horizons\". Awards gala tonight.",
-    "listedRank": 3,
-    "photo": "p52",
-    "kind": "event",
-    "area": "Accra",
-    "venue": "Venue TBA",
-    "date": {
-      "weekday": "Thu",
-      "day": 5,
-      "month": "Nov"
-    },
-    "time": "Times TBA",
-    "price": "See site",
-    "free": false,
-    "mode": "In person",
-    "inDays": 0,
-    "host": "New Africa Capital",
-    "startsAt": "2026-11-05T10:00:00Z",
-    "endsAt": "2026-11-05T13:00:00Z"
   },
   {
     "id": "e28",
@@ -806,7 +567,7 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 52,
+    "inDays": 49,
     "host": "Mr Eazi",
     "startsAt": "2026-12-27T10:00:00Z",
     "endsAt": "2026-12-27T13:00:00Z"
@@ -835,10 +596,653 @@
     "price": "See site",
     "free": false,
     "mode": "In person",
-    "inDays": 53,
+    "inDays": 50,
     "host": "AfroFuture",
     "startsAt": "2026-12-28T10:00:00Z",
     "endsAt": "2026-12-28T13:00:00Z"
+  },
+  {
+    "id": "n2",
+    "title": "Overnight Movie Experience",
+    "category": "Film",
+    "city": "Lagos",
+    "organiser": "Freeverse Studios",
+    "source": "Vibes Calendar",
+    "url": "http://www.pv.rsvp/movie-night-freeverse-studio",
+    "trending": true,
+    "blurb": "The overnight edition of Freeverse's movie night: watch, then review the films together in a cosy studio.",
+    "listedRank": 0,
+    "photo": "p34",
+    "photoUrl": "https://static.wixstatic.com/media/80ac58_9de33ea8576a4f3d91b0ec98170b1716~mv2.jpg/v1/fill/w_1080,h_1349,al_c,q_85/80ac58_9de33ea8576a4f3d91b0ec98170b1716~mv2.jpg",
+    "about": [
+      "Freeverse Studios turns its regular movie night into an overnight session. You watch a run of films back to back, then stay for an open conversation where everyone reviews what they saw.",
+      "Entry is by RSVP on the organiser's page. Bring something warm; it runs late."
+    ],
+    "kind": "event",
+    "area": "Lagos",
+    "venue": "Freeverse Studios",
+    "date": {
+      "weekday": "Fri",
+      "day": 13,
+      "month": "Nov"
+    },
+    "time": "7:00 PM",
+    "price": "Free RSVP",
+    "free": true,
+    "mode": "In person",
+    "inDays": 5,
+    "host": "Freeverse Studios",
+    "startsAt": "2026-11-13T18:00:00Z",
+    "endsAt": "2026-11-13T21:00:00Z"
+  },
+  {
+    "id": "n3",
+    "title": "TEMP House Experience 6.0",
+    "category": "Nightlife",
+    "city": "Lagos",
+    "organiser": "TEMP House",
+    "source": "shows.ng",
+    "url": "https://shows.ng/event/temp-house-experience-6-0",
+    "trending": true,
+    "blurb": "The sixth edition of the TEMP house-music night in Ikeja.",
+    "listedRank": 0,
+    "photo": "p14",
+    "photoUrl": "https://shows.ng/su/evu/event_13db8d2388bada30f24fb8fe86ee15b7.jpg",
+    "about": [
+      "The sixth edition of TEMP House Experience, a house-music night in Ikeja built around long DJ sets and a dance floor that stays full till morning.",
+      "Tickets are ₦50,000 on shows.ng. The exact venue is shared with ticket holders before the night."
+    ],
+    "kind": "event",
+    "area": "Ikeja",
+    "venue": "Venue shared with ticket holders",
+    "date": {
+      "weekday": "Sat",
+      "day": 14,
+      "month": "Nov"
+    },
+    "time": "Times TBA",
+    "price": "₦50,000",
+    "free": false,
+    "mode": "In person",
+    "inDays": 6,
+    "host": "TEMP House",
+    "startsAt": "2026-11-14T09:00:00Z",
+    "endsAt": "2026-11-14T12:00:00Z"
+  },
+  {
+    "id": "n4",
+    "title": "Frequency Arena",
+    "category": "Music",
+    "city": "Lagos",
+    "organiser": "Frequency Arena",
+    "source": "shows.ng",
+    "url": "https://shows.ng/event/frequency-arena",
+    "trending": false,
+    "blurb": "A day of live music and games on Admiralty Way, Lekki.",
+    "listedRank": 0,
+    "photo": "p94",
+    "photoUrl": "https://shows.ng/su/evu/event_a71d0078ac79f4250d73b79ab3f0d8c1.jpg",
+    "about": [
+      "Frequency Arena takes over 15 Admiralty Way, opposite Farm City in Lekki Phase 1, for a day of live music, games and hanging out.",
+      "Doors open at 9 AM. General tickets are ₦5,000 on shows.ng."
+    ],
+    "kind": "event",
+    "area": "Lekki Phase 1",
+    "venue": "15 Admiralty Way, opposite Farm City",
+    "date": {
+      "weekday": "Sat",
+      "day": 14,
+      "month": "Nov"
+    },
+    "time": "9:00 AM",
+    "price": "₦5,000",
+    "free": false,
+    "mode": "In person",
+    "inDays": 6,
+    "host": "Frequency Arena",
+    "startsAt": "2026-11-14T08:00:00Z",
+    "endsAt": "2026-11-14T11:00:00Z"
+  },
+  {
+    "id": "n5",
+    "title": "Nexus by Qore 2026",
+    "category": "Tech",
+    "city": "Lagos",
+    "organiser": "Qore",
+    "source": "Luma",
+    "url": "https://luma.com/4erqgon8",
+    "trending": true,
+    "blurb": "Qore's conference on the future of finance and technology in Nigeria, at the Federal Palace Hotel.",
+    "listedRank": 0,
+    "photo": "p43",
+    "photoUrl": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=1,anim=false,background=white,quality=75,width=800,height=420/event-social/af/08cdaf76-96b9-4093-8c4c-dc624c6bb3ef.png",
+    "about": [
+      "Nexus is Qore's conference on where finance and technology are heading in Nigeria: banks, fintechs, regulators and builders in one room for a day of talks and panels.",
+      "It runs at the Balmoral Convention Centre in the Federal Palace Hotel, Victoria Island, from 9:30 AM. Registration is free on Luma and spaces are limited."
+    ],
+    "kind": "event",
+    "area": "Victoria Island",
+    "venue": "Balmoral Convention Centre, Federal Palace Hotel",
+    "date": {
+      "weekday": "Wed",
+      "day": 18,
+      "month": "Nov"
+    },
+    "time": "9:30 AM",
+    "price": "Free with registration",
+    "free": true,
+    "mode": "In person",
+    "inDays": 10,
+    "host": "Qore",
+    "startsAt": "2026-11-18T08:30:00Z",
+    "endsAt": "2026-11-18T11:30:00Z"
+  },
+  {
+    "id": "n6",
+    "title": "The Fitness Party of the Year",
+    "category": "Sports & Fitness",
+    "city": "Lagos",
+    "organiser": "VerveLife",
+    "source": "Vibes Calendar",
+    "url": "https://myverveworld.com/life",
+    "trending": true,
+    "blurb": "The VerveLife 9.0 grand finale: a full day of group workouts, music and wellness at Eko Hotel.",
+    "listedRank": 0,
+    "photo": "p3",
+    "photoUrl": "https://static.wixstatic.com/media/80ac58_82e43031bb5c46059ae0408cbc0c2119~mv2.jpg/v1/fill/w_1440,h_1920,al_c,q_90/80ac58_82e43031bb5c46059ae0408cbc0c2119~mv2.jpg",
+    "about": [
+      "The grand finale of VerveLife 9.0. Expect a full morning of group workouts, dance fitness, wellness stalls and music, run by Access Bank's Verve community at Eko Hotel and Suites.",
+      "It starts at 7 AM. Wear your gym kit and bring water; registration details are on the VerveLife site."
+    ],
+    "kind": "event",
+    "area": "Victoria Island",
+    "venue": "Eko Hotel and Suites",
+    "date": {
+      "weekday": "Sat",
+      "day": 21,
+      "month": "Nov"
+    },
+    "time": "7:00 AM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 13,
+    "host": "VerveLife",
+    "startsAt": "2026-11-21T06:00:00Z",
+    "endsAt": "2026-11-21T09:00:00Z"
+  },
+  {
+    "id": "n7",
+    "title": "Geo-Innovation Summit 2026",
+    "category": "Tech",
+    "city": "Lagos",
+    "organiser": "Geo-Innovation Summit",
+    "source": "shows.ng",
+    "url": "https://shows.ng/event/geo-innovation-summit-2026",
+    "trending": false,
+    "blurb": "A summit on geospatial technology, mapping and data for Nigeria. Free entry, with paid delegate passes.",
+    "listedRank": 0,
+    "photo": "p35",
+    "photoUrl": "https://shows.ng/su/evu/event_8d7c43f4a3dc166b395534079b4ec363.png",
+    "about": [
+      "A one-day summit on geospatial technology in Nigeria: mapping, satellite data, GIS and how they feed into planning, agriculture and business.",
+      "General entry is free. Paid delegate passes, from about ₦30,000, add the full programme and networking."
+    ],
+    "kind": "event",
+    "area": "Agidingbi, Ikeja",
+    "venue": "High Point Event Centre and Suites",
+    "date": {
+      "weekday": "Fri",
+      "day": 27,
+      "month": "Nov"
+    },
+    "time": "9:00 AM",
+    "price": "Free",
+    "free": true,
+    "mode": "In person",
+    "inDays": 19,
+    "host": "Geo-Innovation Summit",
+    "startsAt": "2026-11-27T08:00:00Z",
+    "endsAt": "2026-11-27T11:00:00Z"
+  },
+  {
+    "id": "n8",
+    "title": "CONNEXA 2026: The Opportunity Playground",
+    "category": "Networking",
+    "city": "Lagos",
+    "organiser": "Zidepeople",
+    "source": "shows.ng",
+    "url": "https://shows.ng/event/connexa-2026-the-opportunity-playground-a",
+    "trending": true,
+    "blurb": "Talent, founders and recruiters in one room: keynotes, business showcases, career sessions and AI demos. Talent pass ₦5,000, VIP ₦10,000.",
+    "listedRank": 0,
+    "photo": "p91",
+    "photoUrl": "https://shows.ng/su/evu/1783093238_Connexa_Social_Media_Designs.png",
+    "about": [
+      "CONNEXA calls itself the opportunity playground: talent, founders, recruiters and industry leaders in one hall, with keynote conversations, business showcases, exhibitions, AI demos and career sessions.",
+      "Talent Pass ₦5,000, Talent VIP ₦10,000, Business Owner Pass ₦30,000. It runs 10 AM to about 5 PM at the UNILAG Indoor Sports Centre."
+    ],
+    "kind": "event",
+    "area": "Akoka, Yaba",
+    "venue": "UNILAG Indoor Sports Centre",
+    "date": {
+      "weekday": "Sat",
+      "day": 28,
+      "month": "Nov"
+    },
+    "time": "10:00 AM",
+    "price": "₦5,000",
+    "free": false,
+    "mode": "In person",
+    "inDays": 20,
+    "host": "Zidepeople",
+    "startsAt": "2026-11-28T09:00:00Z",
+    "endsAt": "2026-11-28T12:00:00Z"
+  },
+  {
+    "id": "n9",
+    "title": "Techfeast 2026",
+    "category": "Tech",
+    "city": "Lagos",
+    "organiser": "Techfeast",
+    "source": "shows.ng",
+    "url": "https://shows.ng/event/techfeast-2026",
+    "trending": false,
+    "blurb": "A full day of tech talks, networking and entertainment on the human side of innovation. The exhibition floor is free from 10 AM to 3 PM.",
+    "listedRank": 0,
+    "photo": "p91",
+    "photoUrl": "https://shows.ng/su/evu/external_30d429e10d19ac30c81043705b36f4f3.jpg",
+    "about": [
+      "A full day of technology, networking and entertainment focused on the human side of innovation, with the main Techfeast sessions, a Future Skills Week track and an exhibition floor.",
+      "The exhibition is free from 10 AM to 3 PM. Full-day passes are on shows.ng."
+    ],
+    "kind": "event",
+    "area": "Lekki",
+    "venue": "Lagos Oriental Hotel",
+    "date": {
+      "weekday": "Sat",
+      "day": 28,
+      "month": "Nov"
+    },
+    "time": "10:00 AM",
+    "price": "Free",
+    "free": true,
+    "mode": "In person",
+    "inDays": 20,
+    "host": "Techfeast",
+    "startsAt": "2026-11-28T09:00:00Z",
+    "endsAt": "2026-11-28T12:00:00Z"
+  },
+  {
+    "id": "n10",
+    "title": "Bae & Boo: Owambe Edition",
+    "category": "Nightlife",
+    "city": "Lagos",
+    "organiser": "House of Rest International",
+    "source": "Vibes Calendar",
+    "url": "https://bit.ly/baeandboo26",
+    "trending": false,
+    "blurb": "A relationship banquet for singles and couples, dressed for an owambe.",
+    "listedRank": 0,
+    "photo": "p1",
+    "photoUrl": "https://static.wixstatic.com/media/80ac58_31183c5100b24d7bb0f48da3fe8ba084~mv2.jpg/v1/fill/w_1168,h_1456,al_c,q_85/80ac58_31183c5100b24d7bb0f48da3fe8ba084~mv2.jpg",
+    "about": [
+      "A relationship banquet for singles and couples with an owambe dress code: music, food, games and conversation hosted by House of Rest International.",
+      "It starts at 8:30 PM at The Nest Innovation Technology Park, Yaba. Registration is through the organiser's link."
+    ],
+    "kind": "event",
+    "area": "Yaba",
+    "venue": "The Nest Innovation Technology Park",
+    "date": {
+      "weekday": "Sun",
+      "day": 29,
+      "month": "Nov"
+    },
+    "time": "8:30 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 21,
+    "host": "House of Rest International",
+    "startsAt": "2026-11-29T19:30:00Z",
+    "endsAt": "2026-11-29T22:30:00Z"
+  },
+  {
+    "id": "n11",
+    "title": "Vibration: Beat 'n' Feet Dance Concert 2026",
+    "category": "Music",
+    "city": "Lagos",
+    "organiser": "Beat 'n' Feet",
+    "source": "Vibes Calendar",
+    "url": "https://www.chasescroll.com/",
+    "trending": false,
+    "blurb": "Dance, music and fashion on one stage at the UNILAG main auditorium.",
+    "listedRank": 0,
+    "photo": "p7",
+    "photoUrl": "https://static.wixstatic.com/media/80ac58_969626b8591f42a3b2c1d5befb3e2830~mv2.jpg/v1/fill/w_1498,h_1872,al_c,q_90/80ac58_969626b8591f42a3b2c1d5befb3e2830~mv2.jpg",
+    "about": [
+      "Beat 'n' Feet's dance concert brings dance crews, live music and fashion to one stage at the J.F. Ade. Ajayi Auditorium on the UNILAG campus.",
+      "The show starts at 3 PM. Tickets are on Chasescroll."
+    ],
+    "kind": "event",
+    "area": "Akoka",
+    "venue": "J.F. Ade. Ajayi Auditorium, UNILAG",
+    "date": {
+      "weekday": "Sun",
+      "day": 6,
+      "month": "Dec"
+    },
+    "time": "3:00 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 28,
+    "host": "Beat 'n' Feet",
+    "startsAt": "2026-12-06T14:00:00Z",
+    "endsAt": "2026-12-06T17:00:00Z"
+  },
+  {
+    "id": "n12",
+    "title": "Gloria! Celebrating The King",
+    "category": "Music",
+    "city": "Lagos",
+    "organiser": "Lagos City Chorale",
+    "source": "tix.africa",
+    "url": "https://tix.africa/discover/celebratetheking",
+    "trending": true,
+    "blurb": "Lagos City Chorale's annual Christmas concert at MUSON.",
+    "listedRank": 0,
+    "photo": "p1",
+    "photoUrl": "https://static.wixstatic.com/media/80ac58_42bd02491c80467b976a56f285eaa14b~mv2.webp/v1/fill/w_750,h_825,al_c/80ac58_42bd02491c80467b976a56f285eaa14b~mv2.webp",
+    "about": [
+      "Lagos City Chorale's annual Christmas concert at the MUSON Centre: carols, choral classics and seasonal favourites from one of the city's best-known choirs.",
+      "The concert starts at 5 PM. Tickets are on tix.africa and usually go early."
+    ],
+    "kind": "event",
+    "area": "Onikan",
+    "venue": "MUSON Centre",
+    "date": {
+      "weekday": "Sat",
+      "day": 12,
+      "month": "Dec"
+    },
+    "time": "5:00 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 34,
+    "host": "Lagos City Chorale",
+    "startsAt": "2026-12-12T16:00:00Z",
+    "endsAt": "2026-12-12T19:00:00Z"
+  },
+  {
+    "id": "n13",
+    "title": "Mamafela Festival 2026",
+    "category": "Festivals",
+    "city": "Lagos",
+    "organiser": "Mamafela of Lagos",
+    "source": "Vibes Calendar",
+    "url": "https://trendmyevent.com/mamafela-festival",
+    "trending": true,
+    "blurb": "A December village-square rave: music, food and culture in Lekki.",
+    "listedRank": 0,
+    "photo": "p6",
+    "photoUrl": "https://static.wixstatic.com/media/80ac58_8f279fa4c82045e5b1ae32701506d533~mv2.jpg/v1/fill/w_960,h_1280,al_c,q_85/80ac58_8f279fa4c82045e5b1ae32701506d533~mv2.jpg",
+    "about": [
+      "Mamafela Festival is a December rave styled like a village square: live music, DJs, food stalls and culture at Justice Mall, Lekki.",
+      "Gates open at 4 PM. Tickets are on Trend My Event."
+    ],
+    "kind": "event",
+    "area": "Lekki",
+    "venue": "Justice Mall",
+    "date": {
+      "weekday": "Sat",
+      "day": 12,
+      "month": "Dec"
+    },
+    "time": "4:00 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 34,
+    "host": "Mamafela of Lagos",
+    "startsAt": "2026-12-12T15:00:00Z",
+    "endsAt": "2026-12-12T18:00:00Z"
+  },
+  {
+    "id": "n14",
+    "title": "Kwagh-hir",
+    "category": "Theatre",
+    "city": "Lagos",
+    "organiser": "CIIFA",
+    "source": "Eventbrite",
+    "url": "https://www.eventbrite.com/e/kwagh-hir-tickets-2004373238312",
+    "trending": false,
+    "blurb": "An evening of African folklore: live storytelling, traditional dance, masquerade, crafts and games you join in.",
+    "listedRank": 0,
+    "photo": "p37",
+    "photoUrl": "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1197256314%2F3020266281674%2F1%2Foriginal.20261104-133618?crop=focalpoint&fit=crop&w=940&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.536&fp-y=0.109&s=b1a95db31ab220705fd7a6e23e1afce9",
+    "about": [
+      "Kwagh-hir is an evening of African folklore: live storytelling, traditional dance, masquerade, crafts and games, built so you take part rather than just watch.",
+      "It runs from 5 PM to 8:30 PM on GT's Lawn and at the CIIFA SafeHouse, 4 Onikoyi Lane, Ikoyi. Tickets are on Eventbrite."
+    ],
+    "kind": "event",
+    "area": "Ikoyi",
+    "venue": "GT's Lawn and CIIFA SafeHouse, 4 Onikoyi Lane",
+    "date": {
+      "weekday": "Sun",
+      "day": 20,
+      "month": "Dec"
+    },
+    "time": "5:00 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 42,
+    "host": "CIIFA",
+    "startsAt": "2026-12-20T16:00:00Z",
+    "endsAt": "2026-12-20T19:00:00Z"
+  },
+  {
+    "id": "n15",
+    "title": "Drunch in the City: Lagos Edition",
+    "category": "Food & Drink",
+    "city": "Lagos",
+    "organiser": "Detty Experience",
+    "source": "Eventbrite",
+    "url": "https://www.eventbrite.com/e/drunch-in-the-city-lagos-edition-tickets-2004093431402",
+    "trending": true,
+    "blurb": "African fashion, fine dining, music and networking, from afternoon into the night.",
+    "listedRank": 0,
+    "photo": "p4",
+    "photoUrl": "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1196888261%2F2969384848501%2F1%2Foriginal.20261029-210324?crop=focalpoint&fit=crop&w=940&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=ac4f2a0f2fe058b08e71b2e7ac1c75fb",
+    "about": [
+      "Detty Experience brings together African fashion, fine dining, music and networking for a long December afternoon at The Leisure Park Event Center, off Admiralty Way in Lekki.",
+      "It starts at 2 PM. Dress the part; tickets are on Eventbrite."
+    ],
+    "kind": "event",
+    "area": "Lekki",
+    "venue": "The Leisure Park Event Center, off Admiralty Way",
+    "date": {
+      "weekday": "Mon",
+      "day": 28,
+      "month": "Dec"
+    },
+    "time": "2:00 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 50,
+    "host": "Detty Experience",
+    "startsAt": "2026-12-28T13:00:00Z",
+    "endsAt": "2026-12-28T16:00:00Z"
+  },
+  {
+    "id": "n16",
+    "title": "Padels & Pilates: Softlife Wellness Morning",
+    "category": "Wellness",
+    "city": "Lagos",
+    "organiser": "Detty Experience",
+    "source": "Eventbrite",
+    "url": "https://www.eventbrite.com/e/padels-pilates-softlife-wellness-morning-tickets-2004094820557",
+    "trending": false,
+    "blurb": "Padel and Pilates sessions, massages and breakfast to recover from December.",
+    "listedRank": 0,
+    "photo": "p3",
+    "photoUrl": "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1196889634%2F2969384848501%2F1%2Foriginal.20261029-212645?crop=focalpoint&fit=crop&w=940&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=545764c74811ad70447443c61dc6d304",
+    "about": [
+      "A softer way to end December: padel and Pilates sessions, massages, breakfast and networking at 23AA Cooper Road, Ikoyi, from Detty Experience.",
+      "It runs 9 AM to 1 PM. Bring trainers and a change of clothes; tickets are on Eventbrite."
+    ],
+    "kind": "event",
+    "area": "Ikoyi",
+    "venue": "23AA Cooper Road",
+    "date": {
+      "weekday": "Wed",
+      "day": 30,
+      "month": "Dec"
+    },
+    "time": "9:00 AM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 52,
+    "host": "Detty Experience",
+    "startsAt": "2026-12-30T08:00:00Z",
+    "endsAt": "2026-12-30T11:00:00Z"
+  },
+  {
+    "id": "n17",
+    "title": "Crossover into 2027",
+    "category": "Faith",
+    "city": "Lagos",
+    "organiser": "The Liberty Church",
+    "source": "Eventbrite",
+    "url": "https://www.eventbrite.co.uk/e/crossover-into-2027-lagos-new-years-eve-celebration-tickets-2003512829807",
+    "trending": false,
+    "blurb": "New Year's Eve with music, worship, testimonies and a midnight countdown.",
+    "listedRank": 0,
+    "photo": "p13",
+    "photoUrl": "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1197427714%2F149695524580%2F1%2Foriginal.20261106-140317?crop=focalpoint&fit=crop&w=940&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=23ea33c462b912a3e700244f7e7790bb",
+    "about": [
+      "The Liberty Church's New Year's Eve service at Landmark Centre Annex: music, worship, testimonies, prophetic declarations and a countdown into 2027.",
+      "Doors open at 8 PM. Guest artists are still to be announced; registration is on Eventbrite."
+    ],
+    "kind": "event",
+    "area": "Victoria Island",
+    "venue": "Landmark Centre Annex",
+    "date": {
+      "weekday": "Thu",
+      "day": 31,
+      "month": "Dec"
+    },
+    "time": "8:00 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 53,
+    "host": "The Liberty Church",
+    "startsAt": "2026-12-31T19:00:00Z",
+    "endsAt": "2026-12-31T22:00:00Z"
+  },
+  {
+    "id": "n18",
+    "title": "Flytime Fest 2026",
+    "category": "Music",
+    "city": "Lagos",
+    "organiser": "Flytime Promotions",
+    "source": "notjustok.com",
+    "url": "https://flytimefest.com",
+    "trending": true,
+    "blurb": "Three nights of concerts, 22 to 24 December. Latto, A Boogie Wit da Hoodie and Sexyy Red open the first night.",
+    "listedRank": 0,
+    "photo": "p12",
+    "about": [
+      "Flytime Fest returns to the Eko Convention Centre for three nights, 22 to 24 December. Latto, A Boogie Wit da Hoodie and Sexyy Red headline the first night, with more names to come.",
+      "Tickets are sold by Flytime. Buy only from official sellers."
+    ],
+    "kind": "event",
+    "area": "Victoria Island",
+    "venue": "Eko Convention Centre",
+    "date": {
+      "weekday": "Tue",
+      "day": 22,
+      "month": "Dec"
+    },
+    "time": "Times TBA",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 44,
+    "host": "Flytime Promotions",
+    "startsAt": "2026-12-22T09:00:00Z",
+    "endsAt": "2026-12-22T12:00:00Z"
+  },
+  {
+    "id": "n19",
+    "title": "ELITE FEST 2026",
+    "category": "Music",
+    "city": "Lagos",
+    "organiser": "The Elite Collective",
+    "source": "notjustok.com",
+    "url": "https://notjustok.com",
+    "trending": false,
+    "blurb": "An afternoon-into-night festival headlined by BNXN, with the full lineup still to come.",
+    "listedRank": 0,
+    "photo": "p41",
+    "about": [
+      "ELITE FEST runs from the afternoon into the night at the Balmoral Convention Centre, Federal Palace Hotel, with BNXN headlining.",
+      "The full lineup is still to be announced."
+    ],
+    "kind": "event",
+    "area": "Victoria Island",
+    "venue": "Balmoral Convention Centre, Federal Palace Hotel",
+    "date": {
+      "weekday": "Mon",
+      "day": 21,
+      "month": "Dec"
+    },
+    "time": "4:00 PM",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 43,
+    "host": "The Elite Collective",
+    "startsAt": "2026-12-21T15:00:00Z",
+    "endsAt": "2026-12-21T18:00:00Z"
+  },
+  {
+    "id": "n20",
+    "title": "AfroJazz Fest: To the Roots",
+    "category": "Music",
+    "city": "Lagos",
+    "organiser": "AfroJazz Fest",
+    "source": "notjustok.com",
+    "url": "https://notjustok.com",
+    "trending": false,
+    "blurb": "The Cavemen and Lagbaja lead an evening of highlife and Afro-jazz in Lekki.",
+    "listedRank": 0,
+    "photo": "p94",
+    "about": [
+      "AfroJazz Fest: To the Roots brings highlife and Afro-jazz to Amore Gardens in Lekki, led by The Cavemen and Lagbaja.",
+      "Tickets and times are on the organiser's pages."
+    ],
+    "kind": "event",
+    "area": "Lekki",
+    "venue": "Amore Gardens",
+    "date": {
+      "weekday": "Wed",
+      "day": 23,
+      "month": "Dec"
+    },
+    "time": "Times TBA",
+    "price": "See site",
+    "free": false,
+    "mode": "In person",
+    "inDays": 45,
+    "host": "AfroJazz Fest",
+    "startsAt": "2026-12-23T09:00:00Z",
+    "endsAt": "2026-12-23T12:00:00Z"
   },
   {
     "id": "o1",
@@ -859,7 +1263,7 @@
       "month": "Nov",
       "label": "Mon 16 Nov 2026"
     },
-    "daysLeft": 11,
+    "daysLeft": 8,
     "award": "£20,000",
     "level": "Any level",
     "remote": true,
@@ -867,7 +1271,8 @@
     "eligibility": [
       "Filmmakers with a planet health story",
       "Developed with BAFTA Albert and SXSW London"
-    ]
+    ],
+    "sector": "Health"
   },
   {
     "id": "o2",
@@ -888,12 +1293,16 @@
       "month": "Nov",
       "label": "Mon 30 Nov 2026"
     },
-    "daysLeft": 25,
+    "daysLeft": 22,
     "award": "See brief",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Education and AI leaders", "Leadership development cohort"]
+    "eligibility": [
+      "Education and AI leaders",
+      "Leadership development cohort"
+    ],
+    "sector": "Education"
   },
   {
     "id": "o3",
@@ -914,7 +1323,7 @@
       "month": "Nov",
       "label": "Wed 18 Nov 2026"
     },
-    "daysLeft": 13,
+    "daysLeft": 10,
     "award": "Support programme",
     "level": "Under 30",
     "remote": false,
@@ -922,7 +1331,8 @@
     "eligibility": [
       "Young Nigerian innovators",
       "Working solution or prototype"
-    ]
+    ],
+    "sector": "Entrepreneurship"
   },
   {
     "id": "o4",
@@ -943,12 +1353,16 @@
       "month": "Dec",
       "label": "Fri 4 Dec 2026"
     },
-    "daysLeft": 29,
+    "daysLeft": 26,
     "award": "€90,000",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Initiatives addressing indifference", "Open globally"]
+    "eligibility": [
+      "Initiatives addressing indifference",
+      "Open globally"
+    ],
+    "sector": "Governance"
   },
   {
     "id": "o5",
@@ -969,12 +1383,16 @@
       "month": "Dec",
       "label": "Fri 11 Dec 2026"
     },
-    "daysLeft": 36,
+    "daysLeft": 33,
     "award": "Up to £50,000",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Ocean and blue economy projects", "Commonwealth countries"]
+    "eligibility": [
+      "Ocean and blue economy projects",
+      "Commonwealth countries"
+    ],
+    "sector": "Climate"
   },
   {
     "id": "o6",
@@ -995,7 +1413,7 @@
       "month": "Nov",
       "label": "Sun 22 Nov 2026"
     },
-    "daysLeft": 17,
+    "daysLeft": 14,
     "award": "$100,000 prize",
     "level": "Under 30",
     "remote": true,
@@ -1003,7 +1421,8 @@
     "eligibility": [
       "Young green entrepreneurs",
       "Land restoration and sustainability ventures"
-    ]
+    ],
+    "sector": "Climate"
   },
   {
     "id": "o7",
@@ -1024,12 +1443,16 @@
       "month": "Nov",
       "label": "Tue 24 Nov 2026"
     },
-    "daysLeft": 19,
+    "daysLeft": 16,
     "award": "Fully funded, US",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Community youth leaders", "Working on a local issue"]
+    "eligibility": [
+      "Community youth leaders",
+      "Working on a local issue"
+    ],
+    "sector": "Governance"
   },
   {
     "id": "o8",
@@ -1050,7 +1473,7 @@
       "month": "Nov",
       "label": "Sun 29 Nov 2026"
     },
-    "daysLeft": 24,
+    "daysLeft": 21,
     "award": "Free programme",
     "level": "Any level",
     "remote": true,
@@ -1058,7 +1481,8 @@
     "eligibility": [
       "African journalists and media professionals",
       "Five-week online lab"
-    ]
+    ],
+    "sector": "Technology"
   },
   {
     "id": "o9",
@@ -1079,12 +1503,16 @@
       "month": "Nov",
       "label": "Sun 15 Nov 2026"
     },
-    "daysLeft": 10,
+    "daysLeft": 7,
     "award": "Free online course",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Six online courses", "Africa focused"]
+    "eligibility": [
+      "Six online courses",
+      "Africa focused"
+    ],
+    "sector": "Technology"
   },
   {
     "id": "o10",
@@ -1105,7 +1533,7 @@
       "month": "Nov",
       "label": "Mon 16 Nov 2026"
     },
-    "daysLeft": 11,
+    "daysLeft": 8,
     "award": "Internship",
     "level": "Any level",
     "remote": true,
@@ -1113,7 +1541,8 @@
     "eligibility": [
       "Students and recent graduates",
       "Interest in West Africa and the Sahel"
-    ]
+    ],
+    "sector": "Research"
   },
   {
     "id": "o11",
@@ -1134,12 +1563,15 @@
       "month": "Nov",
       "label": "Wed 18 Nov 2026"
     },
-    "daysLeft": 13,
+    "daysLeft": 10,
     "award": "Accelerator",
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["African-owned growth-stage agribusinesses"]
+    "eligibility": [
+      "African-owned growth-stage agribusinesses"
+    ],
+    "sector": "Agriculture"
   },
   {
     "id": "o12",
@@ -1160,12 +1592,15 @@
       "month": "Nov",
       "label": "Fri 20 Nov 2026"
     },
-    "daysLeft": 15,
+    "daysLeft": 12,
     "award": "Award",
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Young energy professionals"]
+    "eligibility": [
+      "Young energy professionals"
+    ],
+    "sector": "Climate"
   },
   {
     "id": "o13",
@@ -1186,12 +1621,15 @@
       "month": "Nov",
       "label": "Mon 30 Nov 2026"
     },
-    "daysLeft": 25,
+    "daysLeft": 22,
     "award": "Board seat",
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Emerging young leaders in food systems"]
+    "eligibility": [
+      "Emerging young leaders in food systems"
+    ],
+    "sector": "Agriculture"
   },
   {
     "id": "o14",
@@ -1212,12 +1650,15 @@
       "month": "Nov",
       "label": "Mon 30 Nov 2026"
     },
-    "daysLeft": 25,
+    "daysLeft": 22,
     "award": "Paid internship",
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["BSc and MSc students in computer science"]
+    "eligibility": [
+      "BSc and MSc students in computer science"
+    ],
+    "sector": "Research"
   },
   {
     "id": "o15",
@@ -1238,12 +1679,15 @@
       "month": "Nov",
       "label": "Sun 15 Nov 2026"
     },
-    "daysLeft": 10,
+    "daysLeft": 7,
     "award": "Investment readiness",
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["African start-ups in livestock"]
+    "eligibility": [
+      "African start-ups in livestock"
+    ],
+    "sector": "Agriculture"
   },
   {
     "id": "o16",
@@ -1264,12 +1708,15 @@
       "month": "Nov",
       "label": "Sun 15 Nov 2026"
     },
-    "daysLeft": 10,
+    "daysLeft": 7,
     "award": "Fully funded",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Researchers from the Global South"]
+    "eligibility": [
+      "Researchers from the Global South"
+    ],
+    "sector": "Research"
   },
   {
     "id": "o17",
@@ -1290,12 +1737,15 @@
       "month": "Nov",
       "label": "Fri 27 Nov 2026"
     },
-    "daysLeft": 22,
+    "daysLeft": 19,
     "award": "Paid fellowship",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Economists, one position"]
+    "eligibility": [
+      "Economists, one position"
+    ],
+    "sector": "Finance"
   },
   {
     "id": "o18",
@@ -1316,12 +1766,15 @@
       "month": "Nov",
       "label": "Thu 26 Nov 2026"
     },
-    "daysLeft": 21,
+    "daysLeft": 18,
     "award": "Fellowship",
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["EdTech ventures in Uganda"]
+    "eligibility": [
+      "EdTech ventures in Uganda"
+    ],
+    "sector": "Education"
   },
   {
     "id": "o19",
@@ -1342,12 +1795,15 @@
       "month": "Jan",
       "label": "Sun 31 Jan 2027"
     },
-    "daysLeft": 87,
+    "daysLeft": 84,
     "award": "Award",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["African journalists"]
+    "eligibility": [
+      "African journalists"
+    ],
+    "sector": "Finance"
   },
   {
     "id": "o20",
@@ -1368,12 +1824,15 @@
       "month": "Jan",
       "label": "Sun 10 Jan 2027"
     },
-    "daysLeft": 66,
+    "daysLeft": 63,
     "award": "Summer programme",
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Doctoral students"]
+    "eligibility": [
+      "Doctoral students"
+    ],
+    "sector": "Research"
   },
   {
     "id": "o21",
@@ -1394,12 +1853,15 @@
       "month": "Jan",
       "label": "Sun 31 Jan 2027"
     },
-    "daysLeft": 87,
+    "daysLeft": 84,
     "award": "Recognition",
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Early-stage start-ups worldwide"]
+    "eligibility": [
+      "Early-stage start-ups worldwide"
+    ],
+    "sector": "Technology"
   },
   {
     "id": "o22",
@@ -1420,12 +1882,15 @@
       "month": "Feb",
       "label": "Thu 18 Feb 2027"
     },
-    "daysLeft": 105,
+    "daysLeft": 102,
     "award": "Up to $55,000",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Real estate and urban development"]
+    "eligibility": [
+      "Real estate and urban development"
+    ],
+    "sector": "Design"
   },
   {
     "id": "o23",
@@ -1446,12 +1911,15 @@
       "month": "Feb",
       "label": "Sun 28 Feb 2027"
     },
-    "daysLeft": 115,
+    "daysLeft": 112,
     "award": "Fully funded, Belgium",
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Master's applicants from partner countries"]
+    "eligibility": [
+      "Master's applicants from partner countries"
+    ],
+    "sector": "Education"
   },
   {
     "id": "o24",
@@ -1472,12 +1940,15 @@
       "month": "Nov",
       "label": "Tue 10 Nov 2026"
     },
-    "daysLeft": 5,
+    "daysLeft": 2,
     "award": "Fully funded, Brussels",
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Young climate leaders"]
+    "eligibility": [
+      "Young climate leaders"
+    ],
+    "sector": "Climate"
   },
   {
     "id": "o25",
@@ -1498,12 +1969,15 @@
       "month": "Nov",
       "label": "Mon 9 Nov 2026"
     },
-    "daysLeft": 4,
+    "daysLeft": 1,
     "award": "Free programme",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["African universities and research centres"]
+    "eligibility": [
+      "African universities and research centres"
+    ],
+    "sector": "Education"
   },
   {
     "id": "o26",
@@ -1524,12 +1998,15 @@
       "month": "Nov",
       "label": "Mon 9 Nov 2026"
     },
-    "daysLeft": 4,
+    "daysLeft": 1,
     "award": "Programme",
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Young social entrepreneurs"]
+    "eligibility": [
+      "Young social entrepreneurs"
+    ],
+    "sector": "Entrepreneurship"
   },
   {
     "id": "o27",
@@ -1550,11 +2027,14 @@
       "month": "Nov",
       "label": "Mon 30 Nov 2026"
     },
-    "daysLeft": 25,
+    "daysLeft": 22,
     "award": "Conference slot",
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": ["Researchers in social, economic and policy fields"]
+    "eligibility": [
+      "Researchers in social, economic and policy fields"
+    ],
+    "sector": "Research"
   }
 ]
