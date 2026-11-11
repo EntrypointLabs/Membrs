@@ -11,7 +11,7 @@ type Section = keyof typeof SECTION_TAGS;
 export function Tag({ name }: { name: string }) {
   return (
     <span
-      className="inline-flex h-[19px] items-center rounded-sm bg-(--tag) px-1.5 text-[10.5px] leading-none font-semibold whitespace-nowrap text-[#141414]"
+      className="inline-flex h-[22px] items-center rounded-sm bg-(--tag) px-2 text-[12px] leading-none font-semibold whitespace-nowrap text-[#141414]"
       style={{ '--tag': tagFill(name) } as CSSProperties}
     >
       {name}
@@ -39,8 +39,8 @@ export function Tags({
   plain = false,
   className = '',
 }: TagsProps) {
-  const cats = names.filter((n): n is string => Boolean(n));
-  const all = section ? [SECTION_TAGS[section][0], ...cats] : cats;
+  const cats = cardTags(undefined, names);
+  const all = cardTags(section, names);
   const text = (
     <span
       className={`text-fg-3 text-[13px] font-medium ${plain ? '' : 'md:hidden'}`}
@@ -59,6 +59,14 @@ export function Tags({
       </span>
     </span>
   );
+}
+
+export function cardTags(
+  section: Section | undefined,
+  names: (string | null | undefined)[],
+): string[] {
+  const cats = names.filter((n): n is string => Boolean(n));
+  return (section ? [SECTION_TAGS[section][0], ...cats] : cats).slice(0, 2);
 }
 
 /** The names a listing is tagged with: its category, and an opportunity's sector. */

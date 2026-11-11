@@ -125,6 +125,8 @@
     -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter',
     ui-sans-serif, 'Segoe UI', Roboto, sans-serif;
 
+  --spacing-bar: 80px;
+
   /* The content column: 81% of the viewport, capped. */
   --container-page: min(1742px, 81vw);
 }

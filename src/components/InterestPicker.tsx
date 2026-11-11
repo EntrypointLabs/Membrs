@@ -29,11 +29,13 @@ export function Chip({
   onClick,
   children,
   invalid = false,
+  mark = true,
 }: {
   on: boolean;
   onClick: () => void;
   children: string;
   invalid?: boolean;
+  mark?: boolean;
 }) {
   return (
     <button
@@ -47,7 +49,9 @@ export function Chip({
       }`}
     >
       {children}
-      <Icon name={on ? 'check' : 'plus'} className="h-3.5 w-3.5 opacity-80" />
+      {mark && (
+        <Icon name={on ? 'check' : 'plus'} className="h-3.5 w-3.5 opacity-80" />
+      )}
     </button>
   );
 }

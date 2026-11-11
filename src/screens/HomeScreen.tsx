@@ -53,8 +53,10 @@ export function HomeScreen() {
     <div className="page">
       <MobileTop city={city} />
 
-      <section className="mt-12 hidden gap-12 md:grid">
-        <HeroCarousel picks={picks} />
+      <section className="mt-12 hidden gap-8 md:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:gap-12">
+        <div className="lg:top-bar self-start lg:sticky">
+          <HeroCarousel picks={picks} />
+        </div>
         <MostPopular items={popular} />
       </section>
 
@@ -188,7 +190,7 @@ function ClosingSoon() {
   const pages = Math.ceil(items.length / CLOSING_PAGE);
   return (
     <section className="mt-16 grid gap-10 md:mt-[clamp(140px,11vw,200px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-[clamp(64px,7vw,128px)]">
-      <div className="self-start lg:sticky lg:top-6">
+      <div className="lg:top-bar self-start lg:sticky">
         <h2 className="text-[30px] font-semibold tracking-tight md:text-[44px]">
           Closing Soon
         </h2>

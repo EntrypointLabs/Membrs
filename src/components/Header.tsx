@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { sessionStore, signOut } from '../lib/auth';
 import { themeStore, type Theme } from '../lib/preferences';
 import { openOverlay, toast } from '../lib/ui';
@@ -13,12 +14,29 @@ import { NAV } from './nav';
  * and the section nav underneath. Hidden on phones, where the tab bar and
  * each screen's own title take over.
  */
+const TOP_ROW = 112;
+
+function useScrolledPast(offset: number) {
+  const [past, setPast] = useState(false);
+  useEffect(() => {
+    const check = () => setPast(window.scrollY > offset);
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  }, [offset]);
+  return past;
+}
+
 export function Header() {
   const route = useRoute();
   const active = navSection(route);
+  const docked = useScrolledPast(TOP_ROW);
   return (
-    <header className="page hidden md:block">
-      <div className="relative flex items-center justify-center py-6">
+    <header className="sticky z-40 hidden md:block" style={{ top: -TOP_ROW }}>
+      <div
+        className="page relative flex items-center justify-center py-6"
+        style={{ height: TOP_ROW }}
+      >
         <Link
           href="/"
           aria-label="membrs home"
@@ -33,41 +51,59 @@ export function Header() {
       </div>
       <nav
         aria-label="Sections"
-        className="border-line relative flex items-center justify-center border-y"
+        className={`border-line transition-colors ${
+          docked ? 'bg-bg/80 border-b backdrop-blur-md' : ''
+        }`}
       >
-        <ul className="flex items-center gap-[clamp(8px,2vw,40px)]">
-          {NAV.map((item) => (
-            <li key={item.key}>
-              <Link
-                href={item.href}
-                aria-current={active === item.key ? 'page' : undefined}
-                data-tour={item.key === 'events' ? 'nav-events' : undefined}
-                className={`relative flex h-14 items-center gap-2 text-[clamp(13px,1vw,16px)] font-bold tracking-wide uppercase transition-colors ${
-                  active === item.key ? 'text-fg' : 'text-fg-3 hover:text-fg'
-                }`}
-              >
-                <Icon
-                  name={item.icon}
-                  className={`hidden h-4 w-4 lg:block ${item.color}`}
-                />
-                {item.label}
-                {active === item.key && (
-                  <span
-                    className={`absolute inset-x-0 -bottom-px h-0.5 rounded-full ${item.bar}`}
-                  />
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <Link
-          href={paths.search()}
-          aria-label="Search"
-          data-tour="search"
-          className="bg-btn hover:bg-btn-hover absolute right-0 grid h-10 w-10 place-items-center rounded-md"
+        <div
+          className={`page border-line relative flex items-center justify-center ${docked ? '' : 'border-y'}`}
         >
-          <Icon name="search" />
-        </Link>
+          {docked && (
+            <Link
+              href="/"
+              aria-label="membrs home"
+              className="absolute left-0 text-[22px] leading-none font-black tracking-[-0.05em]"
+            >
+              MEMBRS
+            </Link>
+          )}
+          <ul className="flex items-center gap-[clamp(8px,2vw,40px)]">
+            {NAV.map((item) => (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
+                  aria-current={active === item.key ? 'page' : undefined}
+                  data-tour={item.key === 'events' ? 'nav-events' : undefined}
+                  className={`relative flex h-14 items-center gap-2 text-[clamp(13px,1vw,16px)] font-bold tracking-wide uppercase transition-colors ${
+                    active === item.key ? 'text-fg' : 'text-fg-3 hover:text-fg'
+                  }`}
+                >
+                  <Icon
+                    name={item.icon}
+                    className={`hidden h-4 w-4 lg:block ${item.color}`}
+                  />
+                  {item.label}
+                  {active === item.key && (
+                    <span
+                      className={`absolute inset-x-0 -bottom-px h-0.5 rounded-full ${item.bar}`}
+                    />
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="absolute right-0 flex items-center gap-2">
+            <Link
+              href={paths.search()}
+              aria-label="Search"
+              data-tour="search"
+              className="bg-btn hover:bg-btn-hover grid h-10 w-10 place-items-center rounded-md"
+            >
+              <Icon name="search" />
+            </Link>
+            {docked && <ThemeToggle />}
+          </div>
+        </div>
       </nav>
     </header>
   );
@@ -95,6 +131,21 @@ export function ThemeSwitch({ className = '' }: { className?: string }) {
       {option('light', 'sun')}
       {option('dark', 'moon')}
     </div>
+  );
+}
+
+function ThemeToggle() {
+  const theme = useStore(themeStore);
+  const next: Theme = theme === 'dark' ? 'light' : 'dark';
+  return (
+    <button
+      type="button"
+      aria-label={`Switch to ${next} mode`}
+      onClick={() => themeStore.set(next)}
+      className="bg-btn hover:bg-btn-hover grid h-10 w-10 place-items-center rounded-md"
+    >
+      <Icon name={theme === 'dark' ? 'moon' : 'sun'} className="h-4 w-4" />
+    </button>
   );
 }
 

@@ -118,7 +118,7 @@ export function AboutBlock({
 /** The sticky action card in the right column. */
 export function ActionCard({ children }: { children: ReactNode }) {
   return (
-    <aside className="bg-panel border-line-2 self-start rounded-lg border p-6 lg:sticky lg:top-6">
+    <aside className="bg-panel border-line-2 lg:top-bar self-start rounded-lg border p-6 lg:sticky">
       {children}
     </aside>
   );

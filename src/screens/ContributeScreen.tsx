@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import {
   DURATIONS,
   isPlacement,
@@ -23,6 +29,7 @@ import type { ContributeKind, FormField } from '../lib/types';
 import { toast } from '../lib/ui';
 import { BachsDemo } from '../components/BachsDemo';
 import { Icon } from '../components/Icon';
+import { Chip } from '../components/InterestPicker';
 import { ListingCard } from '../components/ListingCard';
 import { Link } from '../components/Link';
 import { Tabs } from '../components/Tabs';
@@ -33,7 +40,6 @@ import {
   FieldContent,
   FieldDescription,
   FieldError,
-  FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
@@ -41,15 +47,8 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 const KINDS: { value: ContributeKind; label: string }[] = [
   { value: 'event', label: 'Event' },
@@ -59,8 +58,13 @@ const KINDS: { value: ContributeKind; label: string }[] = [
   { value: 'ad', label: 'Advertise' },
 ];
 
-/** Our controls run a little larger than shadcn's defaults, to match the type. */
-const CONTROL = 'h-11 px-3.5 text-base md:text-base';
+const CAPTION = 'text-fg-4 text-[13px]';
+
+const LABEL = 'text-fg w-full text-[15px] font-medium';
+
+const CONTROL = 'placeholder:text-fg-4 h-12 px-4 text-base md:text-base';
+
+const SEND = 'mt-auto h-12 self-start px-6 text-base';
 
 type Errors = Record<string, string>;
 
@@ -187,69 +191,110 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     );
   }
 
+  const details = form.fields.filter((f) => f.type !== 'select');
+  const choices = form.fields.filter((f) => f.type === 'select');
+  const spans = fullWidth(details);
+  const sections = isAd
+    ? ['Details', 'Placement', 'Photo', 'Run length', 'Content']
+    : ['Details', 'Category', 'Photo'];
+  const step = (name: string) =>
+    String(sections.indexOf(name) + 1).padStart(2, '0');
+
   return (
-    <div className="page pt-8 md:pt-16">
-      <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
-        Contribute
-      </h1>
-      <div className="mt-8">
-        <Tabs
-          label="What are you sending?"
-          value={kind}
-          options={KINDS}
-          onChange={(k) => navigate(paths.contribute(k), { replace: true })}
-        />
-      </div>
-      {isAd && (
-        <AdPreview
-          placement={placement}
-          title={values.title}
-          brand={values.name}
-          city={values.city}
-          photo={photo}
-        />
-      )}
+    <div className="page grid gap-12 pt-10 pb-20 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-16 md:pt-16 lg:gap-24">
+      <aside className="md:top-bar flex flex-col md:sticky md:self-start">
+        <p className="text-fg-3 text-sm font-semibold">Contribute</p>
+        <h1 className="mt-3 text-[40px] leading-[1.02] font-semibold tracking-[-0.03em] md:text-[56px]">
+          {titleCase(form.title)}
+        </h1>
+        <p className="text-fg-2 mt-5 max-w-[42ch] text-[17px] leading-relaxed">
+          {form.lead}
+        </p>
+        <div className="mt-8">
+          <Tabs
+            label="What are you sending?"
+            value={kind}
+            options={KINDS}
+            onChange={(k) => navigate(paths.contribute(k), { replace: true })}
+          />
+        </div>
+        {isAd ? (
+          <AdPreview
+            placement={placement}
+            title={values.title}
+            brand={values.name}
+            city={values.city}
+            photo={photo}
+          />
+        ) : (
+          <NextSteps />
+        )}
+        <p className="text-fg-3 mt-10 text-[15px]">
+          Rather talk it through?{' '}
+          <a
+            href={`mailto:${CONTACT.hello}`}
+            className="text-fg inline-flex items-center gap-1 underline underline-offset-4"
+          >
+            Email us
+            <Icon name="arrow" className="h-3.5 w-3.5" />
+          </a>
+        </p>
+      </aside>
 
       <form
         onSubmit={onSubmit}
         onFocus={isAd ? preloadCheckout : undefined}
         noValidate
-        className="mt-12 max-w-[920px]"
+        className="flex flex-col gap-14"
       >
-        <FieldSet className="gap-8">
-          <div>
-            <FieldLegend className="text-3xl font-semibold tracking-tight data-[variant=legend]:text-3xl">
-              {titleCase(form.title)}
-            </FieldLegend>
-            <FieldDescription className="text-fg-3 max-w-xl text-base">
-              {form.lead}
-            </FieldDescription>
-          </div>
-
-          <FieldGroup className="grid gap-x-6 gap-y-6 md:grid-cols-2">
-            {form.fields.map((f) => (
-              <FormControl
+        <Section index={step('Details')} title="Details">
+          <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
+            {details.map((f, i) => (
+              <TextField
                 key={f.name}
                 field={f}
+                wide={spans[i] ?? true}
                 value={filled[f.name] ?? ''}
                 error={errors[f.name]}
                 onChange={(v) => set(f.name, v)}
               />
             ))}
-            <PhotoField
-              ad={isAd}
-              photo={photo}
-              error={errors.photo}
-              onChange={(url) => {
-                setPhoto(url);
-                setErrors((prev) => ({ ...prev, photo: '' }));
-              }}
-            />
-          </FieldGroup>
+          </div>
+        </Section>
 
-          {isAd && (
-            <>
+        <Section
+          index={step(isAd ? 'Placement' : 'Category')}
+          title={isAd ? 'Placement' : 'Category'}
+        >
+          {choices.map((f) => (
+            <ChoiceField
+              key={f.name}
+              field={f}
+              value={filled[f.name] ?? ''}
+              error={errors[f.name]}
+              onChange={(v) => set(f.name, v)}
+            />
+          ))}
+        </Section>
+
+        <Section index={step('Photo')} title="Photo" optional={!isAd}>
+          <PhotoField
+            ad={isAd}
+            photo={photo}
+            error={errors.photo}
+            onChange={(url) => {
+              setPhoto(url);
+              setErrors((prev) => ({ ...prev, photo: '' }));
+            }}
+          />
+        </Section>
+
+        {isAd && (
+          <>
+            <Section index={step('Run length')} title="Run length">
               <RunLength placement={placement} days={days} onChange={setDays} />
+            </Section>
+            <Section index={step('Content')} title="Content">
               <ContentPolicy
                 agreed={agreed}
                 error={errors.agreed}
@@ -258,30 +303,31 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
                   setErrors((prev) => ({ ...prev, agreed: '' }));
                 }}
               />
-            </>
-          )}
-        </FieldSet>
-
-        <Separator className="my-10" />
+            </Section>
+          </>
+        )}
 
         {isAd ? (
-          <Total quote={adQuote} />
+          <SendCard title="Ready to go live?">
+            <Total quote={adQuote} />
+          </SendCard>
         ) : (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-fg-3 text-sm">
-              Submissions follow our{' '}
+          <SendCard title="Ready to send?">
+            <p className="text-inv-fg-3 max-w-[46ch] text-[15px] leading-relaxed">
+              Check the details once more. Submissions follow our{' '}
               <Link
                 href={paths.legal('guidelines')}
-                className="text-fg underline underline-offset-2"
+                className="text-inv-fg underline underline-offset-2"
               >
                 Listing Guidelines
               </Link>
-              . Questions: {CONTACT.hello}
+              .
             </p>
-            <Button type="submit" size="lg" className="h-12 px-7 text-base">
+            <Button type="submit" size="lg" className={SEND}>
               Submit for review
+              <Icon name="arrow" className="size-4" />
             </Button>
-          </div>
+          </SendCard>
         )}
       </form>
 
@@ -296,14 +342,115 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   );
 }
 
-/** One fixture field as a shadcn control, with its label and error. */
-function FormControl({
+const STEPS = [
+  ['Send it in', 'Fill in the form. It takes about two minutes.'],
+  ['We check it', 'A person reviews it, usually within 2 working days.'],
+  ['It goes live', 'We email you the moment it is on membrs.'],
+] as const;
+
+function NextSteps() {
+  return (
+    <section className="border-line-2 mt-12 border-t pt-6">
+      <h2 className="text-fg text-[15px] font-semibold">What happens next</h2>
+      <ol className="mt-5 grid gap-5">
+        {STEPS.map(([title, body], i) => (
+          <li key={title} className="grid grid-cols-[28px_1fr] gap-x-3">
+            <span className="text-fg-4 text-[15px] tabular-nums">{i + 1}</span>
+            <span>
+              <span className="text-fg block text-[15px] font-medium">
+                {title}
+              </span>
+              <span className="text-fg-3 mt-0.5 block text-[15px]">{body}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function Section({
+  index,
+  title,
+  optional = false,
+  children,
+}: {
+  index: string;
+  title: string;
+  optional?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-line-2 flex flex-col gap-7 border-t pt-6">
+      <header className="flex items-baseline gap-4">
+        <span className="text-fg-4 text-[15px] font-medium tabular-nums">
+          {index}
+        </span>
+        <h2 className="text-fg text-[24px] leading-tight font-semibold tracking-tight">
+          {title}
+        </h2>
+        {optional && (
+          <span className="text-fg-4 ml-auto text-sm">Optional</span>
+        )}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function FieldName({
+  htmlFor,
+  id,
+  optional,
+  children,
+}: {
+  htmlFor?: string;
+  id?: string;
+  optional?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <FieldLabel htmlFor={htmlFor} id={id} className={LABEL}>
+      {children}
+      {optional && (
+        <span className="text-fg-4 ml-auto font-normal">Optional</span>
+      )}
+    </FieldLabel>
+  );
+}
+
+function isWide(field: FormField) {
+  return (
+    field.name === 'name' ||
+    field.name === 'title' ||
+    field.type === 'url' ||
+    field.type === 'textarea'
+  );
+}
+
+function fullWidth(fields: FormField[]): boolean[] {
+  let paired = false;
+  return fields.map((f, i) => {
+    if (isWide(f)) return true;
+    if (paired) {
+      paired = false;
+      return false;
+    }
+    const next = fields[i + 1];
+    paired = Boolean(next && !isWide(next));
+    return !paired;
+  });
+}
+
+function TextField({
   field,
+  wide,
   value,
   error,
   onChange,
 }: {
   field: FormField;
+  wide: boolean;
   value: string;
   error?: string;
   onChange: (v: string) => void;
@@ -313,39 +460,19 @@ function FormControl({
   return (
     <Field
       data-invalid={invalid}
-      className={field.type === 'textarea' ? 'md:col-span-2' : undefined}
+      className={cn('gap-2', wide && 'md:col-span-2')}
     >
-      <FieldLabel htmlFor={id} className="text-fg text-sm font-semibold">
+      <FieldName htmlFor={id} optional={!field.required}>
         {field.label}
-        {!field.required && (
-          <span className="text-fg-4 ml-auto font-normal">Optional</span>
-        )}
-      </FieldLabel>
-      {field.type === 'select' ? (
-        <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger
-            id={id}
-            aria-invalid={invalid}
-            className={`${CONTROL} w-full data-[size=default]:h-11`}
-          >
-            <SelectValue placeholder="Choose…" />
-          </SelectTrigger>
-          <SelectContent position="popper" className="border-input max-h-72">
-            {field.options?.map((o) => (
-              <SelectItem key={o} value={o} className="py-2 text-[15px]">
-                {o}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : field.type === 'textarea' ? (
+      </FieldName>
+      {field.type === 'textarea' ? (
         <Textarea
           id={id}
           value={value}
           placeholder={field.placeholder}
           aria-invalid={invalid}
           onChange={(e) => onChange(e.target.value)}
-          className="min-h-28 px-3.5 text-base md:text-base"
+          className="placeholder:text-fg-4 min-h-28 px-4 text-base md:text-base"
         />
       ) : (
         <Input
@@ -364,6 +491,40 @@ function FormControl({
   );
 }
 
+function ChoiceField({
+  field,
+  value,
+  error,
+  onChange,
+}: {
+  field: FormField;
+  value: string;
+  error?: string;
+  onChange: (v: string) => void;
+}) {
+  const id = `f-${field.name}`;
+  const invalid = Boolean(error);
+  return (
+    <Field data-invalid={invalid} className="gap-3">
+      <FieldName id={id}>{field.label}</FieldName>
+      <div role="group" aria-labelledby={id} className="flex flex-wrap gap-2">
+        {field.options?.map((o) => (
+          <Chip
+            key={o}
+            on={value === o}
+            mark={false}
+            invalid={invalid}
+            onClick={() => onChange(o)}
+          >
+            {o}
+          </Chip>
+        ))}
+      </div>
+      {error && <FieldError>{error}</FieldError>}
+    </Field>
+  );
+}
+
 function PhotoField({
   ad,
   photo,
@@ -377,21 +538,19 @@ function PhotoField({
 }) {
   const invalid = Boolean(error);
   return (
-    <Field data-invalid={invalid} className="md:col-span-2">
-      <FieldLabel htmlFor="f-photo" className="text-fg text-sm font-semibold">
-        {ad ? 'Listing photo' : 'Photo'}
-        {!ad && <span className="text-fg-4 ml-auto font-normal">Optional</span>}
-      </FieldLabel>
+    <Field data-invalid={invalid} className="gap-2">
       <label
         htmlFor="f-photo"
-        className={`hover:border-fg-4 flex min-h-36 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed p-6 text-center transition-colors ${invalid ? 'border-destructive' : 'border-input'}`}
+        className={`bg-soft hover:bg-soft-hover flex min-h-44 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed p-6 text-center transition-colors ${invalid ? 'border-destructive' : 'border-line-2'}`}
       >
         {photo ? (
           <img src={photo} alt="Your upload" className="max-h-56 rounded-md" />
         ) : (
           <>
             <Icon name="image" className="text-fg-3 h-6 w-6" />
-            <span className="text-[15px] font-semibold">Choose a file</span>
+            <span className="text-[15px] font-semibold">
+              {ad ? 'Choose your listing photo' : 'Choose a file'}
+            </span>
             <span className="text-fg-3 text-sm">
               {ad
                 ? 'JPG or PNG, 4:3 like every listing, at least 1200px wide'
@@ -404,6 +563,7 @@ function PhotoField({
         id="f-photo"
         type="file"
         accept="image/*"
+        aria-label={ad ? 'Listing photo' : 'Photo'}
         aria-invalid={invalid}
         className="sr-only"
         onChange={(e) => {
@@ -413,6 +573,17 @@ function PhotoField({
       />
       {error && <FieldError>{error}</FieldError>}
     </Field>
+  );
+}
+
+function SendCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="bg-inv text-inv-fg flex min-h-60 flex-col gap-3 rounded-md p-6 md:p-8">
+      <h2 className="text-[28px] leading-tight font-semibold tracking-tight md:text-[32px]">
+        {titleCase(title)}
+      </h2>
+      {children}
+    </div>
   );
 }
 
@@ -435,13 +606,13 @@ function AdPreview({
 }) {
   const after = feed(
     placement === 'Opportunities' ? 'opportunity' : 'event',
-  ).slice(0, 2);
+  ).slice(0, 1);
   return (
-    <section className="bg-soft mt-10 rounded-lg p-5 md:p-10">
-      <p className="text-fg-3 mb-5 text-sm font-semibold">
+    <section className="border-line-2 mt-12 border-t pt-6">
+      <p className={cn(CAPTION, 'mb-5')}>
         Preview: your ad is the first listing
       </p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 md:gap-x-7">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-6">
         <div className="flex flex-col">
           <div className="bg-btn ring-primary grid aspect-[4/3] place-items-center overflow-hidden rounded-md ring-2 ring-offset-4 ring-offset-[var(--soft)]">
             {photo ? (
@@ -450,21 +621,19 @@ function AdPreview({
               <Icon name="image" className="text-fg-4 h-8 w-8" />
             )}
           </div>
-          <p className="text-fg-3 mt-3 text-[13px] md:mt-5 md:text-[15px]">
-            {brand || 'Your brand'}
-          </p>
-          <h3 className="mt-1 line-clamp-2 text-base leading-snug font-semibold tracking-tight md:mt-2.5 md:text-[23px] md:leading-tight">
+          <p className="text-fg-3 mt-3 text-[13px]">{brand || 'Your brand'}</p>
+          <h3 className="mt-1 line-clamp-2 text-base leading-snug font-semibold tracking-tight md:text-lg md:leading-tight">
             {title || 'Your headline'}
           </h3>
-          <p className="text-fg-3 mt-auto pt-2 text-[13px] md:pt-3 md:text-[15px]">
+          <p className="text-fg-3 mt-auto pt-2 text-[13px]">
             {city || 'Your city'}
           </p>
         </div>
-        {after.map((l, i) => (
+        {after.map((l) => (
           <div
             key={l.id}
             aria-hidden="true"
-            className={`pointer-events-none opacity-40 ${i ? 'max-md:hidden' : ''}`}
+            className="pointer-events-none opacity-40"
           >
             <ListingCard listing={l} />
           </div>
@@ -499,7 +668,7 @@ function RunLength({
   };
   return (
     <FieldSet>
-      <FieldLegend variant="label" className="text-fg mb-1 font-semibold">
+      <FieldLegend variant="label" className={cn(LABEL, 'mb-1')}>
         How long should it run?
       </FieldLegend>
       <FieldDescription className="text-fg-3">
@@ -592,7 +761,7 @@ function ContentPolicy({
 }) {
   return (
     <FieldSet>
-      <FieldLegend variant="label" className="text-fg mb-1 font-semibold">
+      <FieldLegend variant="label" className={cn(LABEL, 'mb-1')}>
         Safe for work only
       </FieldLegend>
       <FieldDescription className="text-fg-2 max-w-[640px] text-[15px] leading-relaxed">
@@ -632,8 +801,8 @@ function ContentPolicy({
 /** The bill, then the button that pays it. */
 function Total({ quote }: { quote: AdQuote }) {
   return (
-    <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
-      <dl className="text-fg-2 grid max-w-[460px] grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-[15px]">
+    <>
+      <dl className="text-inv-fg-2 mt-2 grid max-w-[420px] grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-[15px]">
         <dt>
           {placementLabel(quote.placement)}, {quote.days}{' '}
           {quote.days === 1 ? 'day' : 'days'}
@@ -645,18 +814,19 @@ function Total({ quote }: { quote: AdQuote }) {
             <dd className="tabular-nums">−{naira(quote.discount)}</dd>
           </>
         )}
-        <dt className="text-fg mt-2 font-semibold">Due now</dt>
-        <dd className="text-fg mt-2 text-xl font-semibold tabular-nums">
+        <dt className="text-inv-fg mt-2 font-semibold">Due now</dt>
+        <dd className="text-inv-fg mt-2 text-xl font-semibold tabular-nums">
           {naira(quote.total)}
         </dd>
       </dl>
-      <div className="grid gap-2 md:justify-items-end">
-        <Button type="submit" size="lg" className="h-12 px-7 text-base">
+      <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-8">
+        <Button type="submit" size="lg" className={cn(SEND, 'mt-0')}>
           Pay {naira(quote.total)}
+          <Icon name="arrow" className="size-4" />
         </Button>
-        <p className="text-fg-3 text-sm">Payments are handled by Bachs.</p>
+        <p className="text-inv-fg-3 text-sm">Payments are handled by Bachs.</p>
       </div>
-    </div>
+    </>
   );
 }
 
