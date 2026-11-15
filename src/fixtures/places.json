@@ -36,11 +36,7 @@
         "closes": 17.0
       }
     ],
-    "goodFor": [
-      "Canopy walk",
-      "Nature",
-      "Picnics"
-    ],
+    "goodFor": ["Canopy walk", "Nature", "Picnics"],
     "about": "Wetland and forest reserve with the 401m canopy walk (₦1,000 extra), monkeys, and giant board games. Children 10 and under ₦200.",
     "photo": "q31"
   },
@@ -81,11 +77,7 @@
         "closes": 18.0
       }
     ],
-    "goodFor": [
-      "Art",
-      "Photography",
-      "Gifts"
-    ],
+    "goodFor": ["Art", "Photography", "Gifts"],
     "about": "Five floors of Nigerian art collected by Nike Davies-Okundaye, one of the largest galleries in West Africa.",
     "photo": "p9"
   },
@@ -126,11 +118,7 @@
         "closes": 22.0
       }
     ],
-    "goodFor": [
-      "Live music",
-      "Theatre",
-      "Evenings"
-    ],
+    "goodFor": ["Live music", "Theatre", "Evenings"],
     "about": "A former colonial prison turned public park and arts venue, home to concerts, Fringe shows and food stalls.",
     "photo": "q36"
   },
@@ -171,11 +159,7 @@
         "closes": 18.0
       }
     ],
-    "goodFor": [
-      "Swimming",
-      "Day trips",
-      "Surfing"
-    ],
+    "goodFor": ["Swimming", "Day trips", "Surfing"],
     "about": "A sheltered beach reached by boat from the Tarzan or Five Cowries jetties, calmer water than the city beaches.",
     "photo": "q3"
   },
@@ -216,11 +200,7 @@
         "closes": 20.0
       }
     ],
-    "goodFor": [
-      "Music",
-      "Food",
-      "Groups"
-    ],
+    "goodFor": ["Music", "Food", "Groups"],
     "about": "Lively private beach with music, food and horse rides, busiest on weekends and holidays.",
     "photo": "q10"
   },
@@ -261,11 +241,7 @@
         "closes": 19.0
       }
     ],
-    "goodFor": [
-      "Walks",
-      "Families",
-      "Picnics"
-    ],
+    "goodFor": ["Walks", "Families", "Picnics"],
     "about": "A landscaped public park at Alausa with fountains, lawns and walking paths.",
     "photo": "q35"
   },
@@ -306,11 +282,7 @@
         "closes": 19.0
       }
     ],
-    "goodFor": [
-      "Rides",
-      "Zoo",
-      "Families"
-    ],
+    "goodFor": ["Rides", "Zoo", "Families"],
     "about": "Amusement rides, a zoo and a beach in one, with day passes for families.",
     "photo": "q22"
   },
@@ -351,11 +323,7 @@
         "closes": 18.0
       }
     ],
-    "goodFor": [
-      "Music history",
-      "Fela",
-      "Rooftop"
-    ],
+    "goodFor": ["Music history", "Fela", "Rooftop"],
     "about": "Fela Anikulapo-Kuti's former home, now a museum with his rooms, outfits and a rooftop bar.",
     "photo": "p36"
   },
@@ -396,11 +364,7 @@
         "closes": 19.0
       }
     ],
-    "goodFor": [
-      "Walks",
-      "Picnics",
-      "Families"
-    ],
+    "goodFor": ["Walks", "Picnics", "Families"],
     "about": "Abuja's largest public park, with gardens, a river and wide lawns at the foot of Aso Rock.",
     "photo": "q28"
   },
@@ -441,11 +405,7 @@
         "closes": 21.0
       }
     ],
-    "goodFor": [
-      "Boat rides",
-      "Sunsets",
-      "Walks"
-    ],
+    "goodFor": ["Boat rides", "Sunsets", "Walks"],
     "about": "The lakeside promenade next to Jabi Lake Mall, with boat rides and food spots.",
     "photo": "q4"
   },
@@ -486,11 +446,7 @@
         "closes": 18.0
       }
     ],
-    "goodFor": [
-      "Kids",
-      "Animals",
-      "Picnics"
-    ],
+    "goodFor": ["Kids", "Animals", "Picnics"],
     "about": "Abuja's zoo and children's park with animal enclosures and play areas.",
     "photo": "q16"
   },
@@ -531,11 +487,7 @@
         "closes": 20.0
       }
     ],
-    "goodFor": [
-      "Rides",
-      "Families",
-      "Evenings"
-    ],
+    "goodFor": ["Rides", "Families", "Evenings"],
     "about": "Rides and games on the airport road side of the Central Area.",
     "photo": "q20"
   },
@@ -570,11 +522,7 @@
       null,
       null
     ],
-    "goodFor": [
-      "Study",
-      "Research",
-      "Quiet"
-    ],
+    "goodFor": ["Study", "Research", "Quiet"],
     "about": "The national library's Abuja headquarters, with reading rooms and research collections.",
     "photo": "q14"
   },
@@ -615,11 +563,7 @@
         "closes": 20.0
       }
     ],
-    "goodFor": [
-      "Music",
-      "Food",
-      "Weekends"
-    ],
+    "goodFor": ["Music", "Food", "Weekends"],
     "about": "Accra's best known beach, busy with music, food and horse rides on weekends.",
     "photo": "q1"
   },
@@ -660,11 +604,7 @@
         "closes": 19.0
       }
     ],
-    "goodFor": [
-      "Surfing",
-      "Day trips",
-      "Drumming"
-    ],
+    "goodFor": ["Surfing", "Day trips", "Drumming"],
     "about": "A laid-back surf beach west of Accra, known for drumming and simple beach bars.",
     "photo": "q12"
   },
@@ -705,11 +645,7 @@
         "closes": 17.0
       }
     ],
-    "goodFor": [
-      "History",
-      "Photography",
-      "Walks"
-    ],
+    "goodFor": ["History", "Photography", "Walks"],
     "about": "The mausoleum and museum of Ghana's first president, on the site where independence was declared.",
     "photo": "p15"
   },
@@ -750,11 +686,7 @@
         "closes": 18.0
       }
     ],
-    "goodFor": [
-      "Day trips",
-      "Walks",
-      "Cool air"
-    ],
+    "goodFor": ["Day trips", "Walks", "Cool air"],
     "about": "Historic botanical gardens in the hills an hour from Accra, with old trees and cooler air.",
     "photo": "q29"
   },
@@ -795,11 +727,7 @@
         "closes": 17.0
       }
     ],
-    "goodFor": [
-      "Kids",
-      "Animals",
-      "Forest"
-    ],
+    "goodFor": ["Kids", "Animals", "Forest"],
     "about": "The zoo inside Achimota Forest, with a forest trail around it.",
     "photo": "q18"
   },
@@ -834,11 +762,7 @@
       null,
       null
     ],
-    "goodFor": [
-      "Study",
-      "African history",
-      "Quiet"
-    ],
+    "goodFor": ["Study", "African history", "Quiet"],
     "about": "Ghana's research library on African affairs, open to readers on weekdays.",
     "photo": "q27"
   },
@@ -876,11 +800,7 @@
         "closes": 18.0
       }
     ],
-    "goodFor": [
-      "Contemporary art",
-      "Talks",
-      "Quiet"
-    ],
+    "goodFor": ["Contemporary art", "Talks", "Quiet"],
     "about": "Contemporary art centre, showing Frederick Okai's sculpture from 11 November.",
     "photo": "p9"
   }

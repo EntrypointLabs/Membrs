@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { titleCase } from '../lib/text';
+import { HeadingCount } from './HeadingCount';
 
 interface SectionHeaderProps {
   title: string;
@@ -8,6 +9,7 @@ interface SectionHeaderProps {
   /** Controls on the right: filters, a see-all link. */
   actions?: ReactNode;
   id?: string;
+  count?: number;
 }
 
 export function SectionHeader({
@@ -15,6 +17,7 @@ export function SectionHeader({
   body,
   actions,
   id,
+  count,
 }: SectionHeaderProps) {
   return (
     <header className="mb-10 flex flex-wrap items-end justify-between gap-x-10 gap-y-5 md:mb-14">
@@ -24,6 +27,7 @@ export function SectionHeader({
           className="text-[30px] leading-tight font-semibold tracking-tight md:text-[44px]"
         >
           {titleCase(title)}
+          {count !== undefined && <HeadingCount count={count} />}
         </h2>
         {body && (
           <p className="text-fg-3 mt-3 max-w-xl text-base md:mt-4">{body}</p>

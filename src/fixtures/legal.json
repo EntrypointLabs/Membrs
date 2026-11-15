@@ -1,15 +1,19 @@
 {
   "privacy": {
     "title": "Privacy Policy",
-    "updated": "5 Nov 2026",
+    "updated": "14 Nov 2026",
     "intro": "membrs helps you find events, opportunities and places worth your time. We collect as little as we can to do that, and we never sell your data. This policy explains what we collect, why, and the choices you have.",
     "sections": [
       {
         "heading": "Information we collect",
         "paragraphs": [
-          "<b>Email, city and interests</b> when you subscribe to the Sunday digest, together with your consent to receive it and our promotional emails. Nothing else is required, and there is no account or password.",
+          "<b>Your Google or Apple account.</b> To subscribe to the digest or send us a listing, you sign in with Google or Apple. They share your name and email address with us. We never see your password.",
+          "<b>Email, city and interests</b> when you subscribe to the Sunday digest, together with your consent to receive it and our promotional emails. Telling us about your field of work is optional.",
+          "<b>What you send us.</b> Events, opportunities and ads you submit, including any photo and the contact details you put in the form.",
+          "<b>Ad payments.</b> Ads are paid for through our payment provider, Bachs. We receive the amount, the status and the payment reference. We never see your card or bank details.",
+          "<b>Questions to Ask membrs.</b> Questions you send to Ask membrs go to our AI provider, Anthropic, together with your interests and city, so it can answer them. The current chat is kept only until you start a new one or the day ends.",
           "<b>What you search for.</b> Searches are used to rank results in the moment. Your recent searches are kept only on your own device.",
-          "<b>Approximate city</b> from your connection, so we can show listings near you. We do not store it. Precise device location is only used if you tap Use my location, and only on your device.",
+          "<b>Your location</b>, only if you have already allowed location for membrs in your browser. It is used on your device to show listings near you and is never sent to us.",
           "<b>Basic usage data</b> such as pages viewed and the device type, collected without identifying you, so we can tell what is useful."
         ]
       },
@@ -26,7 +30,7 @@
       {
         "heading": "Sharing and disclosure",
         "paragraphs": [
-          "<b>Service providers</b> that help us run membrs, such as email delivery and hosting, under contracts that limit what they can do with your data.",
+          "<b>Service providers</b> that help us run membrs, under contracts that limit what they can do with your data: Google and Apple for sign-in, Google for the spreadsheets we keep subscriber and submission records in, Bachs for ad payments, Anthropic for answering questions sent to Ask membrs, and our email delivery and hosting providers.",
           "<b>Organisers do not get your details from us.</b> When you get a ticket or apply, you leave membrs for the organiser's own page, and their privacy policy applies there.",
           "<b>Legal reasons</b>, if we are required to by law or to protect people from harm."
         ]
@@ -47,7 +51,9 @@
       {
         "heading": "How long we keep it",
         "paragraphs": [
-          "We keep your email, city and interests until you unsubscribe or ask us to delete them. After that they are removed from our systems within 30 days."
+          "We keep your email, city and interests until you unsubscribe or ask us to delete them. After that they are removed from our systems within 30 days.",
+          "We keep submissions for as long as the listing is shown and for 12 months after, so we can answer questions about it.",
+          "We keep ad payment records for as long as tax and accounting law requires."
         ]
       },
       {
@@ -68,6 +74,7 @@
         "heading": "Legal basis for using your data",
         "paragraphs": [
           "<b>Consent</b> for the digest, promotional emails, analytics and marketing cookies. You can withdraw it at any time.",
+          "<b>Contract</b> for running your account, reviewing your submissions and placing the ads you pay for.",
           "<b>Legitimate interests</b> for keeping membrs secure, fixing errors and understanding which listings are useful, in ways you would reasonably expect.",
           "<b>Legal obligation</b> where the law requires us to keep or share information."
         ]
@@ -106,14 +113,14 @@
   },
   "terms": {
     "title": "Terms of Service",
-    "updated": "5 Nov 2026",
+    "updated": "14 Nov 2026",
     "intro": "These terms cover your use of membrs, including the website, the app when it opens and the Sunday digest. By using membrs you agree to them. They are written to be read, so please do.",
     "sections": [
       {
         "heading": "What membrs is",
         "paragraphs": [
           "membrs is a discovery service. We list events, opportunities and places, and link you to the official page to get a ticket, apply or visit.",
-          "We do not sell tickets, take payments, process applications or run the venues we list. Listings belong to their organisers."
+          "We do not sell tickets, process applications or run the venues we list. The only payment we take is for ads. Listings belong to their organisers."
         ]
       },
       {
@@ -129,6 +136,13 @@
           "Use membrs for lawful, personal purposes.",
           "Do not scrape, copy in bulk or access membrs with automated tools without our written permission.",
           "Do not try to break, overload or interfere with the service, or misuse the search."
+        ]
+      },
+      {
+        "heading": "Your account",
+        "paragraphs": [
+          "You sign in with Google or Apple to subscribe to the digest or send us a listing. Keep that account secure. You are responsible for what is submitted from it.",
+          "You can sign out at any time, and ask us to delete your account from <a href=\"mailto:privacy@membrs.app\">privacy@membrs.app</a>."
         ]
       },
       {
@@ -175,6 +189,7 @@
         "heading": "Advertising and sponsored listings",
         "paragraphs": [
           "Some listings are paid placements. They always carry an <b>Ad</b> badge. Paid placements are reviewed to the same standard as every other listing and must follow our <a href=\"#advertising\">Advertising Policy</a>.",
+          "Ads are paid for in advance through our payment provider, Bachs. An ad runs for the number of days you paid for once it passes review.",
           "Paying for a placement does not buy a review, a ranking in Most Popular or a mention in the digest."
         ]
       },
@@ -212,7 +227,7 @@
   },
   "cookies": {
     "title": "Cookie Policy",
-    "updated": "6 Nov 2026",
+    "updated": "14 Nov 2026",
     "intro": "This policy explains the cookies and similar technologies membrs uses, what each one does and how you control them. Cookies are small files saved on your device. We also use local storage, which works in a similar way.",
     "sections": [
       {
@@ -227,7 +242,11 @@
         "paragraphs": [
           "<b>membrs.theme</b> remembers dark or light mode. Kept until you clear it.",
           "<b>membrs.cookies</b> remembers your cookie choice. Kept for 12 months.",
-          "<b>membrs.city, saved items and recent searches</b> remember your city, bookmarks and searches on your own device only. They are never sent to us.",
+          "<b>membrs.user and membrs.refresh</b> keep you signed in. Removed when you sign out.",
+          "<b>membrs.city and recent searches</b> remember your city and searches on your own device only. They are never sent to us.",
+          "<b>membrs.interests, membrs.fields and membrs.joined</b> remember the digest picks you chose, so the digest card opens with them.",
+          "<b>membrs.outbox and form drafts</b> hold a listing you are writing or sending, including its photo, until it is sent or you clear the form.",
+          "<b>membrs.tour and membrs.signup-prompted</b> remember that you have seen the tour and the sign-up prompt.",
           "<b>Security and load balancing</b> cookies set by our hosting provider to keep the site fast and protected. Session only."
         ]
       },

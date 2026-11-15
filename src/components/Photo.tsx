@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import photos from '../generated/photos.json';
+import { tagFill } from '../lib/palette';
+import { Icon } from './Icon';
 
 interface PhotoMeta {
   w: number;
@@ -16,7 +18,7 @@ const MANIFEST = photos as Record<string, PhotoMeta>;
  */
 const SIZES = {
   thumb: '96px',
-  row: '(max-width: 760px) 80px, 22vw',
+  row: '(max-width: 760px) 128px, 22vw',
   card: '(max-width: 760px) 44vw, (max-width: 1280px) 30vw, 440px',
   tile: '(max-width: 760px) 50vw, 25vw',
   hero: '(max-width: 1024px) 100vw, 60vw',
@@ -42,6 +44,7 @@ interface PhotoProps {
    * stock photo takes over if it fails to load.
    */
   src?: string;
+  cover?: { title: string; tag: string };
 }
 
 function srcSet(id: string, widths: number[], format: 'avif' | 'webp'): string {
@@ -60,6 +63,7 @@ export function Photo({
   size = 'card',
   priority = false,
   src,
+  cover,
 }: PhotoProps) {
   const [failed, setFailed] = useState(false);
   const meta = MANIFEST[id];
@@ -80,9 +84,28 @@ export function Photo({
         />
       </div>
     );
+  if (!meta && cover)
+    return (
+      <div
+        className={`@container grid content-end overflow-hidden bg-(--cover) text-[#141414] ${className}`}
+        style={{ '--cover': tagFill(cover.tag) } as CSSProperties}
+        role="img"
+        aria-label={alt}
+      >
+        <p className="line-clamp-3 p-[7cqw] text-[8cqw] leading-[1.15] font-bold tracking-tight">
+          {cover.title}
+        </p>
+      </div>
+    );
   if (!meta)
     return (
-      <div className={`bg-soft ${className}`} role="img" aria-label={alt} />
+      <div
+        className={`bg-soft text-fg-4 grid place-items-center ${className}`}
+        role="img"
+        aria-label={alt}
+      >
+        <Icon name="image" className="h-8 w-8" />
+      </div>
     );
   const fallback = meta.widths.find((w) => w >= 640) ?? meta.widths.at(-1);
   return (

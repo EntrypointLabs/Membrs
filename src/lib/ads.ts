@@ -5,6 +5,8 @@
  * the total from the same table before it opens a checkout, so a tampered
  * total in the browser never reaches Bachs.
  */
+import { localIsoDate } from './contribute';
+
 export type Placement =
   'Home' | 'Events' | 'Opportunities' | 'Places' | 'Promos';
 
@@ -48,18 +50,50 @@ export function isPlacement(value: string): value is Placement {
   return value in DAY_RATE;
 }
 
+function discountedTotal(rate: number, days: number): number {
+  const subtotal = rate * days;
+  return subtotal - Math.round(subtotal * discountRate(days));
+}
+
+const DISCOUNT_FROM = [14, 30];
+
 export function quote(placement: Placement, days: number): AdQuote {
   const rate = DAY_RATE[placement];
   const subtotal = rate * days;
-  const discount = Math.round(subtotal * discountRate(days));
+  const next = DISCOUNT_FROM.find((from) => from > days);
+  const own = discountedTotal(rate, days);
+  const total = next ? Math.min(own, discountedTotal(rate, next)) : own;
   return {
     placement,
     rate,
     days,
     subtotal,
-    discount,
-    total: subtotal - discount,
+    discount: subtotal - total,
+    total,
   };
+}
+
+export const MIN_RUN_DAYS = 1;
+export const MAX_RUN_DAYS = 90;
+
+export function runDays(text: string): number | null {
+  const trimmed = text.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const days = Number(trimmed);
+  if (days < MIN_RUN_DAYS) return null;
+  return Math.min(MAX_RUN_DAYS, days);
+}
+
+export const REVIEW_WORKING_DAYS = 2;
+
+export function earliestStart(today: Date): string {
+  const day = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let left = REVIEW_WORKING_DAYS;
+  while (left > 0) {
+    day.setDate(day.getDate() + 1);
+    if (day.getDay() !== 0 && day.getDay() !== 6) left--;
+  }
+  return localIsoDate(day);
 }
 
 export function naira(amount: number): string {

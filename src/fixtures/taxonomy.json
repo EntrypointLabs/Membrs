@@ -44,16 +44,6 @@
     "Museums & galleries",
     "Lakes & nature"
   ],
-  "placeTypeBlurbs": {
-    "Beaches": "Sand, surf and sunsets within reach of the city.",
-    "Parks & gardens": "Green space for walks, picnics and slow Sundays.",
-    "Libraries": "Quiet floors, study desks and weekly story hours.",
-    "Amusement parks": "Rides, games and a full day out with the family.",
-    "Water parks": "Slides, wave pools and lazy rivers.",
-    "Zoos & wildlife": "Animals, keeper talks and feeding times.",
-    "Museums & galleries": "Art, history and exhibitions worth a slow walk.",
-    "Lakes & nature": "Boardwalks, boat rides and fresh air."
-  },
   "promoCategories": [
     "Restaurants",
     "Shopping",

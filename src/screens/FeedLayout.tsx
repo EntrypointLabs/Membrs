@@ -1,18 +1,22 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useIsPhone } from '../lib/media';
+import { DesktopTilesProvider } from '../lib/rowLayout';
 import { setSearchParams, useSearchParam } from '../lib/router';
 import { plural } from '../lib/text';
-import type { View } from '../lib/views';
+import type { Listing } from '../lib/types';
+import { groupByView, type View } from '../lib/views';
+import { HeadingCount } from '../components/HeadingCount';
 import { Icon } from '../components/Icon';
-import { Pager, pageOf } from '../components/Pager';
+import { ListingCard } from '../components/ListingCard';
+import { ListingRow } from '../components/ListingRow';
+import { clampPage, Pager, pageOf } from '../components/Pager';
 import { Rail } from '../components/Rail';
 
 /** Rows a page on a flat, filtered list. */
 const LIST_PAGE = 12;
 /** Cards a page in the lead rail on web: three by two. */
 const RAIL_PAGE = 6;
-/** Every group shows three to five listings; smaller groups are left out. */
-const GROUP_MIN = 3;
-const GROUP_MAX = 5;
+const GROUP_MAX = 9;
 
 interface FeedBodyProps<T> {
   items: T[];
@@ -43,41 +47,32 @@ export function FeedBody<T>({
   rail,
   card,
 }: FeedBodyProps<T>) {
-  const page = Number(useSearchParam('page') ?? 1) || 1;
+  const paged = usePagedList(items);
   const [railPage, setRailPage] = useState(1);
 
   if (items.length === 0) return <Empty />;
 
   if (filtered) {
-    const pages = Math.ceil(items.length / LIST_PAGE);
     return (
       <>
-        {pageOf(items, page, LIST_PAGE).map((i) => (
-          <div key={keyOf(i)}>{row(i)}</div>
-        ))}
-        <Pager
-          page={Math.min(page, pages || 1)}
-          pages={pages}
-          total={items.length}
-          noun={noun[1]}
-          onChange={(p) => setSearchParams({ page: String(p) })}
-        />
+        <TileGrid>
+          {paged.items.map((i) => (
+            <div key={keyOf(i)}>{row(i)}</div>
+          ))}
+        </TileGrid>
+        <PagedListPager paged={paged} total={items.length} noun={noun[1]} />
       </>
     );
   }
 
-  const groups = views
-    .map((v) => ({ view: v, items: items.filter(v.test) }))
-    .filter((g) => g.items.length);
-  const sized = groups.filter((g) => g.items.length >= GROUP_MIN);
-  const shown = sized.length ? sized : groups;
+  const shown = groupByView(items, views);
   const railPages = Math.ceil(rail.items.length / RAIL_PAGE);
 
   return (
     <>
       {rail.items.length > 0 && (
         <section className="mt-2 md:mt-10">
-          <GroupHeading title={rail.title} />
+          <GroupHeading title={rail.title} count={rail.items.length} />
           <div className="md:hidden">
             <Rail>{rail.items.slice(0, 10).map(card)}</Rail>
           </div>
@@ -99,11 +94,12 @@ export function FeedBody<T>({
           <section key={view.id} className="mt-10 md:mt-16">
             <GroupHeading
               title={view.label}
-              count={extra > 0 ? undefined : group.length}
+              count={group.length}
               more={
                 extra > 0
                   ? {
-                      label: `${extra} more ${extra === 1 ? noun[0] : noun[1]}`,
+                      label: String(extra),
+                      aria: `${extra} more ${extra === 1 ? noun[0] : noun[1]}`,
                       onClick: () => {
                         setSearchParams({
                           view: view.id,
@@ -116,13 +112,127 @@ export function FeedBody<T>({
                   : undefined
               }
             />
-            {group.slice(0, GROUP_MAX).map((i) => (
-              <div key={keyOf(i)}>{row(i)}</div>
-            ))}
+            <TileGrid>
+              {group.slice(0, GROUP_MAX).map((i) => (
+                <div key={keyOf(i)}>{row(i)}</div>
+              ))}
+            </TileGrid>
           </section>
         );
       })}
     </>
+  );
+}
+
+interface PagedList<T> {
+  page: number;
+  pages: number;
+  items: T[];
+  phone: boolean;
+  more: (() => void) | null;
+}
+
+/**
+ * Numbered pages on web. Phones scroll instead: the list grows by a page each
+ * time its end comes into view, and starts over when the list itself changes.
+ */
+export function usePagedList<T>(items: T[], size = LIST_PAGE): PagedList<T> {
+  const phone = useIsPhone();
+  const pages = Math.ceil(items.length / size);
+  const page = clampPage(useSearchParam('page'), pages);
+  const first = items[0] as { id?: string } | undefined;
+  const identity = `${items.length}:${first?.id ?? ''}:${size}`;
+  const [loaded, setLoaded] = useState({ identity, count: size });
+  const count = loaded.identity === identity ? loaded.count : size;
+  if (!phone)
+    return { page, pages, items: pageOf(items, page, size), phone, more: null };
+  const more =
+    count < items.length
+      ? () => setLoaded({ identity, count: count + size })
+      : null;
+  return { page: 1, pages, items: items.slice(0, count), phone, more };
+}
+
+export function PagedListPager<T>({
+  paged,
+  total,
+  noun,
+}: {
+  paged: PagedList<T>;
+  total: number;
+  noun: string;
+}) {
+  if (paged.phone) return <ScrollMore more={paged.more} />;
+  return (
+    <Pager
+      page={paged.page}
+      pages={paged.pages}
+      total={total}
+      noun={noun}
+      onChange={(p) => setSearchParams({ page: String(p) })}
+    />
+  );
+}
+
+/**
+ * A flat list of listings in the one shape every list page uses: rows on
+ * phones that keep loading as you scroll, cards on wider screens with pages.
+ */
+export function ListingResults({
+  items,
+  empty,
+}: {
+  items: Listing[];
+  empty?: string;
+}) {
+  const paged = usePagedList(items);
+  if (items.length === 0) return <Empty>{empty}</Empty>;
+  return (
+    <>
+      <div className="border-line border-t md:hidden">
+        {paged.items.map((l) => (
+          <ListingRow key={l.id} listing={l} />
+        ))}
+      </div>
+      <div className="mt-10 hidden grid-cols-2 gap-x-8 gap-y-16 md:grid lg:grid-cols-3">
+        {paged.items.map((l) => (
+          <ListingCard key={l.id} listing={l} mixed />
+        ))}
+      </div>
+      <PagedListPager paged={paged} total={items.length} noun="listings" />
+    </>
+  );
+}
+
+function ScrollMore({ more }: { more: (() => void) | null }) {
+  const end = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = end.current;
+    if (!node || !more) return;
+    const watcher = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) more();
+      },
+      { rootMargin: '600px 0px' },
+    );
+    watcher.observe(node);
+    return () => watcher.disconnect();
+  }, [more]);
+  if (!more) return null;
+  return (
+    <div ref={end} className="grid place-items-center py-10" aria-hidden="true">
+      <Icon name="loader" className="text-fg-3 h-5 w-5 animate-spin" />
+    </div>
+  );
+}
+
+function TileGrid({ children }: { children: ReactNode }) {
+  return (
+    <DesktopTilesProvider value={true}>
+      <div className="md:mt-2 md:grid md:grid-cols-3 md:gap-x-10 md:gap-y-14 xl:gap-x-14">
+        {children}
+      </div>
+    </DesktopTilesProvider>
   );
 }
 
@@ -133,22 +243,19 @@ function GroupHeading({
 }: {
   title: string;
   count?: number;
-  more?: { label: string; onClick: () => void };
+  more?: { label: string; aria: string; onClick: () => void };
 }) {
   return (
     <header className="mb-2 flex items-baseline justify-between gap-4 md:mb-6">
-      <h2 className="text-[22px] font-semibold tracking-tight md:text-[44px]">
+      <h2 className="min-w-0 truncate text-[22px] font-semibold tracking-tight md:text-[44px]">
         {title}
-        {count !== undefined && (
-          <em className="text-fg-3 ml-2 text-sm font-medium not-italic md:text-lg">
-            {count}
-          </em>
-        )}
+        {count !== undefined && <HeadingCount count={count} />}
       </h2>
       {more && (
         <button
           type="button"
           onClick={more.onClick}
+          aria-label={more.aria}
           className="text-fg-3 hover:text-fg flex shrink-0 items-center gap-0.5 text-[15px]"
         >
           {more.label} <Icon name="chevronRight" />
@@ -167,9 +274,9 @@ export function Empty({
 }
 
 /**
- * The one line of filters. On web: the count, large, on the left, and the
- * controls on the right in no more than half the page. On phones the
- * controls scroll sideways under the section title instead.
+ * The one line of filters on web: the count, large, on the left, and the
+ * controls on the right in no more than half the page. Phones filter from
+ * the section title's sheet instead.
  */
 export function FilterLine({
   count,
@@ -184,7 +291,7 @@ export function FilterLine({
   children: ReactNode;
 }) {
   return (
-    <div className="md:border-line mb-2 md:mb-0 md:flex md:items-center md:justify-between md:gap-6 md:border-b md:pb-6">
+    <div className="md:border-line hidden md:flex md:items-center md:justify-between md:gap-6 md:border-b md:pb-6">
       <p className="hidden items-baseline gap-2.5 md:flex">
         <b className="text-5xl leading-none font-bold tracking-tight tabular-nums">
           {count}
@@ -202,12 +309,9 @@ export function FilterLine({
           </button>
         )}
       </p>
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:max-w-[50%] md:flex-none md:justify-end md:overflow-visible md:px-0 lg:max-w-[50%]">
+      <div className="flex max-w-[50%] flex-none justify-end gap-2">
         {children}
       </div>
-      <p className="text-fg-3 mt-4 text-[15px] md:hidden">
-        {plural(count, noun[0], noun[1])}
-      </p>
     </div>
   );
 }

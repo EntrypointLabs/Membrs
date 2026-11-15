@@ -10,12 +10,10 @@ import { listingTags, Tags } from './Tags';
 export function Kicker({
   listing,
   mixed = false,
-  plain = false,
   className = '',
 }: {
   listing: Listing;
   mixed?: boolean;
-  plain?: boolean;
   className?: string;
 }) {
   return (
@@ -23,7 +21,6 @@ export function Kicker({
       <Tags
         section={mixed ? listing.kind : undefined}
         names={listingTags(listing)}
-        plain={plain}
       />
     </p>
   );

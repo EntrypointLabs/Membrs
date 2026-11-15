@@ -11,7 +11,7 @@ type Section = keyof typeof SECTION_TAGS;
 export function Tag({ name }: { name: string }) {
   return (
     <span
-      className="inline-flex h-[22px] items-center rounded-sm bg-(--tag) px-2 text-[12px] leading-none font-semibold whitespace-nowrap text-[#141414]"
+      className="rounded-tag inline-flex h-[22px] items-center bg-(--tag) px-2 text-[12px] leading-none font-semibold whitespace-nowrap text-[#141414]"
       style={{ '--tag': tagFill(name) } as CSSProperties}
     >
       {name}
@@ -20,38 +20,21 @@ export function Tag({ name }: { name: string }) {
 }
 
 interface TagsProps {
-  /** The section the item belongs to. Shown first, on mixed feeds only. */
   section?: Section;
   names: (string | null | undefined)[];
-  /** Plain grey text instead of filled tags: lists and showcases, not cards. */
-  plain?: boolean;
   className?: string;
 }
 
-/**
- * The tags above a title. Cards on web get filled tags; phones, and anything
- * that is a list rather than a card, get the same names as plain text with
- * no section tag, because the page already says what it is.
- */
-export function Tags({
-  section,
-  names,
-  plain = false,
-  className = '',
-}: TagsProps) {
+export function Tags({ section, names, className = '' }: TagsProps) {
   const cats = cardTags(undefined, names);
   const all = cardTags(section, names);
-  const text = (
-    <span
-      className={`text-fg-3 text-[13px] font-medium ${plain ? '' : 'md:hidden'}`}
-    >
-      {(plain ? all : cats).join(' · ')}
-    </span>
-  );
-  if (plain) return <span className={className}>{text}</span>;
   return (
     <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
-      {text}
+      <span className="inline-flex flex-wrap items-center gap-1.5 md:hidden">
+        {cats.map((n) => (
+          <Tag key={n} name={n} />
+        ))}
+      </span>
       <span className="hidden flex-wrap items-center gap-1.5 md:inline-flex">
         {all.map((n) => (
           <Tag key={n} name={n} />

@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import type { ContributeKind, LegalSlug } from './types';
+import { shown } from './sections';
 
 /**
  * A dependency-free history router, the same shape as the merchant portal's.
@@ -54,6 +55,7 @@ export type Route =
   | { page: 'promo'; id: string }
   | { page: 'contribute'; kind: ContributeKind }
   | { page: 'search'; query: string }
+  | { page: 'for-you' }
   | { page: 'legal'; doc: LegalSlug }
   | { page: 'not-found' };
 
@@ -85,15 +87,27 @@ function isOneOf<T extends string>(
   return (list as readonly string[]).includes(value);
 }
 
+function decoded(part: string): string | null {
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    return null;
+  }
+}
+
 /** Read a path and query into a Route. Unknown paths are not-found, never a throw. */
 export function parseRoute(location: string): Route {
   const [rawPath = '/', search = ''] = location.split('?');
   const params = new URLSearchParams(search);
-  const parts = rawPath.split('/').filter(Boolean).map(decodeURIComponent);
+  const raw = rawPath.split('/').filter(Boolean).map(decoded);
+  if (raw.includes(null)) return { page: 'not-found' };
+  const parts = (raw as string[]).map((part, i) =>
+    i === 0 ? part.toLowerCase() : part,
+  );
   const [first = '', second] = parts;
 
   if (parts.length === 0) return { page: 'home' };
-  if (isOneOf(FEEDS, first)) {
+  if (isOneOf(FEEDS, first) && shown(first)) {
     if (!second) return { page: 'feed', feed: first };
     if (second === 'categories' && parts.length === 2) {
       return { page: 'categories', feed: first };
@@ -102,17 +116,18 @@ export function parseRoute(location: string): Route {
   if (parts.length === 2 && second) {
     if (first === 'category') return { page: 'category', slug: second };
     if (first === 'listing') return { page: 'listing', id: second };
-    if (first === 'place') return { page: 'place', id: second };
-    if (first === 'promo') return { page: 'promo', id: second };
+    if (first === 'place' && shown(first)) return { page: 'place', id: second };
+    if (first === 'promo' && shown(first)) return { page: 'promo', id: second };
   }
   if (parts.length === 1) {
     if (first === 'search')
       return { page: 'search', query: params.get('q') ?? '' };
+    if (first === 'for-you') return { page: 'for-you' };
     if (first === 'contribute') {
       const kind = params.get('kind') ?? 'event';
       return {
         page: 'contribute',
-        kind: isOneOf(CONTRIBUTE, kind) ? kind : 'event',
+        kind: isOneOf(CONTRIBUTE, kind) && shown(kind) ? kind : 'event',
       };
     }
     if (isOneOf(LEGAL, first)) return { page: 'legal', doc: first };
@@ -177,6 +192,7 @@ export const paths = {
   promo: (id: string) => `/promo/${id}`,
   contribute: (kind: ContributeKind = 'event') =>
     kind === 'event' ? '/contribute' : `/contribute?kind=${kind}`,
+  forYou: () => '/for-you',
   search: (query = '') =>
     query ? `/search?q=${encodeURIComponent(query)}` : '/search',
   legal: (doc: LegalSlug) => `/${doc}`,

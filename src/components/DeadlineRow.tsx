@@ -1,6 +1,7 @@
 import { deadlineUrgency } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { OpportunityListing } from '../lib/types';
+import { Kicker } from './Kicker';
 import { Link } from './Link';
 
 const URGENCY_COLOR = {
@@ -27,14 +28,17 @@ export function DeadlineRow({ listing }: { listing: OpportunityListing }) {
         </b>
         <span className="text-fg-3 text-sm">left</span>
       </span>
-      <span className="min-w-0">
+      <div className="min-w-0">
         <span className="group-hover:text-accent block text-base leading-snug font-semibold md:text-xl">
           {listing.title}
         </span>
-        <span className="text-fg-3 mt-1 block text-sm">
-          {listing.organiser} · {listing.category}
-        </span>
-      </span>
+        {listing.organiser && (
+          <span className="text-fg-3 mt-1 block text-sm">
+            {listing.organiser}
+          </span>
+        )}
+        <Kicker listing={listing} className="mt-2 md:mt-3" />
+      </div>
       <span className="hidden text-right md:block">
         <span className="block text-[15px] font-medium">{listing.award}</span>
         <span className="text-fg-3 block text-sm">

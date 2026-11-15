@@ -1,9 +1,17 @@
 import type { ReactNode } from 'react';
+import { DropdownMenu } from 'radix-ui';
+import { navigate } from '../lib/router';
 import { titleCase } from '../lib/text';
-import { Icon } from '../components/Icon';
+import { cameFromApp, copyText, toast } from '../lib/ui';
+import { Icon, type IconName } from '../components/Icon';
 import { Link } from '../components/Link';
+import { Photo } from '../components/Photo';
 
-/** Back button and breadcrumb trail above a detail page. */
+function goBack(trail: [string, string][]) {
+  if (cameFromApp() || !trail[0]) window.history.back();
+  else navigate(trail[0][1]);
+}
+
 export function Crumbs({ trail }: { trail: [string, string][] }) {
   return (
     <nav
@@ -12,7 +20,7 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
     >
       <button
         type="button"
-        onClick={() => history.back()}
+        onClick={() => goBack(trail)}
         aria-label="Back"
         className="bg-btn hover:bg-btn-hover grid h-9 w-9 place-items-center rounded-md"
       >
@@ -22,7 +30,7 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
         {trail.map(([label, href], i) => (
           <li key={href} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true">/</span>}
-            <Link href={href} className="text-fg-2 hover:text-fg font-medium">
+            <Link href={href} className="text-fg-2 hover:text-fg font-bold">
               {label}
             </Link>
           </li>
@@ -32,7 +40,154 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
   );
 }
 
-/** One row of the details table: a label on the left, the fact, an action. */
+const OVERLAY_BUTTON =
+  'grid h-11 w-11 place-items-center rounded-xl bg-black/45 text-white backdrop-blur-md transition-colors hover:bg-black/60';
+
+export function OverlayButton({
+  icon,
+  label,
+  onClick,
+  href,
+}: {
+  icon: IconName;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+}) {
+  return href ? (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      className={OVERLAY_BUTTON}
+    >
+      <Icon name={icon} />
+    </a>
+  ) : (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={OVERLAY_BUTTON}
+    >
+      <Icon name={icon} />
+    </button>
+  );
+}
+
+export function OverlayMenu({
+  icon,
+  label,
+  items,
+}: {
+  icon: IconName;
+  label: string;
+  items: { label: string; href?: string; onSelect?: () => void }[];
+}) {
+  return (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger aria-label={label} className={OVERLAY_BUTTON}>
+        <Icon name={icon} />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={8}
+          className="bg-panel border-line-2 text-fg z-[70] min-w-48 rounded-md border p-1 shadow-[0_16px_48px_rgb(0_0_0/0.35)]"
+        >
+          {items.map((item) => (
+            <DropdownMenu.Item
+              key={item.label}
+              asChild={Boolean(item.href)}
+              onSelect={item.onSelect}
+              className="data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center rounded-sm px-3 text-[15px] font-medium outline-none"
+            >
+              {item.href ? (
+                <a href={item.href} target="_blank" rel="noopener noreferrer">
+                  {item.label}
+                </a>
+              ) : (
+                item.label
+              )}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+export function DetailHead({
+  trail,
+  title,
+  photo,
+  tools,
+}: {
+  trail: [string, string][];
+  title: string;
+  photo: {
+    id: string;
+    src?: string;
+    cover?: { title: string; tag: string };
+  };
+  tools?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col">
+      <div className="hidden md:block">
+        <Crumbs trail={trail} />
+      </div>
+      <header className="mt-7 md:mt-8">
+        <h1 className="text-[clamp(30px,4vw,68px)] leading-[1.08] font-semibold tracking-tight text-pretty md:leading-[1.04]">
+          {title}
+        </h1>
+      </header>
+      <div className="relative -mx-4 max-md:order-first md:mx-0 md:mt-10">
+        <Photo
+          size="wide"
+          id={photo.id}
+          src={photo.src}
+          cover={photo.cover}
+          alt={title}
+          priority
+          className="md:rounded-photo aspect-[4/3] md:aspect-[2/1]"
+        />
+        <div className="absolute inset-x-4 top-[calc(12px+env(safe-area-inset-top,0px))] flex items-center justify-between md:hidden">
+          <OverlayButton
+            icon="chevronLeft"
+            label="Back"
+            onClick={() => goBack(trail)}
+          />
+          <div className="flex items-center gap-2">{tools}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const FACT_ICONS: Record<string, IconName> = {
+  Date: 'cal',
+  Venue: 'pin',
+  Where: 'pin',
+  Format: 'org',
+  'Offered by': 'org',
+  Price: 'tag',
+  Entry: 'tag',
+  Offer: 'tag',
+  Deadline: 'clock',
+  Ends: 'clock',
+  Today: 'clock',
+  Award: 'award',
+  Level: 'spark',
+  'Who can apply': 'check',
+};
+
+/**
+ * One row of the details list: a tinted icon tile, the fact in bold with a
+ * quieter line under it, and an optional action on the right. The label is
+ * kept for screen readers; the icon says it for everyone else.
+ */
 export function Fact({
   label,
   children,
@@ -43,12 +198,20 @@ export function Fact({
   action?: ReactNode;
 }) {
   return (
-    <div className="border-line grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-1 border-b py-5 md:grid-cols-[150px_1fr_auto] md:py-6">
-      <dt className="text-fg-3 col-span-2 text-sm md:col-span-1 md:text-[15px]">
-        {label}
-      </dt>
-      <dd className="min-w-0">{children}</dd>
-      {action ?? <span />}
+    <div className="group flex items-center gap-4">
+      <span
+        aria-hidden="true"
+        className="bg-accent/12 text-accent grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+      >
+        <Icon name={FACT_ICONS[label] ?? 'tag'} className="h-5 w-5" />
+      </span>
+      <div className="border-line flex min-w-0 flex-1 items-center gap-4 border-b py-4 group-last:border-b-0">
+        <dt className="sr-only">{label}</dt>
+        <dd className="min-w-0 flex-1 [&>p:first-child]:text-[17px]">
+          {children}
+        </dd>
+        {action}
+      </div>
     </div>
   );
 }
@@ -65,9 +228,9 @@ export function FactAction({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-brand dark:text-accent flex items-center gap-1 text-[15px] font-semibold whitespace-nowrap"
+      className="bg-btn hover:bg-btn-hover flex h-10 shrink-0 items-center rounded-md px-4 text-[15px] font-semibold whitespace-nowrap transition-colors"
     >
-      {children} <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
+      {children}
     </a>
   );
 }
@@ -97,12 +260,14 @@ export function Block({
 export function AboutBlock({
   title,
   paragraphs,
+  className = 'mt-10 md:mt-14',
 }: {
   title: string;
   paragraphs: string[];
+  className?: string;
 }) {
   return (
-    <section className="mt-10 max-w-3xl md:mt-14">
+    <section className={`max-w-3xl ${className}`}>
       <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
         {titleCase(title)}
       </h2>
@@ -115,10 +280,104 @@ export function AboutBlock({
   );
 }
 
+export function DetailBody({
+  about,
+  action,
+  primary,
+  links,
+  children,
+}: {
+  about: ReactNode;
+  action: ReactNode;
+  primary: ReactNode;
+  links: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mt-6 grid gap-8 md:mt-14 md:gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-x-16">
+      {about}
+      <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <div className="hidden h-full md:block">{action}</div>
+        <div className="flex flex-col gap-3 md:hidden">{primary}</div>
+      </div>
+      <div className="min-w-0">
+        {children}
+        <ul className="mt-6 md:hidden">{links}</ul>
+      </div>
+    </div>
+  );
+}
+
+export function PrimaryLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-brand hover:bg-brand-hover flex h-12 items-center justify-center gap-1.5 rounded-md font-bold text-white"
+    >
+      {children} <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
+    </a>
+  );
+}
+
+export function LinkRow({
+  icon,
+  label,
+  href,
+  onClick,
+}: {
+  icon: IconName;
+  label: string;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const body = (
+    <>
+      <span
+        aria-hidden="true"
+        className="bg-accent/12 text-accent grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+      >
+        <Icon name={icon} className="h-5 w-5" />
+      </span>
+      <span className="border-line flex min-w-0 flex-1 items-center justify-between gap-4 border-b py-5 text-[17px] font-semibold group-last:border-b-0">
+        {label}
+        <Icon name="chevronRight" className="text-fg-3 h-4 w-4" />
+      </span>
+    </>
+  );
+  const cls = 'flex w-full items-center gap-4 text-left';
+  return (
+    <li className="group">
+      {href ? (
+        <Link href={href} className={cls}>
+          {body}
+        </Link>
+      ) : (
+        <button type="button" onClick={onClick} className={cls}>
+          {body}
+        </button>
+      )}
+    </li>
+  );
+}
+
+export async function shareAndConfirm(title: string): Promise<void> {
+  const outcome = await share(title);
+  if (outcome === 'copied') toast('Link copied');
+  if (outcome === 'failed') toast('Could not share this link');
+}
+
 /** The sticky action card in the right column. */
 export function ActionCard({ children }: { children: ReactNode }) {
   return (
-    <aside className="bg-panel border-line-2 lg:top-bar self-start rounded-lg border p-6 lg:sticky">
+    <aside className="bg-panel border-line-2 lg:top-bar rounded-lg border p-6 lg:sticky">
       {children}
     </aside>
   );
@@ -157,31 +416,25 @@ export function SmallButton({
 export function MapCard({ name, area }: { name: string; area: string }) {
   const q = encodeURIComponent(`${name}, ${area}`);
   return (
-    <div className="bg-soft border-line-2 relative mt-10 grid aspect-[16/9] place-items-center overflow-hidden rounded-lg border">
-      <div className="text-center">
-        <Icon name="pin" className="text-accent mx-auto h-8 w-8" />
-        <p className="mt-2 font-semibold">{name}</p>
-        <p className="text-fg-3 text-sm">{area}</p>
-      </div>
-      <a
-        href={`https://www.google.com/maps/search/?api=1&query=${q}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bg-fg text-bg absolute right-4 bottom-4 flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold"
-      >
-        Open in Maps <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
-      </a>
+    <div className="bg-soft border-line-2 rounded-photo relative mt-10 aspect-[16/9] overflow-hidden border">
+      <iframe
+        title={`Map of ${name}`}
+        src={`https://maps.google.com/maps?q=${q}&z=16&output=embed`}
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        className="absolute inset-0 h-full w-full border-0 dark:[filter:invert(90%)_hue-rotate(180deg)]"
+      />
     </div>
   );
 }
 
-/** Copy a link, or use the share sheet where the device has one. */
-export async function share(title: string): Promise<'shared' | 'copied'> {
+export async function share(
+  title: string,
+): Promise<'shared' | 'copied' | 'failed'> {
   const url = window.location.href;
   if (navigator.share) {
     await navigator.share({ title, url }).catch(() => undefined);
     return 'shared';
   }
-  await navigator.clipboard?.writeText(url);
-  return 'copied';
+  return (await copyText(url)) ? 'copied' : 'failed';
 }

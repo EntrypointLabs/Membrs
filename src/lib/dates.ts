@@ -1,6 +1,157 @@
-import type { DayLabel, EventListing, Listing } from './types';
+import type {
+  DayLabel,
+  EventListing,
+  Listing,
+  OpportunityListing,
+} from './types';
 
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+const DAY_MS = 86_400_000;
+
+export const CATALOGUE_ZONE = 'Africa/Lagos';
+export const DEFAULT_EVENT_MS = 2 * 3_600_000;
+const MINUTE_MS = 60_000;
+const MAX_OFFSET_MS = 14 * 3_600_000;
+
+const zoneClock = new Intl.DateTimeFormat('en-US', {
+  timeZone: CATALOGUE_ZONE,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  hourCycle: 'h23',
+});
+
+function zoneWallClock(at: number): number {
+  const part = Object.fromEntries(
+    zoneClock.formatToParts(new Date(at)).map((p) => [p.type, Number(p.value)]),
+  );
+  return Date.UTC(
+    part.year ?? 0,
+    (part.month ?? 1) - 1,
+    part.day ?? 1,
+    (part.hour ?? 0) % 24,
+    part.minute ?? 0,
+  );
+}
+
+function dayNumber(wallClock: number): number {
+  return Math.floor(wallClock / DAY_MS);
+}
+
+export function clockMinutes(time: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})\s*([AP]M)$/i.exec(time.trim());
+  if (!match) return null;
+  const pm = match[3]!.toUpperCase() === 'PM';
+  return ((Number(match[1]) % 12) + (pm ? 12 : 0)) * 60 + Number(match[2]);
+}
+
+export function eventOffset(event: EventListing): number {
+  if (!event.startsAt) return zoneWallClock(Date.now()) - Date.now();
+  const starts = Date.parse(event.startsAt);
+  const month = MONTHS.indexOf(event.date.month);
+  for (const shift of [0, -1, 1]) {
+    const day = new Date(starts + shift * DAY_MS);
+    if (day.getUTCMonth() !== month || day.getUTCDate() !== event.date.day)
+      continue;
+    const wall =
+      Date.UTC(day.getUTCFullYear(), month, event.date.day) +
+      (clockMinutes(event.time) ?? 0) * MINUTE_MS;
+    if (Math.abs(wall - starts) <= MAX_OFFSET_MS) return wall - starts;
+  }
+  return zoneWallClock(starts) - starts;
+}
+
+export function eventLocalDay(event: EventListing, at: number): number {
+  return dayNumber(at + eventOffset(event));
+}
+
+export function hasStarted(event: EventListing, now = Date.now()): boolean {
+  if (!event.startsAt || clockMinutes(event.time) === null) return false;
+  return Date.parse(event.startsAt) <= now;
+}
+
+export function isOver(event: EventListing, now = Date.now()): boolean {
+  if (event.endsAt) return Date.parse(event.endsAt) <= now;
+  if (!hasStarted(event, now)) return false;
+  return Date.parse(event.startsAt ?? '') + DEFAULT_EVENT_MS <= now;
+}
+
+function deadlineDay(opportunity: OpportunityListing): number | null {
+  const { day, month, label } = opportunity.deadline;
+  const year = Number(label.slice(-4));
+  const monthIndex = MONTHS.indexOf(month);
+  if (!day || monthIndex < 0 || !Number.isInteger(year)) return null;
+  return dayNumber(Date.UTC(year, monthIndex, day));
+}
+
+function asOf(listing: Listing, now: number): Listing | null {
+  if (listing.kind === 'opportunity') {
+    const deadline = deadlineDay(listing);
+    if (deadline === null) return listing;
+    const daysLeft = deadline - dayNumber(zoneWallClock(now));
+    return daysLeft < 0 ? null : { ...listing, daysLeft };
+  }
+  if (!listing.startsAt) return listing;
+  const today = eventLocalDay(listing, now);
+  const lastDay = eventLocalDay(
+    listing,
+    Date.parse(listing.endsAt ?? listing.startsAt),
+  );
+  if (lastDay < today || isOver(listing, now)) return null;
+  const inDays = Math.max(
+    0,
+    eventLocalDay(listing, Date.parse(listing.startsAt)) - today,
+  );
+  return { ...listing, inDays };
+}
+
+export function stillOpen(listings: Listing[], today = new Date()): Listing[] {
+  return listings.flatMap((listing) => asOf(listing, today.getTime()) ?? []);
+}
+
+export interface CalendarToday {
+  weekday: number;
+  daysLeftInMonth: number;
+}
+
+let cachedToday: { minute: number; today: CalendarToday } | undefined;
+
+export function calendarToday(now = Date.now()): CalendarToday {
+  const minute = Math.floor(now / MINUTE_MS);
+  if (cachedToday?.minute === minute) return cachedToday.today;
+  const wall = new Date(zoneWallClock(now));
+  const lastOfMonth = new Date(
+    Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  const today = {
+    weekday: (wall.getUTCDay() + 6) % 7,
+    daysLeftInMonth: lastOfMonth - wall.getUTCDate(),
+  };
+  cachedToday = { minute, today };
+  return today;
+}
+
+export function weekendDays(today = calendarToday()): [number, number] {
+  if (today.weekday === 6) return [0, 0];
+  return [5 - today.weekday, 6 - today.weekday];
+}
 
 /**
  * The time tag an event wears on cards: Tonight, Tomorrow, or This weekend
@@ -10,9 +161,17 @@ export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function eventTag(event: EventListing): string {
   if (event.inDays === 0) return 'Tonight';
   if (event.inDays === 1) return 'Tomorrow';
-  const weekend = event.date.weekday === 'Sat' || event.date.weekday === 'Sun';
-  if (event.inDays <= 3 && weekend) return 'This weekend';
+  const [saturday, sunday] = weekendDays();
+  if (event.inDays >= saturday && event.inDays <= sunday) return 'This weekend';
   return '';
+}
+
+export function eventDay(event: EventListing, year = false): string {
+  const starts = event.startsAt ? new Date(event.startsAt) : null;
+  const differs = starts && starts.getFullYear() !== new Date().getFullYear();
+  return starts && (year || differs)
+    ? `${shortDay(event.date)} ${starts.getFullYear()}`
+    : shortDay(event.date);
 }
 
 /** "Sat 7 Nov" */
@@ -37,13 +196,31 @@ export function soonness(listing: Listing): number {
   return listing.kind === 'event' ? listing.inDays : listing.daysLeft;
 }
 
+function dateKey(listing: Listing): [number, number] {
+  if (listing.kind === 'opportunity')
+    return [hasDeadline(listing) ? listing.daysLeft : Infinity, 0];
+  return [listing.inDays, listing.startsAt ? Date.parse(listing.startsAt) : 0];
+}
+
 export function bySoonest(a: Listing, b: Listing): number {
-  return soonness(a) - soonness(b);
+  const [aDay, aTime] = dateKey(a);
+  const [bDay, bTime] = dateKey(b);
+  return (aDay === bDay ? 0 : aDay - bDay) || aTime - bTime;
+}
+
+export function hasDeadline(opportunity: OpportunityListing): boolean {
+  return opportunity.deadline.day > 0;
+}
+
+export function closesLine(opportunity: OpportunityListing): string {
+  return hasDeadline(opportunity)
+    ? `Closes ${shortDay(opportunity.deadline)}`
+    : 'No deadline';
 }
 
 /** One line for when a listing happens or closes. */
 export function whenLine(listing: Listing): string {
   return listing.kind === 'event'
-    ? `${shortDay(listing.date)}, ${listing.time}`
-    : `Closes ${shortDay(listing.deadline)}`;
+    ? `${eventDay(listing)}, ${listing.time}`
+    : closesLine(listing);
 }

@@ -1,19 +1,15 @@
 import { CONTACT } from '../lib/config';
 import { cityStore } from '../lib/preferences';
+import { shown } from '../lib/sections';
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
 import { titleCase } from '../lib/text';
+import { LEGAL_TITLES } from '../lib/title';
+import type { LegalSlug } from '../lib/types';
 import { openOverlay } from '../lib/ui';
 import { DigestForm } from './DigestForm';
-import { Icon, type IconName } from './Icon';
+import { Icon } from './Icon';
 import { Link } from './Link';
-
-const SOCIALS: { name: string; href: string; icon: IconName }[] = [
-  { name: 'Instagram', href: 'https://instagram.com/', icon: 'instagram' },
-  { name: 'X', href: 'https://x.com/', icon: 'xLogo' },
-  { name: 'LinkedIn', href: 'https://linkedin.com/', icon: 'linkedin' },
-  { name: 'WhatsApp', href: 'https://whatsapp.com/', icon: 'whatsapp' },
-];
 
 const COLUMNS: { title: string; links: [string, string][] }[] = [
   {
@@ -21,8 +17,12 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
     links: [
       ['Events', paths.feed('events')],
       ['Opportunities', paths.feed('opportunities')],
-      ['Places', paths.feed('places')],
-      ['Promos', paths.feed('promos')],
+      ...(shown('places')
+        ? [['Places', paths.feed('places')] as [string, string]]
+        : []),
+      ...(shown('promos')
+        ? [['Promos', paths.feed('promos')] as [string, string]]
+        : []),
     ],
   },
   {
@@ -30,28 +30,24 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
     links: [
       ['List an event', paths.contribute('event')],
       ['Submit an opportunity', paths.contribute('opportunity')],
-      ['Add a place', paths.contribute('place')],
-      ['Feature a promo', paths.contribute('promo')],
+      ...(shown('place')
+        ? [['Add a place', paths.contribute('place')] as [string, string]]
+        : []),
+      ...(shown('promo')
+        ? [['Feature a promo', paths.contribute('promo')] as [string, string]]
+        : []),
       ['Advertise', paths.contribute('ad')],
     ],
   },
   {
     title: 'Legal',
-    links: [
-      ['Terms of Service', paths.legal('terms')],
-      ['Privacy Policy', paths.legal('privacy')],
-      ['Cookie Policy', paths.legal('cookies')],
-      ['Listing Guidelines', paths.legal('guidelines')],
-      ['Advertising Policy', paths.legal('advertising')],
-    ],
+    links: (Object.keys(LEGAL_TITLES) as LegalSlug[]).map((doc) => [
+      LEGAL_TITLES[doc],
+      paths.legal(doc),
+    ]),
   },
 ];
 
-/**
- * The footer: one panel that flips against the page (white in dark mode,
- * near-black in light), rising from the bottom of the page. Digest signup on
- * top, the wordmark with the copyright and socials, then four link columns.
- */
 export function Footer() {
   const city = useStore(cityStore);
   return (
@@ -72,7 +68,6 @@ export function Footer() {
           <DigestForm />
         </div>
 
-        {/* Copyright and socials share the wordmark's row, so the footer needs no bottom bar. */}
         <div className="mt-[clamp(56px,5vw,88px)] mb-[clamp(40px,3.5vw,56px)] flex flex-wrap items-end justify-between gap-5">
           <div className="flex flex-col gap-2.5">
             <Link
@@ -85,21 +80,6 @@ export function Footer() {
               © 2026 MEMBRS. All rights reserved.
             </p>
           </div>
-          <ul className="flex gap-2">
-            {SOCIALS.map((s) => (
-              <li key={s.name}>
-                <a
-                  href={s.href}
-                  aria-label={s.name}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-inv-fg grid h-[42px] w-[42px] place-items-center rounded-sm bg-[color-mix(in_srgb,var(--inv-fg)_6%,var(--inv))] transition-transform hover:-translate-y-0.5"
-                >
-                  <Icon name={s.icon} className="h-[17px] w-[17px]" />
-                </a>
-              </li>
-            ))}
-          </ul>
         </div>
 
         <div className="grid grid-cols-2 gap-10 pb-[clamp(32px,3vw,48px)] lg:grid-cols-4">

@@ -1,22 +1,77 @@
 import { describe, expect, it } from 'vitest';
-import { FOLLOW_UPS, missingFollowUps } from './followups';
+import {
+  asksField,
+  digestFields,
+  FIELD_INTERESTS,
+  FIELDS,
+  fieldsFromDigest,
+} from './followups';
+import { interestsStore } from './preferences';
+import { interestPicks, taxonomy } from './api';
 
-describe('missingFollowUps', () => {
-  it('asks for every picked type that has a question and no answer', () => {
-    expect(missingFollowUps(['Music', 'Scholarships', 'Jobs'], {})).toEqual([
-      'Scholarships',
-      'Jobs',
-    ]);
+const BACKEND_CATEGORIES = [
+  'business',
+  'technology',
+  'education',
+  'research',
+  'health',
+  'agriculture',
+  'climate',
+  'finance',
+  'entrepreneurship',
+  'arts',
+  'music',
+  'film',
+  'sports',
+  'faith',
+  'community',
+  'governance',
+  'media',
+  'design',
+  'career',
+  'food',
+  'nightlife',
+  'family',
+  'wellness',
+  'comedy',
+  'gaming',
+  'fashion',
+  'outdoors',
+  'literature',
+  'other',
+];
+
+describe('field follow-up', () => {
+  it('is only asked by opportunity types the card offers', () => {
+    const offered = taxonomy().onboardingInterests.opportunity;
+    expect(FIELD_INTERESTS.every((i) => offered.includes(i))).toBe(true);
+    expect(asksField(['Music', 'Jobs'])).toBe(true);
+    expect(asksField(['Music', 'Scholarships'])).toBe(false);
   });
 
-  it('is satisfied once each question has at least one answer', () => {
+  it('sends every field as a newsletter category the backend accepts', () => {
+    const sent = digestFields(['Jobs'], FIELDS);
+    expect(sent).toHaveLength(FIELDS.length);
+    expect(sent.every((s) => BACKEND_CATEGORIES.includes(s))).toBe(true);
+  });
+
+  it('sends no fields when nothing picked asks for one', () => {
+    expect(digestFields(['Music'], ['Business'])).toEqual([]);
+  });
+
+  it('round trips the saved digest categories back into fields', () => {
     expect(
-      missingFollowUps(['Scholarships'], { Scholarships: ['Masters'] }),
-    ).toEqual([]);
+      fieldsFromDigest(digestFields(['Grants'], ['Design', 'Business'])),
+    ).toEqual(['Business', 'Design']);
+    expect(fieldsFromDigest(['music', 'climate'])).toEqual(['Climate']);
   });
+});
 
-  it('never asks about types without a question', () => {
-    expect(FOLLOW_UPS.Hackathons).toBeUndefined();
-    expect(missingFollowUps(['Hackathons'], {})).toEqual([]);
+describe('defaults', () => {
+  it('never block saving: every default interest is sent as is', () => {
+    const defaults = interestsStore.get();
+    expect(defaults.length).toBeGreaterThan(0);
+    expect(interestPicks(defaults).map((p) => p.category)).toEqual(defaults);
+    expect(digestFields(defaults, [])).toEqual([]);
   });
 });

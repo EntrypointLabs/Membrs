@@ -1,3 +1,4 @@
+import { shown } from '../lib/sections';
 import type { IconName } from './Icon';
 import type { FeedKind } from '../lib/router';
 
@@ -14,8 +15,7 @@ export interface NavItem {
   bar: string;
 }
 
-/** The sections, in nav order. Header and mobile tab bar both read this. */
-export const NAV: NavItem[] = [
+const ALL_NAV: NavItem[] = [
   {
     key: 'home',
     label: 'Home',
@@ -66,3 +66,12 @@ export const NAV: NavItem[] = [
     bar: 'bg-[#6f93ff]',
   },
 ];
+
+export function navItem(key: NavItem['key']): NavItem {
+  const item = ALL_NAV.find((n) => n.key === key);
+  if (!item) throw new Error(`no nav item ${key}`);
+  return item;
+}
+
+/** The sections, in nav order. Header and mobile tab bar both read this. */
+export const NAV: NavItem[] = ALL_NAV.filter((item) => shown(item.key));

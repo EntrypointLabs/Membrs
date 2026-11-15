@@ -30,11 +30,7 @@ export const interestsStore = createStore<string[]>('membrs.interests', [
   'Grants',
 ]);
 
-/**
- * Whether the onboarding tour has run. The lite rollout shows it on every
- * visit while the flow is being tested, so this only gates within a session.
- */
-export const tourSeenStore = createStore<boolean>(null, false);
+export const tourSeenStore = createStore<boolean>('membrs.tour', false);
 
 export function toggleInterest(name: string): void {
   interestsStore.set((prev) =>
@@ -42,11 +38,4 @@ export function toggleInterest(name: string): void {
   );
 }
 
-/**
- * Answers to the follow-up questions some interests ask (Scholarships asks
- * the level, Jobs the field), keyed by the interest.
- */
-export const followUpsStore = createStore<Record<string, string[]>>(
-  'membrs.followups',
-  {},
-);
+export const fieldsStore = createStore<string[]>('membrs.fields', []);

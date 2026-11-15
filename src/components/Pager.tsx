@@ -38,17 +38,27 @@ export function Pager({
       >
         <Icon name="chevronLeft" className="h-4 w-4" /> Previous
       </button>
-      {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
-        <button
-          key={n}
-          type="button"
-          aria-current={n === page ? 'page' : undefined}
-          className={`${button} ${n === page ? 'bg-fg text-bg' : 'bg-btn hover:bg-btn-hover'}`}
-          onClick={() => onChange(n)}
-        >
-          {n}
-        </button>
-      ))}
+      {pageWindow(page, pages).map((n, i) =>
+        n === null ? (
+          <span
+            key={`gap-${i}`}
+            aria-hidden="true"
+            className="text-fg-3 min-w-6 text-center text-[15px] font-semibold"
+          >
+            …
+          </span>
+        ) : (
+          <button
+            key={n}
+            type="button"
+            aria-current={n === page ? 'page' : undefined}
+            className={`${button} ${n === page ? 'bg-fg text-bg' : 'bg-btn hover:bg-btn-hover'}`}
+            onClick={() => onChange(n)}
+          >
+            {n}
+          </button>
+        ),
+      )}
       <button
         type="button"
         className={`${button} bg-btn hover:bg-btn-hover flex items-center gap-1`}
@@ -61,7 +71,29 @@ export function Pager({
   );
 }
 
+const SLOTS = 7;
+
+export function pageWindow(page: number, pages: number): (number | null)[] {
+  if (pages <= SLOTS) return Array.from({ length: pages }, (_, i) => i + 1);
+  const side = SLOTS - 2;
+  if (page <= side - 1)
+    return [...Array.from({ length: side }, (_, i) => i + 1), null, pages];
+  if (page >= pages - side + 2)
+    return [
+      1,
+      null,
+      ...Array.from({ length: side }, (_, i) => pages - side + 1 + i),
+    ];
+  return [1, null, page - 1, page, page + 1, null, pages];
+}
+
 /** Slice one page out of a list. */
 export function pageOf<T>(items: T[], page: number, size: number): T[] {
   return items.slice((page - 1) * size, page * size);
+}
+
+export function clampPage(raw: string | null, pages: number): number {
+  const page = Math.trunc(Number(raw ?? 1));
+  if (!Number.isFinite(page)) return 1;
+  return Math.min(Math.max(page, 1), Math.max(pages, 1));
 }

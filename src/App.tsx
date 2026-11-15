@@ -1,16 +1,20 @@
 import { Suspense, useEffect } from 'react';
-import { sessionStore } from './lib/auth';
 import { themeStore } from './lib/preferences';
 import { useRoute, type Route } from './lib/router';
 import { useStore } from './lib/store';
-import { openOverlay, overlayStore } from './lib/ui';
+import { documentTitle } from './lib/title';
+import { autoPromptSignUp, overlayStore } from './lib/ui';
+import { AskLauncher, AssistantPanel } from './components/AskMembrs';
 import { AuthModal, PreferencesModal } from './components/AuthModal';
+import { CatalogueGate } from './components/CatalogueGate';
 import { CookieBanner, CookieSettings } from './components/CookieBanner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { MobileTabBar } from './components/MobileTabBar';
 import { OnboardingTour } from './components/OnboardingTour';
 import { PlansModal } from './components/PlansModal';
+import { Presence } from './components/Presence';
 import { Toast } from './components/Toast';
 import { HomeScreen } from './screens/HomeScreen';
 import {
@@ -26,6 +30,7 @@ import {
   PromoScreen,
   PromosScreen,
   SearchScreen,
+  ForYouScreen,
 } from './screens/lazy';
 
 function Screen({ route }: { route: Route }) {
@@ -53,6 +58,8 @@ function Screen({ route }: { route: Route }) {
       return <ContributeScreen key={route.kind} kind={route.kind} />;
     case 'search':
       return <SearchScreen key={route.query} query={route.query} />;
+    case 'for-you':
+      return <ForYouScreen />;
     case 'legal':
       return <LegalScreen doc={route.doc} />;
     case 'not-found':
@@ -73,29 +80,50 @@ export function App() {
       ?.setAttribute('content', theme === 'dark' ? '#0d0d0d' : '#f2f2f2');
   }, [theme]);
 
-  // Readers who are not signed in see the sign-up card every time they land
-  // on home. It is the one way in to the digest, so it always shows.
   useEffect(() => {
-    if (route.page === 'home' && !sessionStore.get()) openOverlay('auth');
+    if (route.page === 'home') autoPromptSignUp();
   }, [route.page]);
+
+  useEffect(() => {
+    document.title = documentTitle(route);
+  });
 
   return (
     <>
       <Header />
-      <main id="main" className="min-h-[60vh]">
+      <main
+        id="main"
+        className="min-h-[60vh] max-md:pb-[calc(92px+env(safe-area-inset-bottom,0px))]"
+      >
         {/* An empty, full-height box while a screen chunk loads: no spinner flash. */}
-        <Suspense fallback={<div className="min-h-[70vh]" />}>
-          <Screen route={route} />
-        </Suspense>
+        <ErrorBoundary resetKey={JSON.stringify(route)}>
+          <Suspense fallback={<div className="min-h-[70vh]" />}>
+            {route.page === 'legal' || route.page === 'contribute' ? (
+              <Screen route={route} />
+            ) : (
+              <CatalogueGate>
+                <Screen route={route} />
+              </CatalogueGate>
+            )}
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <Footer />
       <MobileTabBar />
+      <AskLauncher />
       <CookieBanner />
-      {route.page === 'home' && overlay !== 'auth' && <OnboardingTour />}
-      {overlay === 'cookies' && <CookieSettings />}
-      {overlay === 'plans' && <PlansModal />}
-      {overlay === 'auth' && <AuthModal />}
-      {overlay === 'prefs' && <PreferencesModal />}
+      {route.page === 'home' && <OnboardingTour />}
+      <Presence value={overlay}>
+        {(shown) =>
+          ({
+            cookies: <CookieSettings />,
+            plans: <PlansModal />,
+            auth: <AuthModal />,
+            prefs: <PreferencesModal />,
+            assistant: <AssistantPanel />,
+          })[shown]
+        }
+      </Presence>
       <Toast />
     </>
   );

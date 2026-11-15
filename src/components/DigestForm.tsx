@@ -1,9 +1,8 @@
-import { useState } from 'react';
-import { signIn, sessionStore, type Provider } from '../lib/auth';
+import { sessionStore, type Provider } from '../lib/auth';
 import { subscriptionStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
 import { openDigest, openOverlay } from '../lib/ui';
-import { ProviderButton } from './AuthModal';
+import { ProviderButton, useProviderSignIn } from './AuthModal';
 import { Icon } from './Icon';
 
 /**
@@ -15,13 +14,10 @@ import { Icon } from './Icon';
 export function DigestForm() {
   const session = useStore(sessionStore);
   const joined = useStore(subscriptionStore);
-  const [busy, setBusy] = useState<Provider | null>(null);
+  const { busy, start } = useProviderSignIn();
 
   async function go(provider: Provider) {
-    setBusy(provider);
-    await signIn(provider);
-    setBusy(null);
-    openOverlay('prefs');
+    if (await start(provider)) openOverlay('prefs');
   }
 
   const settings = (

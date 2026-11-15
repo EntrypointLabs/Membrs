@@ -1,24 +1,17 @@
-import type { ReactNode } from 'react';
-import { taxonomy } from '../lib/api';
-import { FOLLOW_UPS } from '../lib/followups';
+import { useEffect, type ReactNode } from 'react';
+import { loadAccount, taxonomy } from '../lib/api';
+import { shown } from '../lib/sections';
+import { digestCities } from '../lib/digest';
+import { asksField, FIELD_QUESTION, FIELDS } from '../lib/followups';
 import {
-  followUpsStore,
+  cityStore,
+  fieldsStore,
   interestsStore,
   toggleInterest,
 } from '../lib/preferences';
 import { useStore } from '../lib/store';
+import { titleCase } from '../lib/text';
 import { Icon } from './Icon';
-
-const MAJOR_CITIES = [
-  'Lagos',
-  'Abuja',
-  'Accra',
-  'Nairobi',
-  'Johannesburg',
-  'Cairo',
-  'Kigali',
-  'Dakar',
-];
 
 /**
  * A pick: outlined with a plus when off, membrs blue with a tick when on, so
@@ -42,7 +35,7 @@ export function Chip({
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={`flex h-10 items-center gap-2 rounded-sm border px-3.5 text-[15px] font-medium transition-colors ${
+      className={`flex h-10 items-center gap-2 rounded-sm border px-3.5 text-[15px] font-medium transition-[color,background-color,border-color,scale] duration-150 ease-out active:scale-[0.97] ${
         on
           ? 'bg-brand border-brand text-white'
           : `hover:bg-soft text-fg ${invalid ? 'border-urgent/60' : 'border-line-2'}`
@@ -58,28 +51,28 @@ export function Chip({
 
 type Section = 'city' | 'event' | 'opportunity' | 'place';
 
-/**
- * The picks step as accordions: City, Events, Opportunities, Places. One is
- * open at a time and each closed header sums up what is chosen. Opportunity
- * types that need it ask their follow-up right under the chips.
- */
 export function PreferenceAccordions({
   city,
   onCity,
-  missing,
   open,
   onOpen,
 }: {
   city: string;
   onCity: (city: string) => void;
-  /** Interests whose required follow-up is unanswered after a save attempt. */
-  missing: string[];
   open: Section;
   onOpen: (section: Section) => void;
 }) {
   const picked = useStore(interestsStore);
-  const answers = useStore(followUpsStore);
-  const t = taxonomy();
+  const offered = taxonomy().onboardingInterests;
+  useEffect(() => {
+    let mounted = true;
+    void loadAccount().then(() => {
+      if (mounted) onCity(cityStore.get());
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [onCity]);
   const sum = (names: string[]) => {
     const on = names.filter((n) => picked.includes(n));
     return on.length ? on.join(', ') : '';
@@ -87,19 +80,7 @@ export function PreferenceAccordions({
   const chips = (names: string[]) => (
     <div className="flex flex-wrap gap-2">
       {names.map((n) => (
-        <Chip
-          key={n}
-          on={picked.includes(n)}
-          onClick={() => {
-            toggleInterest(n);
-            if (picked.includes(n) && answers[n])
-              followUpsStore.set((prev) => {
-                const next = { ...prev };
-                delete next[n];
-                return next;
-              });
-          }}
-        >
+        <Chip key={n} on={picked.includes(n)} onClick={() => toggleInterest(n)}>
           {n}
         </Chip>
       ))}
@@ -114,7 +95,7 @@ export function PreferenceAccordions({
         onToggle={() => onOpen('city')}
       >
         <div className="flex flex-wrap gap-2">
-          {MAJOR_CITIES.map((c) => (
+          {digestCities(city).map((c) => (
             <Chip
               key={c}
               on={city === c}
@@ -130,69 +111,53 @@ export function PreferenceAccordions({
       </Accordion>
       <Accordion
         title="Events"
-        summary={sum(t.eventCategories)}
+        summary={sum(offered.event)}
         open={open === 'event'}
         onToggle={() => onOpen('event')}
       >
-        {chips(t.eventCategories)}
+        {chips(offered.event)}
       </Accordion>
       <Accordion
         title="Opportunities"
-        summary={sum(t.opportunityCategories)}
+        summary={sum(offered.opportunity)}
         open={open === 'opportunity'}
         onToggle={() => onOpen('opportunity')}
       >
-        {chips(t.opportunityCategories)}
-        {t.opportunityCategories
-          .filter((n) => FOLLOW_UPS[n] && picked.includes(n))
-          .map((n) => (
-            <FollowUpBlock key={n} name={n} invalid={missing.includes(n)} />
-          ))}
+        {chips(offered.opportunity)}
+        {asksField(picked) && <FieldBlock />}
       </Accordion>
-      <Accordion
-        title="Places"
-        summary={sum(t.placeTypes)}
-        open={open === 'place'}
-        onToggle={() => onOpen('place')}
-      >
-        {chips(t.placeTypes)}
-      </Accordion>
+      {shown('places') && (
+        <Accordion
+          title="Places"
+          summary={sum(offered.place)}
+          open={open === 'place'}
+          onToggle={() => onOpen('place')}
+        >
+          {chips(offered.place)}
+        </Accordion>
+      )}
     </div>
   );
 }
 
-function FollowUpBlock({ name, invalid }: { name: string; invalid: boolean }) {
-  const answers = useStore(followUpsStore);
-  const { question, options } = FOLLOW_UPS[name]!;
-  const chosen = answers[name] ?? [];
-  const bad = invalid && chosen.length === 0;
+function FieldBlock() {
+  const chosen = useStore(fieldsStore);
   return (
-    <div className="border-line-2 mt-4 border-t pt-4" data-followup={name}>
+    <div className="border-line-2 mt-4 border-t pt-4" data-followup="field">
       <p className="mb-2.5 flex flex-wrap items-baseline gap-1.5 text-sm">
-        <b className="font-semibold">{name}</b>
-        <span className="text-fg-3">{question}</span>
-        <em
-          className={`ml-auto text-xs not-italic ${bad ? 'text-urgent font-semibold' : 'text-fg-4'}`}
-        >
-          {bad ? 'Pick at least one' : 'Required'}
-        </em>
+        <b className="font-semibold">{titleCase('Your field')}</b>
+        <span className="text-fg-3">{FIELD_QUESTION}</span>
+        <em className="text-fg-4 ml-auto text-xs not-italic">Optional</em>
       </p>
       <div className="flex flex-wrap gap-2">
-        {options.map((o) => (
+        {FIELDS.map((o) => (
           <Chip
             key={o}
-            invalid={bad}
             on={chosen.includes(o)}
             onClick={() =>
-              followUpsStore.set((prev) => {
-                const cur = prev[name] ?? [];
-                return {
-                  ...prev,
-                  [name]: cur.includes(o)
-                    ? cur.filter((x) => x !== o)
-                    : [...cur, o],
-                };
-              })
+              fieldsStore.set((prev) =>
+                prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o],
+              )
             }
           >
             {o}

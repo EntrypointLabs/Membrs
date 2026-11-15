@@ -105,6 +105,10 @@
 }
 
 @theme {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   /* membrs blue. Fixed in both modes. */
   --color-brand: #2b55ff;
   --color-brand-hover: #1f45e6;
@@ -120,6 +124,8 @@
   --radius-lg: 6px;
   --radius-md: 6px;
   --radius-sm: 6px;
+  --radius-photo: 12px;
+  --radius-tag: 4px;
 
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter',
@@ -193,4 +199,19 @@ body {
 /* Dialogs take focus on open; that programmatic focus needs no ring. */
 [tabindex='-1']:focus-visible {
   outline: none;
+}
+
+/* The search box lights its own border on focus, so its input needs no ring. */
+[role='search'] input:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-property:
+      color, background-color, border-color, opacity !important;
+    scroll-behavior: auto !important;
+  }
 }

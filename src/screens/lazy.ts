@@ -19,6 +19,10 @@ function lazyScreen<T, K extends keyof T>(load: () => Promise<T>, name: K) {
   };
 }
 
+export const ForYouScreen = lazyScreen(
+  () => import('./ForYouScreen'),
+  'ForYouScreen',
+);
 export const FeedScreen = lazyScreen(
   () => import('./FeedScreen'),
   'FeedScreen',

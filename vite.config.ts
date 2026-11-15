@@ -11,7 +11,13 @@ export default defineConfig({
     // shadcn components import from @/, so the CLI can add more later.
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
-  server: { port: 5173, strictPort: true },
+  server: {
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:24081',
+    },
+  },
   build: {
     target: 'es2022',
     // React changes far less often than our code, so it gets its own chunk

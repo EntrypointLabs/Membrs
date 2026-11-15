@@ -1,5 +1,12 @@
 import { openStateNow } from './hours';
-import type { Listing, Place, Promo } from './types';
+import { calendarToday, hasStarted, weekendDays } from './dates';
+import type {
+  EventListing,
+  Listing,
+  OpportunityListing,
+  Place,
+  Promo,
+} from './types';
 
 /**
  * Time views: the slices each section is grouped into (Tonight, Closing Next
@@ -13,66 +20,98 @@ export interface View<T> {
   test: (item: T) => boolean;
 }
 
+const isEvent = (l: Listing): l is EventListing => l.kind === 'event';
+const isOpportunity = (l: Listing): l is OpportunityListing =>
+  l.kind === 'opportunity';
+const WEEK_DAYS = 7;
+
 export const EVENT_VIEWS: View<Listing>[] = [
+  {
+    id: 'now',
+    label: 'Happening Now',
+    test: (l) => isEvent(l) && l.inDays === 0 && hasStarted(l),
+  },
   {
     id: 'tonight',
     label: 'Tonight',
-    test: (l) => l.kind === 'event' && l.inDays === 0,
+    test: (l) => isEvent(l) && l.inDays === 0 && !hasStarted(l),
   },
   {
     id: 'tomorrow',
     label: 'Tomorrow',
-    test: (l) => l.kind === 'event' && l.inDays === 1,
+    test: (l) => isEvent(l) && l.inDays === 1,
   },
   {
     id: 'weekend',
     label: 'This Weekend',
-    test: (l) => l.kind === 'event' && l.inDays >= 2 && l.inDays <= 3,
+    test: (l) => {
+      const [saturday, sunday] = weekendDays();
+      return isEvent(l) && l.inDays >= saturday && l.inDays <= sunday;
+    },
   },
   {
     id: 'week',
     label: 'Next 7 Days',
-    test: (l) => l.kind === 'event' && l.inDays >= 4 && l.inDays <= 10,
+    test: (l) => isEvent(l) && l.inDays <= WEEK_DAYS,
   },
   {
     id: 'month',
     label: 'Later This Month',
-    test: (l) => l.kind === 'event' && l.inDays > 10 && l.inDays <= 25,
+    test: (l) =>
+      isEvent(l) &&
+      l.inDays > WEEK_DAYS &&
+      l.inDays <= calendarToday().daysLeftInMonth,
   },
   {
     id: 'later',
     label: 'Further Ahead',
-    test: (l) => l.kind === 'event' && l.inDays > 25,
+    test: (l) =>
+      isEvent(l) &&
+      l.inDays > Math.max(WEEK_DAYS, calendarToday().daysLeftInMonth),
   },
 ];
+
+function weekEnds(): { thisWeek: number; nextWeek: number } {
+  const thisWeek = 6 - calendarToday().weekday;
+  return { thisWeek, nextWeek: thisWeek + WEEK_DAYS };
+}
 
 export const OPPORTUNITY_VIEWS: View<Listing>[] = [
   {
     id: 'three',
     label: 'Closing in 3 Days',
-    test: (l) => l.kind === 'opportunity' && l.daysLeft <= 3,
+    test: (l) => isOpportunity(l) && l.daysLeft <= 3,
   },
   {
     id: 'week',
     label: 'Closing This Week',
-    test: (l) => l.kind === 'opportunity' && l.daysLeft >= 4 && l.daysLeft <= 7,
+    test: (l) => isOpportunity(l) && l.daysLeft <= weekEnds().thisWeek,
   },
   {
     id: 'next',
     label: 'Closing Next Week',
-    test: (l) =>
-      l.kind === 'opportunity' && l.daysLeft >= 8 && l.daysLeft <= 14,
+    test: (l) => {
+      const { thisWeek, nextWeek } = weekEnds();
+      return (
+        isOpportunity(l) && l.daysLeft > thisWeek && l.daysLeft <= nextWeek
+      );
+    },
   },
   {
     id: 'month',
     label: 'Later This Month',
     test: (l) =>
-      l.kind === 'opportunity' && l.daysLeft >= 15 && l.daysLeft <= 31,
+      isOpportunity(l) &&
+      l.daysLeft > weekEnds().nextWeek &&
+      l.daysLeft <= calendarToday().daysLeftInMonth,
   },
   {
     id: 'later',
     label: 'Further Ahead',
-    test: (l) => l.kind === 'opportunity' && l.daysLeft > 31,
+    test: (l) =>
+      isOpportunity(l) &&
+      l.daysLeft >
+        Math.max(weekEnds().nextWeek, calendarToday().daysLeftInMonth),
   },
 ];
 
@@ -116,4 +155,14 @@ export function findView<T>(
   id: string | null,
 ): View<T> | undefined {
   return id ? views.find((v) => v.id === id) : undefined;
+}
+
+export function groupByView<T>(
+  items: T[],
+  views: View<T>[],
+): { view: View<T>; items: T[] }[] {
+  const groups = views.map((view) => ({ view, items: [] as T[] }));
+  for (const item of items)
+    groups.find((g) => g.view.test(item))?.items.push(item);
+  return groups.filter((g) => g.items.length > 0);
 }

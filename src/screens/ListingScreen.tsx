@@ -1,43 +1,33 @@
 import { listingById, similar } from '../lib/api';
-import { shortDay } from '../lib/dates';
+import {
+  deadlineCalendarHref,
+  downloadIcs,
+  googleCalendarHref,
+} from '../lib/calendar';
+import { eventDay, hasDeadline } from '../lib/dates';
 import { paths } from '../lib/router';
-import { slugify } from '../lib/text';
-import { toast } from '../lib/ui';
+import { daysLeftLine, distinctParts, slugify, sourceName } from '../lib/text';
 import type { EventListing, Listing, OpportunityListing } from '../lib/types';
-import { Icon } from '../components/Icon';
-import { ListingCard, priceOf } from '../components/ListingCard';
-import { Photo } from '../components/Photo';
+import { ListingCard, shownPrice } from '../components/ListingCard';
 import { Rail } from '../components/Rail';
 import { SectionHeader } from '../components/SectionHeader';
 import {
   AboutBlock,
   ActionCard,
-  Block,
-  Crumbs,
+  DetailBody,
+  DetailHead,
   Fact,
   FactAction,
+  LinkRow,
   MapCard,
-  share,
+  OverlayButton,
+  OverlayMenu,
+  PrimaryLink,
+  shareAndConfirm,
   SmallButton,
 } from './DetailParts';
 import { SeeAll } from './HomeScreen';
 import { NotFoundScreen } from './NotFoundScreen';
-
-/** A Google Calendar link for an event, prefilled from the listing. */
-function calendarHref(e: EventListing): string {
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: e.title,
-    details: `${e.blurb}\n\n${e.url}`,
-    location: `${e.venue}, ${e.area}`,
-  });
-  if (e.startsAt && e.endsAt) {
-    const compact = (iso: string) =>
-      iso.replace(/[-:]/g, '').replace('.000', '');
-    params.set('dates', `${compact(e.startsAt)}/${compact(e.endsAt)}`);
-  }
-  return `https://calendar.google.com/calendar/render?${params}`;
-}
 
 export function ListingScreen({ id }: { id: string }) {
   const listing = listingById(id);
@@ -45,8 +35,8 @@ export function ListingScreen({ id }: { id: string }) {
   const feed = listing.kind === 'event' ? 'events' : 'opportunities';
   const more = similar(listing);
   return (
-    <div className="page pt-6 md:pt-10">
-      <Crumbs
+    <div className="page max-md:pt-0 md:pt-10">
+      <DetailHead
         trail={[
           [
             listing.kind === 'event' ? 'Events' : 'Opportunities',
@@ -54,83 +44,87 @@ export function ListingScreen({ id }: { id: string }) {
           ],
           [listing.category, paths.category(slugify(listing.category))],
         ]}
-      />
-      <header className="mt-8">
-        <h1 className="text-[clamp(34px,4vw,68px)] leading-[1.04] font-semibold tracking-tight text-pretty">
-          {listing.title}
-        </h1>
-      </header>
-      <Photo
-        size="wide"
-        id={listing.photo}
-        src={listing.photoUrl}
-        alt={listing.title}
-        priority
-        className="mt-10 aspect-[2/1] rounded-lg"
+        title={listing.title}
+        photo={{
+          id: listing.photo,
+          src: listing.photoUrl,
+          cover: { title: listing.title, tag: listing.category },
+        }}
+        tools={<HeadTools listing={listing} />}
       />
 
-      <AboutBlock
-        title={
-          listing.kind === 'event'
-            ? 'About This Event'
-            : 'About This Opportunity'
-        }
-        paragraphs={listing.about ?? [listing.blurb]}
-      />
-
-      <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-16">
-        <div>
-          <dl className="border-line border-t">
-            {listing.kind === 'event' ? (
-              <EventFacts e={listing} />
-            ) : (
-              <OpportunityFacts o={listing} />
-            )}
-          </dl>
-          {listing.kind === 'opportunity' && listing.eligibility.length > 0 && (
-            <Block title="Who can apply">
-              <ul className="text-fg-2 flex flex-col gap-3">
-                {listing.eligibility.map((line) => (
-                  <li key={line} className="flex gap-3">
-                    <Icon name="check" className="text-open mt-1 shrink-0" />
-                    <span className="min-w-0 break-words">{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </Block>
-          )}
-          <div className="mt-10 flex flex-wrap gap-2">
-            {[
-              listing.category,
-              listing.city,
+      <DetailBody
+        about={
+          <AboutBlock
+            title={
               listing.kind === 'event'
-                ? listing.free
-                  ? 'Free'
-                  : 'Paid'
-                : listing.mode,
-            ].map((t) => (
-              <span
-                key={t}
-                className="bg-btn rounded-sm px-3 py-1.5 text-sm font-medium"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-          {listing.kind === 'event' && listing.venue !== 'Venue TBA' && (
-            <MapCard
-              name={listing.venue}
-              area={`${listing.area}, ${listing.city}`}
+                ? 'About This Event'
+                : 'About This Opportunity'
+            }
+            paragraphs={listing.about ?? [listing.blurb]}
+            className=""
+          />
+        }
+        action={<Sidebar listing={listing} />}
+        primary={
+          <PrimaryLink href={listing.url}>
+            {listing.kind === 'event' ? 'Get ticket' : 'Apply now'}
+          </PrimaryLink>
+        }
+        links={
+          <>
+            <LinkRow
+              icon="spark"
+              label="Find similar"
+              href={paths.category(slugify(listing.category))}
             />
+            <LinkRow
+              icon="share"
+              label="Share with a friend"
+              onClick={() => shareAndConfirm(listing.title)}
+            />
+          </>
+        }
+      >
+        <dl>
+          {listing.kind === 'event' ? (
+            <EventFacts e={listing} />
+          ) : (
+            <OpportunityFacts o={listing} />
           )}
+        </dl>
+        <div className="mt-10 flex flex-wrap gap-2">
+          {[
+            ...new Set(
+              [
+                listing.category,
+                listing.city,
+                listing.kind === 'event'
+                  ? listing.free
+                    ? 'Free'
+                    : shownPrice(listing) && 'Paid'
+                  : listing.mode,
+              ].filter(Boolean),
+            ),
+          ].map((t) => (
+            <span
+              key={t}
+              className="bg-btn rounded-sm px-3 py-1.5 text-sm font-medium"
+            >
+              {t}
+            </span>
+          ))}
         </div>
-        <Sidebar listing={listing} />
-      </div>
+        {listing.kind === 'event' && listing.venue !== 'Venue TBA' && (
+          <MapCard name={listing.venue} area={whereLine(listing)} />
+        )}
+      </DetailBody>
 
       {more.length > 0 && (
         <section className="mt-[clamp(100px,8vw,160px)]">
           <SectionHeader
             title="More like this"
+            count={more.length}
             actions={
               <SeeAll
                 href={paths.category(slugify(listing.category))}
@@ -148,39 +142,61 @@ export function ListingScreen({ id }: { id: string }) {
   );
 }
 
+function whereLine(e: EventListing): string {
+  return distinctParts(e.venue, [e.area, e.city]).join(', ');
+}
+
 function EventFacts({ e }: { e: EventListing }) {
   return (
     <>
       <Fact
         label="Date"
-        action={<FactAction href={calendarHref(e)}>Add to calendar</FactAction>}
-      >
-        <p className="font-semibold">{shortDay(e.date)} 2026</p>
-        <p className="text-fg-3 text-[15px]">{e.time}, local time</p>
-      </Fact>
-      <Fact
-        label="Venue"
         action={
-          <FactAction
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${e.venue}, ${e.area}`)}`}
-          >
-            Directions
-          </FactAction>
+          <FactAction href={googleCalendarHref(e)}>Add to calendar</FactAction>
         }
       >
-        <p className="font-semibold">{e.venue}</p>
-        <p className="text-fg-3 text-[15px]">
-          {e.area}, {e.city}
-        </p>
+        <p className="font-semibold">{eventDay(e, true)}</p>
+        <p className="text-fg-3 text-[15px]">{e.time}, local time</p>
       </Fact>
+      {e.mode === 'Remote' ? (
+        <Fact label="Venue">
+          <p className="font-semibold">Online</p>
+        </Fact>
+      ) : (
+        <Fact
+          label="Venue"
+          action={
+            e.venue !== 'Venue TBA' && (
+              <FactAction
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([e.venue, whereLine(e)].filter(Boolean).join(', '))}`}
+              >
+                Directions
+              </FactAction>
+            )
+          }
+        >
+          <p className="font-semibold">{e.venue}</p>
+          {whereLine(e) && (
+            <p className="text-fg-3 text-[15px]">{whereLine(e)}</p>
+          )}
+        </Fact>
+      )}
       <Fact label="Format">
         <p className="font-semibold">{e.mode}</p>
-        <p className="text-fg-3 text-[15px]">Hosted by {e.host}</p>
+        {e.host.trim() && (
+          <p className="text-fg-3 text-[15px]">Hosted by {e.host}</p>
+        )}
       </Fact>
-      <Fact label="Price">
-        <p className="font-semibold">{e.price}</p>
-        <p className="text-fg-3 text-[15px]">Sold by {e.source}</p>
-      </Fact>
+      {shownPrice(e) && (
+        <Fact label="Price">
+          <p className="font-semibold">{shownPrice(e)}</p>
+          {!e.free && e.source.trim() && (
+            <p className="text-fg-3 text-[15px]">
+              Sold by {sourceName(e.source)}
+            </p>
+          )}
+        </Fact>
+      )}
     </>
   );
 }
@@ -188,23 +204,84 @@ function EventFacts({ e }: { e: EventListing }) {
 function OpportunityFacts({ o }: { o: OpportunityListing }) {
   return (
     <>
-      <Fact label="Deadline">
-        <p className="font-semibold">{o.deadline.label}</p>
-        <p className="text-fg-3 text-[15px]">{o.daysLeft} days left</p>
+      <Fact
+        label="Deadline"
+        action={
+          hasDeadline(o) &&
+          o.daysLeft >= 0 && (
+            <FactAction href={deadlineCalendarHref(o)}>Remind me</FactAction>
+          )
+        }
+      >
+        <p className="font-semibold">Closes {o.deadline.label}</p>
+        {hasDeadline(o) && (
+          <p className="text-fg-3 text-[15px]">{daysLeftLine(o.daysLeft)}</p>
+        )}
       </Fact>
-      <Fact label="Award">
-        <p className="font-semibold">{o.award}</p>
-      </Fact>
-      <Fact label="Offered by">
-        <p className="font-semibold">{o.organiser}</p>
-        <p className="text-fg-3 text-[15px]">
-          {o.remote ? 'Remote, open internationally' : o.city}
-        </p>
-      </Fact>
+      {shownPrice(o) && (
+        <Fact label="Award">
+          <p className="font-semibold">{shownPrice(o)}</p>
+        </Fact>
+      )}
+      {o.organiser && (
+        <Fact label="Offered by">
+          <p className="font-semibold">{o.organiser}</p>
+          <p className="text-fg-3 text-[15px]">
+            {o.remote ? 'Remote' : o.city}
+          </p>
+        </Fact>
+      )}
       {o.level && (
         <Fact label="Level">
           <p className="font-semibold">{o.level}</p>
         </Fact>
+      )}
+      {o.eligibility.length > 0 && (
+        <Fact label="Who can apply">
+          <p className="font-semibold">Who can apply</p>
+          {o.eligibility.map((line) => (
+            <p key={line} className="text-fg-3 text-[15px] break-words">
+              {line}
+            </p>
+          ))}
+        </Fact>
+      )}
+    </>
+  );
+}
+
+function HeadTools({ listing }: { listing: Listing }) {
+  const shareButton = (
+    <OverlayButton
+      icon="share"
+      label="Share"
+      onClick={() => shareAndConfirm(listing.title)}
+    />
+  );
+  if (listing.kind === 'event') {
+    return (
+      <>
+        {shareButton}
+        <OverlayMenu
+          icon="cal"
+          label="Add to calendar"
+          items={[
+            { label: 'Google Calendar', href: googleCalendarHref(listing) },
+            { label: 'Apple or Outlook', onSelect: () => downloadIcs(listing) },
+          ]}
+        />
+      </>
+    );
+  }
+  return (
+    <>
+      {shareButton}
+      {hasDeadline(listing) && listing.daysLeft >= 0 && (
+        <OverlayButton
+          icon="cal"
+          label="Remind me before it closes"
+          href={deadlineCalendarHref(listing)}
+        />
       )}
     </>
   );
@@ -212,39 +289,29 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
 
 function Sidebar({ listing }: { listing: Listing }) {
   const event = listing.kind === 'event';
-  const onShare = async () => {
-    if ((await share(listing.title)) === 'copied') toast('Link copied');
-  };
   return (
     <ActionCard>
-      <p className="text-fg-3 text-sm">
-        {event ? (listing.free ? 'Entry' : 'From') : 'Award'}
-      </p>
-      <p className="text-3xl font-semibold tracking-tight">
-        {priceOf(listing)}
-      </p>
-      <a
-        href={listing.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bg-brand hover:bg-brand-hover mt-5 flex h-12 items-center justify-center gap-1.5 rounded-md font-bold text-white"
-      >
-        {event ? 'Get ticket' : 'Apply now'}{' '}
-        <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
-      </a>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <PrimaryLink href={listing.url}>
+        {event ? 'Get ticket' : 'Apply now'}
+      </PrimaryLink>
+      <div className="mt-3 grid grid-cols-2 gap-2 [&>:last-child:nth-child(odd)]:col-span-2">
         {event && (
-          <SmallButton href={calendarHref(listing)}>Calendar</SmallButton>
+          <SmallButton href={googleCalendarHref(listing)}>
+            Google Calendar
+          </SmallButton>
+        )}
+        {event && (
+          <SmallButton onClick={() => downloadIcs(listing)}>
+            Apple or Outlook
+          </SmallButton>
         )}
         <SmallButton href={paths.category(slugify(listing.category))}>
           Find similar
         </SmallButton>
-        <SmallButton onClick={onShare}>Share</SmallButton>
-        {!event && <SmallButton href={listing.url}>Details</SmallButton>}
+        <SmallButton onClick={() => shareAndConfirm(listing.title)}>
+          Share
+        </SmallButton>
       </div>
-      <p className="text-fg-3 mt-5 text-sm">
-        No account needed. Add it to your calendar and it is filled in for you.
-      </p>
     </ActionCard>
   );
 }
