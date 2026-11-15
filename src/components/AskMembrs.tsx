@@ -7,6 +7,13 @@ import {
   type ReactNode,
 } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
+import {
+  area,
+  context,
+  itemRef,
+  track,
+  trackItemOpened,
+} from '../lib/analytics';
 import { listingById, taxonomy } from '../lib/api';
 import {
   ASSISTANT_UNAVAILABLE,
@@ -87,6 +94,49 @@ import {
 const TITLE = 'Ask membrs';
 const NEAR_LIMIT = 200;
 
+let askedAt = 0;
+let stopRequested = false;
+
+const secondsSince = (start: number) => Math.round((Date.now() - start) / 1000);
+
+/** Ask, then record how the answer went, by its shape rather than its words. */
+async function askTracked(
+  text: string,
+  source: 'composer' | 'suggestion',
+): Promise<boolean> {
+  const before = assistantStore.get();
+  const asked =
+    before.conversation?.messages.filter((m) => m.role === 'user').length ?? 0;
+  track('assistant_question_asked', {
+    source,
+    length: text.trim().length,
+    message_number: asked + 1,
+  });
+  askedAt = Date.now();
+  stopRequested = false;
+  const ok = await ask(text);
+  const after = assistantStore.get();
+  const last = after.conversation?.messages.at(-1);
+  const reply = ok && last?.role === 'assistant' ? last : null;
+  track('assistant_answered', {
+    outcome: stopRequested ? 'stopped' : reply ? 'answered' : 'failed',
+    seconds: secondsSince(askedAt),
+    listings_shown: reply?.listingIds.length ?? 0,
+    steps: reply?.steps?.length ?? 0,
+    messages_left: after.messagesLeft,
+    error: reply
+      ? null
+      : (after.error ?? (after.messagesLeft === 0 ? 'message_limit' : null)),
+  });
+  return ok;
+}
+
+function stopTracked() {
+  stopRequested = true;
+  track('assistant_stopped', { seconds: secondsSince(askedAt) });
+  stop();
+}
+
 export function AskLauncher() {
   const overlay = useStore(overlayStore);
   if (overlay === 'assistant') return null;
@@ -96,6 +146,7 @@ export function AskLauncher() {
       aria-label={TITLE}
       aria-haspopup="dialog"
       onClick={() => openOverlay('assistant')}
+      {...context({ action: 'open_assistant' })}
       className={cn(
         GLASS,
         'text-accent fixed right-3 bottom-[calc(80px+env(safe-area-inset-bottom,0px))] z-40 hidden h-14 w-14 place-items-center rounded-full transition-[translate,scale] duration-150 ease-out active:scale-95 md:grid',
@@ -198,7 +249,14 @@ function ListingCards({ ids }: { ids: string[] }) {
           key={listing.id}
           {...listingFace(listing)}
           compact
-          onClick={closeOnPhone}
+          onClick={(e) => {
+            trackItemOpened(
+              e.currentTarget,
+              itemRef.listing(listing),
+              'assistant',
+            );
+            closeOnPhone();
+          }}
         />
       ))}
     </div>
@@ -262,7 +320,14 @@ function OpenedName({ step }: { step: AssistantStep }) {
       {listing ? (
         <Link
           href={paths.listing(listing.id)}
-          onClick={closeOnPhone}
+          onClick={(e) => {
+            trackItemOpened(
+              e.currentTarget,
+              itemRef.listing(listing),
+              'assistant',
+            );
+            closeOnPhone();
+          }}
           className="text-fg-2 font-medium hover:underline"
         >
           {name}
@@ -403,6 +468,7 @@ function EmptyState({
               type="button"
               disabled={disabled}
               onClick={() => onPick(chip)}
+              {...context({ action: 'suggestion' })}
               className="border-line-2 text-fg-2 hover:bg-soft-hover hover:text-fg rounded-full border px-3.5 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50"
             >
               {chip}
@@ -431,6 +497,7 @@ function Conversation({ onPick }: { onPick: (text: string) => void }) {
         <MessageScrollerViewport>
           <MessageScrollerContent
             aria-busy={Boolean(state.streaming)}
+            data-ph-mask
             className="gap-6 px-4 pt-5 pb-4"
           >
             {messages.map((m) =>
@@ -479,7 +546,8 @@ function Composer() {
   async function send(value = text) {
     if (!value.trim() || busy || !allowed) return;
     setText('');
-    if (!(await ask(value))) setText((current) => current || value);
+    if (!(await askTracked(value, 'composer')))
+      setText((current) => current || value);
   }
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -530,7 +598,7 @@ function Composer() {
               size="icon-sm"
               variant="secondary"
               aria-label="Stop"
-              onClick={stop}
+              onClick={stopTracked}
               className="rounded-full"
             >
               <Icon name="stop" className="size-4" />
@@ -587,6 +655,7 @@ function Body() {
         <Button
           type="button"
           onClick={() => openSignIn('in')}
+          {...context({ action: 'sign_in' })}
           className="bg-brand hover:bg-brand-hover h-11 px-6 text-[15px] font-semibold text-white"
         >
           Sign in
@@ -606,7 +675,10 @@ function Body() {
         <Button
           type="button"
           variant="secondary"
-          onClick={() => void loadAssistant()}
+          onClick={() => {
+            track('assistant_retry_clicked', {});
+            void loadAssistant();
+          }}
         >
           Try again
         </Button>
@@ -614,7 +686,7 @@ function Body() {
     );
   return (
     <>
-      <Conversation onPick={(text) => void ask(text)} />
+      <Conversation onPick={(text) => void askTracked(text, 'suggestion')} />
       <Composer />
     </>
   );
@@ -649,6 +721,7 @@ export function AssistantPanel() {
   useDialog(panel, closeOverlay);
 
   const toggleExpanded = () => {
+    track('assistant_expanded', { expanded: !expanded });
     setExpanded((was) => {
       writeExpanded(!was);
       return !was;
@@ -679,6 +752,7 @@ export function AssistantPanel() {
         aria-modal="true"
         aria-labelledby="ask-title"
         tabIndex={-1}
+        {...area('assistant')}
         className={cn(
           'bg-panel border-line-2 text-fg relative mx-3 flex h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-88px)] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border shadow-2xl outline-none md:mx-0 md:flex-none',
           'md:pointer-events-auto md:origin-bottom-right md:rounded-lg md:shadow-[0_24px_64px_rgb(0_0_0/0.35)] md:transition-[width,height] md:duration-300 md:ease-out',
@@ -710,7 +784,12 @@ export function AssistantPanel() {
                       state.starting ||
                       state.conversationsLeftToday <= 0
                     }
-                    onClick={() => void newChat()}
+                    onClick={() => {
+                      track('assistant_new_chat', {
+                        conversations_left: state.conversationsLeftToday,
+                      });
+                      void newChat();
+                    }}
                     className="text-fg-2"
                   >
                     <Icon name="compose" className="h-5 w-5" />

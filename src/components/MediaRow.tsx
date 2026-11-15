@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { useDesktopTiles } from '../lib/rowLayout';
 import { cn } from '../lib/utils';
 import { Link } from './Link';
@@ -13,11 +14,13 @@ export function MediaRow({
   meta,
   tags,
   figure,
-}: MediaFace) {
+  onClick,
+}: MediaFace & { onClick?: (e: MouseEvent<HTMLAnchorElement>) => void }) {
   const tile = useDesktopTiles();
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
         'group border-line flex items-start gap-4 border-b py-5 md:items-stretch md:gap-6 md:py-8',
         tile && 'md:h-full md:flex-col md:gap-0 md:border-b-0 md:py-0',

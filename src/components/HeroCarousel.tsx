@@ -1,4 +1,11 @@
 import { useEffect, useState } from 'react';
+import {
+  area,
+  context,
+  itemRef,
+  track,
+  trackItemOpened,
+} from '../lib/analytics';
 import { closesLine, eventDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
@@ -26,6 +33,7 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
   if (!pick) return null;
   return (
     <div
+      {...area('hero')}
       onMouseEnter={() => setHeld(true)}
       onMouseLeave={() => setHeld(false)}
       onFocus={() => setHeld(true)}
@@ -33,7 +41,13 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
         if (!e.currentTarget.contains(e.relatedTarget)) setHeld(false);
       }}
     >
-      <Link href={paths.listing(pick.id)} className="group block">
+      <Link
+        href={paths.listing(pick.id)}
+        onClick={(e) =>
+          trackItemOpened(e.currentTarget, itemRef.listing(pick), 'hero')
+        }
+        className="group block"
+      >
         <div className="relative">
           <Photo
             size="hero"
@@ -71,9 +85,13 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
           {picks.length > 1 && (
             <button
               type="button"
-              onClick={() => setStopped(!stopped)}
+              onClick={(e) => {
+                track('hero_paused', { paused: !stopped }, e.currentTarget);
+                setStopped(!stopped);
+              }}
               aria-label={stopped ? 'Play slideshow' : 'Pause slideshow'}
               aria-pressed={stopped}
+              {...context({ action: 'slideshow_toggle' })}
               className="text-fg-3 hover:text-fg mr-1 grid h-6 w-6 place-items-center rounded-md"
             >
               <Icon name={stopped ? 'play' : 'pause'} className="h-3.5 w-3.5" />
@@ -87,7 +105,14 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
                 role="tab"
                 aria-selected={i === index}
                 aria-label={p.title}
-                onClick={() => setIndex(i)}
+                onClick={(e) => {
+                  track(
+                    'hero_slide_selected',
+                    { index: i + 1, item_id: p.id },
+                    e.currentTarget,
+                  );
+                  setIndex(i);
+                }}
                 className={`ease-out-strong h-1.5 rounded-full transition-[width,background-color] duration-200 ${i === index ? 'bg-fg w-6' : 'bg-fg-4 w-1.5'}`}
               />
             ))}

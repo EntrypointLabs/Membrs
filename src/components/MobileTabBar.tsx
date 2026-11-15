@@ -1,3 +1,4 @@
+import { area, context, track } from '../lib/analytics';
 import { navSection, paths, useRoute } from '../lib/router';
 import { useStore } from '../lib/store';
 import { openOverlay, overlayStore } from '../lib/ui';
@@ -26,6 +27,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Sections"
+      {...area('tab_bar')}
       className={`fixed inset-x-3 md:hidden ${asking ? 'z-[65]' : 'z-40'}`}
       style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
     >
@@ -38,6 +40,9 @@ export function MobileTabBar() {
             <li key={tab.key}>
               <Link
                 href={tab.href}
+                onClick={() =>
+                  track('nav_clicked', { item: tab.key, placement: 'tab_bar' })
+                }
                 aria-label={tab.label}
                 aria-current={on ? 'page' : undefined}
                 className={`${ITEM} ${on ? 'bg-soft-hover text-fg' : ''}`}
@@ -55,6 +60,7 @@ export function MobileTabBar() {
             aria-haspopup="dialog"
             aria-expanded={asking}
             onClick={() => openOverlay('assistant')}
+            {...context({ action: 'ask_membrs' })}
             className={`${ITEM} ${asking ? 'bg-soft-hover text-fg' : ''}`}
           >
             <Icon name="spark" className="text-accent h-5 w-5" />
@@ -64,6 +70,7 @@ export function MobileTabBar() {
         <li>
           <Link
             href={paths.search()}
+            onClick={() => track('search_opened', { placement: 'tab_bar' })}
             aria-label="Search"
             aria-current={searching ? 'page' : undefined}
             className={`${ITEM} ${searching && !asking ? 'bg-soft-hover text-fg' : ''}`}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { area, context, track } from '../lib/analytics';
 import { useIsPhone } from '../lib/media';
 import { DesktopTilesProvider } from '../lib/rowLayout';
 import { setSearchParams, useSearchParam } from '../lib/router';
@@ -54,14 +55,14 @@ export function FeedBody<T>({
 
   if (filtered) {
     return (
-      <>
+      <div {...area('results')}>
         <TileGrid>
           {paged.items.map((i) => (
             <div key={keyOf(i)}>{row(i)}</div>
           ))}
         </TileGrid>
         <PagedListPager paged={paged} total={items.length} noun={noun[1]} />
-      </>
+      </div>
     );
   }
 
@@ -71,7 +72,11 @@ export function FeedBody<T>({
   return (
     <>
       {rail.items.length > 0 && (
-        <section className="mt-2 md:mt-10">
+        <section
+          className="mt-2 md:mt-10"
+          {...area('lead_rail')}
+          {...context({ rail: rail.title })}
+        >
           <GroupHeading title={rail.title} count={rail.items.length} />
           <div className="md:hidden">
             <Rail>{rail.items.slice(0, 10).map(card)}</Rail>
@@ -91,7 +96,12 @@ export function FeedBody<T>({
       {shown.map(({ view, items: group }) => {
         const extra = group.length - GROUP_MAX;
         return (
-          <section key={view.id} className="mt-10 md:mt-16">
+          <section
+            key={view.id}
+            className="mt-10 md:mt-16"
+            {...area('time_group')}
+            {...context({ view: view.id })}
+          >
             <GroupHeading
               title={view.label}
               count={group.length}
@@ -101,6 +111,10 @@ export function FeedBody<T>({
                       label: String(extra),
                       aria: `${extra} more ${extra === 1 ? noun[0] : noun[1]}`,
                       onClick: () => {
+                        track('view_more_clicked', {
+                          view: view.id,
+                          hidden: extra,
+                        });
                         setSearchParams({
                           view: view.id,
                           type: null,
@@ -129,7 +143,8 @@ interface PagedList<T> {
   pages: number;
   items: T[];
   phone: boolean;
-  more: (() => void) | null;
+  /** Grows the list by a page, from the element that asked for it. */
+  more: ((from: Element) => void) | null;
 }
 
 /**
@@ -148,7 +163,17 @@ export function usePagedList<T>(items: T[], size = LIST_PAGE): PagedList<T> {
     return { page, pages, items: pageOf(items, page, size), phone, more: null };
   const more =
     count < items.length
-      ? () => setLoaded({ identity, count: count + size })
+      ? (from: Element) => {
+          track(
+            'list_extended',
+            {
+              shown: Math.min(count + size, items.length),
+              total: items.length,
+            },
+            from,
+          );
+          setLoaded({ identity, count: count + size });
+        }
       : null;
   return { page: 1, pages, items: items.slice(0, count), phone, more };
 }
@@ -204,14 +229,14 @@ export function ListingResults({
   );
 }
 
-function ScrollMore({ more }: { more: (() => void) | null }) {
+function ScrollMore({ more }: { more: PagedList<unknown>['more'] }) {
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = end.current;
     if (!node || !more) return;
     const watcher = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) more();
+        if (entries.some((e) => e.isIntersecting)) more(node);
       },
       { rootMargin: '600px 0px' },
     );
@@ -291,7 +316,10 @@ export function FilterLine({
   children: ReactNode;
 }) {
   return (
-    <div className="md:border-line hidden md:flex md:items-center md:justify-between md:gap-6 md:border-b md:pb-6">
+    <div
+      className="md:border-line hidden md:flex md:items-center md:justify-between md:gap-6 md:border-b md:pb-6"
+      {...area('filters')}
+    >
       <p className="hidden items-baseline gap-2.5 md:flex">
         <b className="text-5xl leading-none font-bold tracking-tight tabular-nums">
           {count}
@@ -302,7 +330,10 @@ export function FilterLine({
         {onClear && (
           <button
             type="button"
-            onClick={onClear}
+            onClick={(e) => {
+              track('filters_cleared', {}, e.currentTarget);
+              onClear();
+            }}
             className="text-fg-3 hover:text-fg ml-2 text-[15px]"
           >
             Clear filters
@@ -349,7 +380,10 @@ export function MoreFilters({
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((o) => !o)}
+        onClick={(e) => {
+          if (!open) track('filters_opened', {}, e.currentTarget);
+          setOpen(!open);
+        }}
         className="bg-btn hover:bg-btn-hover flex h-10 items-center gap-2 rounded-md px-3.5 text-[15px] font-semibold whitespace-nowrap"
       >
         <Icon name="filter" className="h-4 w-4" />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { area, context, track } from '../lib/analytics';
 import { sessionStore, signOut } from '../lib/auth';
 import { themeStore, type Theme } from '../lib/preferences';
 import { toast } from '../lib/ui';
@@ -40,7 +41,11 @@ export function Header() {
       >
         Skip to content
       </a>
-      <header className="sticky z-40 hidden md:block" style={{ top: -TOP_ROW }}>
+      <header
+        className="sticky z-40 hidden md:block"
+        style={{ top: -TOP_ROW }}
+        {...area('header')}
+      >
         <div
           className="page relative flex items-center justify-center py-6"
           style={{ height: TOP_ROW }}
@@ -48,6 +53,7 @@ export function Header() {
           <Link
             href="/"
             aria-label="MEMBRS home"
+            onClick={() => track('logo_clicked', { placement: 'header' })}
             className="text-[64px] leading-none font-black tracking-[-0.05em]"
           >
             MEMBRS
@@ -70,6 +76,9 @@ export function Header() {
               <Link
                 href="/"
                 aria-label="MEMBRS home"
+                onClick={() =>
+                  track('logo_clicked', { placement: 'header_docked' })
+                }
                 className="absolute left-0 text-[22px] leading-none font-black tracking-[-0.05em]"
               >
                 MEMBRS
@@ -83,6 +92,7 @@ export function Header() {
                       trigger={
                         <button
                           type="button"
+                          {...context({ action: 'contribute_menu' })}
                           className={sectionClass(active === item.key)}
                         >
                           <SectionLabel item={item} on={active === item.key} />
@@ -93,6 +103,12 @@ export function Header() {
                   ) : (
                     <Link
                       href={item.href}
+                      onClick={() =>
+                        track('nav_clicked', {
+                          item: item.key,
+                          placement: 'header',
+                        })
+                      }
                       aria-current={active === item.key ? 'page' : undefined}
                       data-tour={
                         item.key === 'events' ? 'nav-events' : undefined
@@ -109,6 +125,7 @@ export function Header() {
               <Link
                 href={paths.search()}
                 aria-label="Search"
+                onClick={() => track('search_opened', { placement: 'header' })}
                 data-tour="search"
                 className="bg-btn hover:bg-btn-hover grid h-10 w-10 place-items-center rounded-md"
               >
@@ -183,7 +200,10 @@ export function AccountButton() {
     <button
       type="button"
       onClick={() => {
-        if (!session) return openSignIn();
+        if (!session) {
+          track('digest_opened', { placement: 'header_sign_in' });
+          return openSignIn();
+        }
         signOut();
         toast('Signed out.');
       }}

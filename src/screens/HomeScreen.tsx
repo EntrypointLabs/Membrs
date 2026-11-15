@@ -12,6 +12,7 @@ import {
   promos,
   within,
 } from '../lib/api';
+import { area, context, track } from '../lib/analytics';
 import { grantedPosition, nearestCity } from '../lib/geo';
 import { openStateNow } from '../lib/hours';
 import {
@@ -87,44 +88,50 @@ export function HomeScreen() {
 
 function MobileTop({ city }: { city: string }) {
   return (
-    <TitleBar className="flex items-center justify-between">
-      <span data-tour="city">
-        <Select
-          label="City"
-          icon="pin"
-          value={city}
-          onChange={(c) => cityStore.set(c)}
-          className="h-11 font-semibold"
-          options={launchCities().map((c) => ({
-            value: c.name,
-            label: c.status === 'soon' ? `${c.name} (soon)` : c.name,
-            disabled: c.status === 'soon',
-          }))}
-        />
-      </span>
-      <span className="flex gap-2">
-        <ContributeMenu
-          align="end"
-          trigger={
-            <button
-              type="button"
-              aria-label="Contribute"
-              className="bg-btn grid h-11 w-11 place-items-center rounded-md"
-            >
-              <Icon name="plus" className="h-5 w-5" />
-            </button>
-          }
-        />
-        <button
-          type="button"
-          data-tour="plans"
-          onClick={() => openOverlay('plans')}
-          aria-label="Your plans"
-          className="bg-btn grid h-11 w-11 place-items-center rounded-md"
-        >
-          <Icon name="cal" className="h-5 w-5" />
-        </button>
-      </span>
+    <TitleBar>
+      <div
+        className="flex items-center justify-between"
+        {...area('mobile_top')}
+      >
+        <span data-tour="city">
+          <Select
+            label="City"
+            icon="pin"
+            value={city}
+            onChange={(c) => cityStore.set(c)}
+            className="h-11 font-semibold"
+            options={launchCities().map((c) => ({
+              value: c.name,
+              label: c.status === 'soon' ? `${c.name} (soon)` : c.name,
+              disabled: c.status === 'soon',
+            }))}
+          />
+        </span>
+        <span className="flex gap-2">
+          <ContributeMenu
+            align="end"
+            trigger={
+              <button
+                type="button"
+                aria-label="Contribute"
+                className="bg-btn grid h-11 w-11 place-items-center rounded-md"
+                {...context({ action: 'contribute_menu' })}
+              >
+                <Icon name="plus" className="h-5 w-5" />
+              </button>
+            }
+          />
+          <button
+            type="button"
+            data-tour="plans"
+            onClick={() => openOverlay('plans')}
+            aria-label="Your plans"
+            className="bg-btn grid h-11 w-11 place-items-center rounded-md"
+          >
+            <Icon name="cal" className="h-5 w-5" />
+          </button>
+        </span>
+      </div>
     </TitleBar>
   );
 }
@@ -157,12 +164,14 @@ function PhoneSectionHead({
 
 function PhoneList({
   title,
+  areaName,
   items,
   href,
   link,
   tour,
 }: {
   title: string;
+  areaName: string;
   items: Listing[];
   href?: string;
   link?: string;
@@ -170,7 +179,7 @@ function PhoneList({
 }) {
   if (!items.length) return null;
   return (
-    <section data-tour={tour} className="mt-12 md:hidden">
+    <section data-tour={tour} className="mt-12 md:hidden" {...area(areaName)}>
       <PhoneSectionHead
         title={title}
         href={href}
@@ -208,7 +217,7 @@ function HappeningSoon() {
   const items = all.slice(0, HOME_LIST);
   if (!items.length) return null;
   return (
-    <section className="mt-12 md:hidden">
+    <section className="mt-12 md:hidden" {...area('happening_soon')}>
       <PhoneSectionHead
         title="Happening Soon"
         href={paths.feed('events')}
@@ -236,6 +245,7 @@ function PhoneHome() {
       {subscribed && (
         <PhoneList
           title="For You"
+          areaName="for_you"
           items={forYou(interests)}
           href={paths.forYou()}
           link="See all"
@@ -243,6 +253,7 @@ function PhoneHome() {
       )}
       <PhoneList
         title="This Week"
+        areaName="this_week"
         items={week}
         href={paths.feed('events')}
         link="Events"
@@ -250,13 +261,22 @@ function PhoneHome() {
       />
       <PhoneList
         title="This Month"
+        areaName="this_month"
         items={within(30).filter((l) => !seen.has(l.id))}
         href={paths.feed('opportunities')}
         link="Opportunities"
       />
-      <PhoneList title="Most Popular" items={mostPopular(HOME_LIST)} />
+      <PhoneList
+        title="Most Popular"
+        areaName="most_popular"
+        items={mostPopular(HOME_LIST)}
+      />
       {nearCity && (
-        <PhoneList title={`Near You in ${nearCity}`} items={inCity(nearCity)} />
+        <PhoneList
+          title={`Near You in ${nearCity}`}
+          areaName="near_you"
+          items={inCity(nearCity)}
+        />
       )}
     </>
   );
@@ -269,7 +289,10 @@ function ThisWeek() {
   const items = within(range === 'week' ? 7 : 30, kind);
   const pages = Math.ceil(items.length / HOME_LIST);
   return (
-    <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+    <section
+      className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+      {...area('this_week')}
+    >
       <header className="mb-14 flex flex-wrap items-end justify-between gap-6">
         <div>
           <h2 className="text-[44px] font-semibold tracking-tight">
@@ -279,6 +302,7 @@ function ThisWeek() {
                   key={r}
                   type="button"
                   onClick={() => {
+                    if (r !== range) track('range_changed', { range: r });
                     setRange(r);
                     setPage(1);
                   }}
@@ -332,6 +356,7 @@ function ClosingSoon() {
     <section
       data-tour="closing"
       className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+      {...area('closing_soon')}
     >
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-[clamp(64px,7vw,128px)]">
         <div className="lg:top-bar self-start lg:sticky">
@@ -341,6 +366,16 @@ function ClosingSoon() {
           </h2>
           <Link
             href={paths.feed('opportunities')}
+            onClick={(e) =>
+              track(
+                'see_all_clicked',
+                {
+                  label: 'All opportunities',
+                  href: paths.feed('opportunities'),
+                },
+                e.currentTarget,
+              )
+            }
             className="bg-btn hover:bg-btn-hover mt-7 inline-flex h-11 items-center gap-2 rounded-md px-5 font-bold"
           >
             All opportunities{' '}
@@ -369,7 +404,10 @@ function NearYou({ city }: { city: string }) {
   const [page, setPage] = useState(1);
   const items = inCity(city, 'event');
   return (
-    <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+    <section
+      className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+      {...area('near_you')}
+    >
       <SectionHeader
         title="Near you"
         count={items.length}
@@ -403,7 +441,7 @@ function PlacesToGo() {
   return (
     <>
       {openNow.length > 0 && (
-        <section className="mt-12 md:hidden">
+        <section className="mt-12 md:hidden" {...area('open_now')}>
           <PhoneSectionHead
             title="Open Now"
             href={paths.feed('places')}
@@ -417,7 +455,10 @@ function PlacesToGo() {
           </div>
         </section>
       )}
-      <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+      <section
+        className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+        {...area('places_to_go')}
+      >
         <SectionHeader
           title="Places to go"
           count={places().length}
@@ -440,7 +481,7 @@ function PromosSection() {
   return (
     <>
       {endingSoon.length > 0 && (
-        <section className="mt-12 md:hidden">
+        <section className="mt-12 md:hidden" {...area('deals_ending_soon')}>
           <PhoneSectionHead
             title="Deals Ending Soon"
             href={paths.feed('promos')}
@@ -454,7 +495,10 @@ function PromosSection() {
           </Rail>
         </section>
       )}
-      <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+      <section
+        className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+        {...area('promos')}
+      >
         <SectionHeader
           title="Promos"
           count={promos().length}
@@ -474,7 +518,10 @@ function PromosSection() {
 function CategoriesSection() {
   const [kind, setKind] = useState<'event' | 'opportunity'>('event');
   return (
-    <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+    <section
+      className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+      {...area('categories')}
+    >
       <SectionHeader
         title="Browse by category"
         actions={
@@ -534,6 +581,9 @@ export function SeeAll({
   return (
     <Link
       href={href}
+      onClick={(e) =>
+        track('see_all_clicked', { label: children, href }, e.currentTarget)
+      }
       className={`text-fg-3 hover:text-fg flex h-10 items-center gap-1 px-2 text-[15px] font-semibold ${className}`}
     >
       {children} <Icon name="chevronRight" className="h-4 w-4" />

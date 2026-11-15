@@ -4,6 +4,7 @@ import {
   places as allPlaces,
   taxonomy,
 } from '../lib/api';
+import { area, track } from '../lib/analytics';
 import { bySoonest } from '../lib/dates';
 import { paths, useSearchParam, type FeedKind } from '../lib/router';
 import { EVENT_VIEWS, findView, OPPORTUNITY_VIEWS } from '../lib/views';
@@ -29,11 +30,24 @@ export function CategoryTiles({
     .filter((c) => c.kind === kind)
     .slice(0, limit);
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6">
+    <div
+      className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6"
+      {...area('category_tiles')}
+    >
       {list.map((c) => (
         <Link
           key={c.slug}
           href={paths.category(c.slug)}
+          onClick={(e) =>
+            track(
+              'category_clicked',
+              {
+                category: c.name,
+                section: kind === 'event' ? 'events' : 'opportunities',
+              },
+              e.currentTarget,
+            )
+          }
           className="group rounded-photo relative block overflow-hidden"
         >
           <Photo
@@ -89,11 +103,18 @@ function TypeList({ feed }: { feed: 'places' | 'promos' }) {
   const t = taxonomy();
   const names = feed === 'places' ? t.placeTypes : t.promoCategories;
   return (
-    <ul className="border-line border-t">
+    <ul className="border-line border-t" {...area('type_list')}>
       {names.map((n) => (
         <li key={n} className="border-line border-b">
           <Link
             href={`${paths.feed(feed)}?type=${slugify(n)}`}
+            onClick={(e) =>
+              track(
+                'category_clicked',
+                { category: n, section: feed },
+                e.currentTarget,
+              )
+            }
             className="hover:text-accent flex items-baseline justify-between gap-6 py-6 text-2xl font-semibold"
           >
             <CategoryLabel name={n} dot />
@@ -141,7 +162,9 @@ export function CategoryScreen({ slug }: { slug: string }) {
           total={all.length}
         />
       </TitleBar>
-      <ListingResults items={items} />
+      <div {...area('category_listings')}>
+        <ListingResults items={items} />
+      </div>
     </div>
   );
 }

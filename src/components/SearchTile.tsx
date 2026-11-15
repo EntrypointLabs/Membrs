@@ -1,11 +1,19 @@
+import type { MouseEvent } from 'react';
 import type { SearchTileData } from '../lib/searchShelves';
 import { Link } from './Link';
 import { Photo } from './Photo';
 
-export function SearchTile({ tile }: { tile: SearchTileData }) {
+export function SearchTile({
+  tile,
+  onClick,
+}: {
+  tile: SearchTileData;
+  onClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
+}) {
   return (
     <Link
       href={tile.href}
+      onClick={onClick}
       className="group bg-soft hover:bg-soft-hover flex items-center gap-4 rounded-lg p-2 pr-4"
     >
       <Photo

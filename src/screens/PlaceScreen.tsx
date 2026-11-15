@@ -1,3 +1,5 @@
+import type { MouseEvent } from 'react';
+import { area, context, itemRef, track } from '../lib/analytics';
 import { placeById, places } from '../lib/api';
 import { WEEKDAYS } from '../lib/dates';
 import { openStateNow, rangeLabel } from '../lib/hours';
@@ -36,8 +38,13 @@ export function PlaceScreen({ id }: { id: string }) {
         p.id !== place.id && (p.type === place.type || p.city === place.city),
     )
     .slice(0, 3);
+  const item = itemRef.place(place);
+  const findSimilar = (e: MouseEvent<HTMLElement>) =>
+    track('find_similar_clicked', item, e.currentTarget);
+  const onShare = (e: MouseEvent<HTMLElement>) =>
+    shareAndConfirm(place.name, item, e.currentTarget);
   return (
-    <div className="page max-md:pt-0 md:pt-10">
+    <div className="page max-md:pt-0 md:pt-10" {...context(item)}>
       <DetailHead
         trail={[
           ['Places', paths.feed('places')],
@@ -49,7 +56,8 @@ export function PlaceScreen({ id }: { id: string }) {
           <OverlayButton
             icon="share"
             label="Share"
-            onClick={() => shareAndConfirm(place.name)}
+            action="share"
+            onClick={onShare}
           />
         }
       />
@@ -61,18 +69,25 @@ export function PlaceScreen({ id }: { id: string }) {
             className=""
           />
         }
-        primary={<PrimaryLink href={maps}>Get directions</PrimaryLink>}
+        primary={
+          <PrimaryLink href={maps} item={item} cta="get_directions">
+            Get directions
+          </PrimaryLink>
+        }
         links={
           <>
             <LinkRow
               icon="spark"
               label="Find similar"
+              action="find_similar"
               href={paths.feed('places')}
+              onClick={findSimilar}
             />
             <LinkRow
               icon="share"
               label="Share with a friend"
-              onClick={() => shareAndConfirm(place.name)}
+              action="share"
+              onClick={onShare}
             />
           </>
         }
@@ -83,27 +98,37 @@ export function PlaceScreen({ id }: { id: string }) {
               {place.entry || 'See gate'}
             </p>
             <div className="mt-5">
-              <PrimaryLink href={maps}>Get directions</PrimaryLink>
+              <PrimaryLink href={maps} item={item} cta="get_directions">
+                Get directions
+              </PrimaryLink>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <SmallButton href={paths.feed('places')}>
+              <SmallButton
+                href={paths.feed('places')}
+                action="find_similar"
+                onClick={findSimilar}
+              >
                 Find similar
               </SmallButton>
-              <SmallButton onClick={() => shareAndConfirm(place.name)}>
+              <SmallButton action="share" onClick={onShare}>
                 Share
               </SmallButton>
             </div>
           </ActionCard>
         }
       >
-        <dl>
+        <dl {...area('facts')}>
           <Fact label="Today">
             <p className="font-semibold">{state.label}</p>
             <p className="text-fg-3 text-[15px]">{state.detail}</p>
           </Fact>
           <Fact
             label="Where"
-            action={<FactAction href={maps}>Directions</FactAction>}
+            action={
+              <FactAction href={maps} action="directions">
+                Directions
+              </FactAction>
+            }
           >
             <p className="font-semibold">{place.area}</p>
             <p className="text-fg-3 text-[15px]">{place.city}</p>
@@ -151,7 +176,10 @@ export function PlaceScreen({ id }: { id: string }) {
         <MapCard name={place.name} area={`${place.area}, ${place.city}`} />
       </DetailBody>
       {more.length > 0 && (
-        <section className="mt-[clamp(100px,8vw,160px)]">
+        <section
+          className="mt-[clamp(100px,8vw,160px)]"
+          {...area('more_like_this')}
+        >
           <SectionHeader
             title="More like this"
             count={more.length}

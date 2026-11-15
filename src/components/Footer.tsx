@@ -1,3 +1,4 @@
+import { area, context, track } from '../lib/analytics';
 import { CONTACT } from '../lib/config';
 import { cityStore } from '../lib/preferences';
 import { shown } from '../lib/sections';
@@ -51,7 +52,10 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
 export function Footer() {
   const city = useStore(cityStore);
   return (
-    <footer className="page mt-[clamp(120px,9vw,180px)] max-md:hidden">
+    <footer
+      className="page mt-[clamp(120px,9vw,180px)] max-md:hidden"
+      {...area('footer')}
+    >
       <div className="bg-inv text-inv-fg rounded-t-lg px-[clamp(32px,4.5vw,88px)] pt-[clamp(64px,5.5vw,104px)] pb-10 shadow-[0_-24px_60px_rgb(0_0_0/0.18)]">
         {/* Same four columns as the links below, so the sign-up sits exactly in the Contact column. */}
         <div className="grid items-center gap-10 md:grid-cols-2 lg:grid-cols-4">
@@ -72,6 +76,7 @@ export function Footer() {
           <div className="flex flex-col gap-2.5">
             <Link
               href="/"
+              onClick={() => track('logo_clicked', { placement: 'footer' })}
               className="text-[clamp(34px,2.6vw,44px)] leading-none font-black tracking-[-0.05em]"
             >
               MEMBRS
@@ -90,6 +95,9 @@ export function Footer() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={() =>
+                    track('nav_clicked', { item: label, placement: 'footer' })
+                  }
                   className="text-inv-fg-2 hover:text-inv-fg text-base"
                 >
                   {titleCase(label)}
@@ -99,6 +107,7 @@ export function Footer() {
                 <button
                   type="button"
                   onClick={() => openOverlay('cookies')}
+                  {...context({ action: 'cookie_settings' })}
                   className="text-inv-fg-2 hover:text-inv-fg text-base"
                 >
                   Cookie Settings
@@ -112,6 +121,7 @@ export function Footer() {
               <a
                 key={email}
                 href={`mailto:${email}`}
+                {...context({ action: 'email' })}
                 className="text-inv-fg-2 hover:text-inv-fg group flex items-center gap-1.5 text-base"
               >
                 {email}

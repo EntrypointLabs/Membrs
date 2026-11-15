@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { area, track } from '../lib/analytics';
 import { setSearchParams } from '../lib/router';
 import { slugify } from '../lib/text';
 import { Icon } from './Icon';
@@ -55,6 +56,11 @@ export function FeedPicker({
   const typeName = types.find((t) => t.value === type)?.label;
   const current = views.find((v) => v.value === view)?.label ?? typeName;
   const pick = (next: { view?: string | null; type?: string | null }) => {
+    track('picker_option_selected', {
+      section: title,
+      view: next.view ?? null,
+      type: next.type ?? null,
+    });
     setSearchParams({
       view: next.view ?? null,
       type: next.type ?? null,
@@ -71,51 +77,56 @@ export function FeedPicker({
         current={current ?? placeholder}
         muted={!current && !allLabel}
         category={type ? typeName : undefined}
-        onOpen={() => setOpen(true)}
+        onOpen={() => {
+          track('picker_opened', { section: title });
+          setOpen(true);
+        }}
       />
       <Presence value={open}>
         {() => (
           <Modal title={sheetTitle} onClose={() => setOpen(false)}>
-            {filters && (
-              <div className="mb-5 flex flex-wrap gap-2">{filters}</div>
-            )}
-            <Group>
-              <Option
-                label={allLabel ?? `All ${title.toLowerCase()}`}
-                count={total}
-                on={!view && !type}
-                onClick={() => pick({})}
-              />
-            </Group>
-            <Heading icon="clock">By date</Heading>
-            <Group>
-              {views.map((v) => (
+            <div {...area('picker')}>
+              {filters && (
+                <div className="mb-5 flex flex-wrap gap-2">{filters}</div>
+              )}
+              <Group>
                 <Option
-                  key={v.value}
-                  label={v.label}
-                  count={v.count}
-                  on={view === v.value}
-                  onClick={() => pick({ view: v.value })}
+                  label={allLabel ?? `All ${title.toLowerCase()}`}
+                  count={total}
+                  on={!view && !type}
+                  onClick={() => pick({})}
                 />
-              ))}
-            </Group>
-            {types.length > 0 && (
-              <>
-                <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
-                <Group>
-                  {types.map((t) => (
-                    <Option
-                      key={t.value}
-                      label={t.label}
-                      count={t.count}
-                      dot
-                      on={type === t.value}
-                      onClick={() => pick({ type: t.value })}
-                    />
-                  ))}
-                </Group>
-              </>
-            )}
+              </Group>
+              <Heading icon="clock">By date</Heading>
+              <Group>
+                {views.map((v) => (
+                  <Option
+                    key={v.value}
+                    label={v.label}
+                    count={v.count}
+                    on={view === v.value}
+                    onClick={() => pick({ view: v.value })}
+                  />
+                ))}
+              </Group>
+              {types.length > 0 && (
+                <>
+                  <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
+                  <Group>
+                    {types.map((t) => (
+                      <Option
+                        key={t.value}
+                        label={t.label}
+                        count={t.count}
+                        dot
+                        on={type === t.value}
+                        onClick={() => pick({ type: t.value })}
+                      />
+                    ))}
+                  </Group>
+                </>
+              )}
+            </div>
           </Modal>
         )}
       </Presence>

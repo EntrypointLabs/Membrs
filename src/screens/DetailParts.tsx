@@ -1,5 +1,12 @@
-import type { ReactNode } from 'react';
+import { useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { DropdownMenu } from 'radix-ui';
+import {
+  area,
+  context,
+  contextOf,
+  track,
+  type ItemRef,
+} from '../lib/analytics';
 import { navigate } from '../lib/router';
 import { titleCase } from '../lib/text';
 import { cameFromApp, copyText, toast } from '../lib/ui';
@@ -7,7 +14,8 @@ import { Icon, type IconName } from '../components/Icon';
 import { Link } from '../components/Link';
 import { Photo } from '../components/Photo';
 
-function goBack(trail: [string, string][]) {
+function goBack(trail: [string, string][], from: Element) {
+  track('back_clicked', {}, from);
   if (cameFromApp() || !trail[0]) window.history.back();
   else navigate(trail[0][1]);
 }
@@ -17,10 +25,11 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
     <nav
       aria-label="Breadcrumb"
       className="flex items-center gap-3 text-[15px]"
+      {...area('breadcrumbs')}
     >
       <button
         type="button"
-        onClick={() => goBack(trail)}
+        onClick={(e) => goBack(trail, e.currentTarget)}
         aria-label="Back"
         className="bg-btn hover:bg-btn-hover grid h-9 w-9 place-items-center rounded-md"
       >
@@ -30,7 +39,17 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
         {trail.map(([label, href], i) => (
           <li key={href} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true">/</span>}
-            <Link href={href} className="text-fg-2 hover:text-fg font-bold">
+            <Link
+              href={href}
+              onClick={(e) =>
+                track(
+                  'breadcrumb_clicked',
+                  { label, href, depth: i + 1 },
+                  e.currentTarget,
+                )
+              }
+              className="text-fg-2 hover:text-fg font-bold"
+            >
               {label}
             </Link>
           </li>
@@ -46,12 +65,15 @@ const OVERLAY_BUTTON =
 export function OverlayButton({
   icon,
   label,
+  action,
   onClick,
   href,
 }: {
   icon: IconName;
   label: string;
-  onClick?: () => void;
+  /** What the button does, for analytics: "share", "remind_me". */
+  action?: string;
+  onClick?: (e: MouseEvent<HTMLElement>) => void;
   href?: string;
 }) {
   return href ? (
@@ -60,6 +82,8 @@ export function OverlayButton({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
+      onClick={onClick}
+      {...context({ action })}
       className={OVERLAY_BUTTON}
     >
       <Icon name={icon} />
@@ -69,6 +93,7 @@ export function OverlayButton({
       type="button"
       onClick={onClick}
       aria-label={label}
+      {...context({ action })}
       className={OVERLAY_BUTTON}
     >
       <Icon name={icon} />
@@ -79,19 +104,42 @@ export function OverlayButton({
 export function OverlayMenu({
   icon,
   label,
+  action,
   items,
 }: {
   icon: IconName;
   label: string;
-  items: { label: string; href?: string; onSelect?: () => void }[];
+  /** What opening the menu is for, for analytics: "calendar_menu". */
+  action: string;
+  items: {
+    label: string;
+    action: string;
+    href?: string;
+    onSelect?: (from: HTMLElement) => void;
+  }[];
 }) {
+  const trigger = useRef<HTMLButtonElement>(null);
+  // The menu renders in a portal outside the page, so clicks in it would lose
+  // the area and item the trigger sits in. It takes them along when it opens.
+  const [scope, setScope] = useState<ReturnType<typeof contextOf>>({});
   return (
-    <DropdownMenu.Root modal={false}>
-      <DropdownMenu.Trigger aria-label={label} className={OVERLAY_BUTTON}>
+    <DropdownMenu.Root
+      modal={false}
+      onOpenChange={(open) =>
+        open && setScope(contextOf(trigger.current?.parentElement))
+      }
+    >
+      <DropdownMenu.Trigger
+        ref={trigger}
+        aria-label={label}
+        {...context({ action })}
+        className={OVERLAY_BUTTON}
+      >
         <Icon name={icon} />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
+          {...context(scope)}
           align="end"
           sideOffset={8}
           className="bg-panel border-line-2 text-fg z-[70] min-w-48 rounded-md border p-1 shadow-[0_16px_48px_rgb(0_0_0/0.35)]"
@@ -100,7 +148,9 @@ export function OverlayMenu({
             <DropdownMenu.Item
               key={item.label}
               asChild={Boolean(item.href)}
-              onSelect={item.onSelect}
+              // Radix dispatches the select event on the item element itself.
+              onSelect={(e) => item.onSelect?.(e.currentTarget as HTMLElement)}
+              {...context({ action: item.action })}
               className="data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center rounded-sm px-3 text-[15px] font-medium outline-none"
             >
               {item.href ? (
@@ -153,11 +203,14 @@ export function DetailHead({
           priority
           className="md:rounded-photo aspect-[4/3] md:aspect-[2/1]"
         />
-        <div className="absolute inset-x-4 top-[calc(12px+env(safe-area-inset-top,0px))] flex items-center justify-between md:hidden">
+        <div
+          className="absolute inset-x-4 top-[calc(12px+env(safe-area-inset-top,0px))] flex items-center justify-between md:hidden"
+          {...area('photo_tools')}
+        >
           <OverlayButton
             icon="chevronLeft"
             label="Back"
-            onClick={() => goBack(trail)}
+            onClick={(e) => goBack(trail, e.currentTarget)}
           />
           <div className="flex items-center gap-2">{tools}</div>
         </div>
@@ -218,14 +271,21 @@ export function Fact({
 
 export function FactAction({
   href,
+  action,
+  onClick,
   children,
 }: {
   href: string;
+  /** What the link does, for analytics: "directions", "remind_me". */
+  action: string;
+  onClick?: (e: MouseEvent<HTMLElement>) => void;
   children: string;
 }) {
   return (
     <a
       href={href}
+      onClick={onClick}
+      {...context({ action })}
       target="_blank"
       rel="noopener noreferrer"
       className="bg-btn hover:bg-btn-hover flex h-10 shrink-0 items-center rounded-md px-4 text-[15px] font-semibold whitespace-nowrap transition-colors"
@@ -298,11 +358,18 @@ export function DetailBody({
       {about}
       <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
         <div className="hidden h-full md:block">{action}</div>
-        <div className="flex flex-col gap-3 md:hidden">{primary}</div>
+        <div
+          className="flex flex-col gap-3 md:hidden"
+          {...area('mobile_actions')}
+        >
+          {primary}
+        </div>
       </div>
       <div className="min-w-0">
         {children}
-        <ul className="mt-6 md:hidden">{links}</ul>
+        <ul className="mt-6 md:hidden" {...area('mobile_links')}>
+          {links}
+        </ul>
       </div>
     </div>
   );
@@ -310,9 +377,14 @@ export function DetailBody({
 
 export function PrimaryLink({
   href,
+  item,
+  cta,
   children,
 }: {
   href: string;
+  item: ItemRef;
+  /** The call to action, for analytics: "get_ticket", "go_to_merchant". */
+  cta: string;
   children: string;
 }) {
   return (
@@ -320,6 +392,10 @@ export function PrimaryLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={(e) =>
+        track('listing_cta_clicked', { ...item, cta }, e.currentTarget)
+      }
+      {...context({ action: cta })}
       className="bg-brand hover:bg-brand-hover flex h-12 items-center justify-center gap-1.5 rounded-md font-bold text-white"
     >
       {children} <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
@@ -330,13 +406,16 @@ export function PrimaryLink({
 export function LinkRow({
   icon,
   label,
+  action,
   href,
   onClick,
 }: {
   icon: IconName;
   label: string;
+  /** What the row does, for analytics: "find_similar", "share". */
+  action: string;
   href?: string;
-  onClick?: () => void;
+  onClick?: (e: MouseEvent<HTMLElement>) => void;
 }) {
   const body = (
     <>
@@ -354,9 +433,9 @@ export function LinkRow({
   );
   const cls = 'flex w-full items-center gap-4 text-left';
   return (
-    <li className="group">
+    <li className="group" {...context({ action })}>
       {href ? (
-        <Link href={href} className={cls}>
+        <Link href={href} onClick={onClick} className={cls}>
           {body}
         </Link>
       ) : (
@@ -368,8 +447,18 @@ export function LinkRow({
   );
 }
 
-export async function shareAndConfirm(title: string): Promise<void> {
+export async function shareAndConfirm(
+  title: string,
+  item: ItemRef,
+  from: Element,
+): Promise<void> {
   const outcome = await share(title);
+  if (outcome !== 'failed')
+    track(
+      'item_shared',
+      { ...item, method: outcome === 'copied' ? 'copied' : 'share_sheet' },
+      from,
+    );
   if (outcome === 'copied') toast('Link copied');
   if (outcome === 'failed') toast('Could not share this link');
 }
@@ -377,7 +466,10 @@ export async function shareAndConfirm(title: string): Promise<void> {
 /** The sticky action card in the right column. */
 export function ActionCard({ children }: { children: ReactNode }) {
   return (
-    <aside className="bg-panel border-line-2 lg:top-bar rounded-lg border p-6 lg:sticky">
+    <aside
+      className="bg-panel border-line-2 lg:top-bar rounded-lg border p-6 lg:sticky"
+      {...area('action_card')}
+    >
       {children}
     </aside>
   );
@@ -386,27 +478,47 @@ export function ActionCard({ children }: { children: ReactNode }) {
 export function SmallButton({
   onClick,
   href,
+  action,
   children,
 }: {
-  onClick?: () => void;
+  onClick?: (e: MouseEvent<HTMLElement>) => void;
   href?: string;
+  /** What the button does, for analytics: "share", "add_to_calendar_ics". */
+  action: string;
   children: string;
 }) {
   const cls =
     'bg-btn hover:bg-btn-hover flex h-10 items-center justify-center rounded-md px-3 text-sm font-bold';
   if (href?.startsWith('/')) {
     return (
-      <Link href={href} className={cls}>
+      <Link
+        href={href}
+        onClick={onClick}
+        {...context({ action })}
+        className={cls}
+      >
         {children}
       </Link>
     );
   }
   return href ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+      {...context({ action })}
+      className={cls}
+    >
       {children}
     </a>
   ) : (
-    <button type="button" onClick={onClick} className={cls}>
+    <button
+      type="button"
+      onClick={onClick}
+      {...context({ action })}
+      className={cls}
+    >
       {children}
     </button>
   );
@@ -416,7 +528,10 @@ export function SmallButton({
 export function MapCard({ name, area }: { name: string; area: string }) {
   const q = encodeURIComponent(`${name}, ${area}`);
   return (
-    <div className="bg-soft border-line-2 rounded-photo relative mt-10 aspect-[16/9] overflow-hidden border">
+    <div
+      {...context({ area: 'map' })}
+      className="bg-soft border-line-2 rounded-photo relative mt-10 aspect-[16/9] overflow-hidden border"
+    >
       <iframe
         title={`Map of ${name}`}
         src={`https://maps.google.com/maps?q=${q}&z=16&output=embed`}

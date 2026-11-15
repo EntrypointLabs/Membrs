@@ -3,7 +3,9 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { useRef } from 'react';
 import { Select as SelectPrimitive } from 'radix-ui';
+import { track } from '../lib/analytics';
 import { Icon, type IconName } from './Icon';
 
 interface SelectProps<T extends string> {
@@ -29,10 +31,26 @@ export function Select<T extends string>({
   icon,
   className = 'h-10',
 }: SelectProps<T>) {
+  const trigger = useRef<HTMLButtonElement>(null);
   const current = options.find((o) => o.value === value)?.label ?? value;
+  const pick = (next: T) => {
+    // The menu renders in a portal, outside the page's areas, so the event
+    // takes its area from the trigger instead.
+    track(
+      'filter_changed',
+      {
+        filter: label,
+        value: next,
+        label: options.find((o) => o.value === next)?.label ?? next,
+      },
+      trigger.current,
+    );
+    onChange(next);
+  };
   return (
-    <Root value={value} onValueChange={(v) => onChange(v as T)}>
+    <Root value={value} onValueChange={(v) => pick(v as T)}>
       <SelectPrimitive.Trigger
+        ref={trigger}
         aria-label={`${label}: ${current}`}
         className={`bg-btn hover:bg-btn-hover data-[state=open]:bg-btn-hover focus-visible:ring-accent flex ${className} shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-3.5 text-[15px] whitespace-nowrap transition-colors outline-none focus-visible:ring-2`}
       >

@@ -19,6 +19,7 @@ import {
   type AdQuote,
   type Placement,
 } from '../lib/ads';
+import { area, context, track } from '../lib/analytics';
 import {
   PHOTO_TYPES,
   contributeForm,
@@ -112,6 +113,15 @@ function todayIso(): string {
   return localIsoDate(new Date());
 }
 
+function checkoutOf(run: AdQuote) {
+  return {
+    placement: run.placement,
+    days: run.days,
+    total: run.total,
+    demo: PAYMENTS_DEMO,
+  };
+}
+
 function shortDate(iso: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', {
     weekday: 'short',
@@ -152,6 +162,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     quote: AdQuote;
     reference: string;
   } | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const session = useStore(sessionStore);
   const canSend = !API_BASE || Boolean(session?.accessToken);
   const deliveredElsewhere = useStore(sentSlotsStore).includes(slot);
@@ -222,27 +233,65 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     : (firstPlacement ?? 'Home');
   const adQuote = days === null ? null : quoteFor(placement, days);
   const filled = isAd ? { ...values, cat: placement } : values;
+  // Clearing the form bumps the generation, after which nothing on screen
+  // came from the draft.
+  const resumed = saved !== null && generation === 0;
 
-  const finish = useCallback(() => {
-    clearDraft(kind);
-    setResume(false);
-    setSent(true);
-  }, [kind]);
+  // Submitted means the server has it. A send that goes through at once also
+  // lands in sentSlotsStore, so finish runs twice for it and the ref keeps
+  // that to one event.
+  const reportedSent = useRef(false);
+  const finish = useCallback(
+    (delivery: 'sent' | 'outbox') => {
+      if (!reportedSent.current) {
+        reportedSent.current = true;
+        track(
+          'contribute_submitted',
+          {
+            kind,
+            category: values.cat ?? null,
+            city: values.city ?? null,
+            has_photo: Boolean(photo),
+            resumed,
+            delivery,
+          },
+          formRef.current,
+        );
+      }
+      clearDraft(kind);
+      setResume(false);
+      setSent(true);
+    },
+    [kind, values.cat, values.city, photo, resumed],
+  );
 
   useEffect(() => {
     if (!deliveredElsewhere) return;
     consumeSent(slot);
-    if (!isAd) finish();
+    // While a send is in flight, the slot that landed is that send's own.
+    // Otherwise it came from a write the outbox delivered later.
+    if (!isAd) finish(busyRef.current ? 'sent' : 'outbox');
   }, [deliveredElsewhere, slot, isAd, finish]);
 
-  const set = (name: string, value: string) => {
+  // Each field is reported once and the first one marks the form as
+  // started, so a funnel over them shows where people give up.
+  const touched = useRef(new Set<string>());
+  const set = (name: string, value: string, complete = value.trim() !== '') => {
+    if (complete && !touched.current.has(name)) {
+      if (touched.current.size === 0)
+        track('contribute_started', { kind, resumed }, formRef.current);
+      touched.current.add(name);
+      track('contribute_field_filled', { kind, field: name }, formRef.current);
+    }
     setValues((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
     setResume(false);
   };
 
+  // A typed city only counts once it is picked from the list, the same rule
+  // the form checks before sending.
   const setCity = (name: string, value: string, wasPicked: boolean) => {
-    set(name, value);
+    set(name, value, wasPicked || value === WORLDWIDE);
     setPicked((prev) => {
       const next = { ...prev };
       if (wasPicked) next[name] = value;
@@ -322,11 +371,12 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         kind,
         url ? { ...payload, photo: url } : payload,
       );
-      if (delivery === 'sent') return finish();
+      if (delivery === 'sent') return finish('sent');
       if (delivery === 'signedOut') {
         discardSlot(slot);
         return needSignIn();
       }
+      track('contribute_queued', { kind }, formRef.current);
       toast('Saved. We will send it when we can.');
     } catch (error) {
       if (error instanceof SignedOutError) return needSignIn();
@@ -343,6 +393,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       toast(messageOf(error, 'Could not upload the photo. Try again.'));
       return;
     }
+    track('ad_checkout_started', checkoutOf(run), formRef.current);
     if (PAYMENTS_DEMO) {
       setDemoPhoto(uploaded);
       return;
@@ -354,6 +405,11 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         values: payload,
         photo: uploaded,
       });
+      track(
+        'ad_checkout_finished',
+        { ...checkoutOf(run), status: result.status },
+        formRef.current,
+      );
       if (result.status === 'completed' || result.status === 'pending') {
         if (result.status === 'pending')
           toast(
@@ -364,6 +420,11 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         toast('Payment cancelled. Nothing was charged.');
       else toast('That payment did not go through. Try again.');
     } catch (error) {
+      track(
+        'ad_checkout_errored',
+        { placement: run.placement, days: run.days, total: run.total },
+        formRef.current,
+      );
       if (error instanceof SignedOutError) return needSignIn();
       toast(
         messageOf(
@@ -382,6 +443,11 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     const missing = problems();
     setErrors(missing);
     if (Object.keys(missing).length) {
+      track(
+        'contribute_validation_failed',
+        { kind, fields: Object.keys(missing) },
+        formRef.current,
+      );
       setResume(false);
       setScrollRequest((n) => n + 1);
       return;
@@ -430,9 +496,17 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         days: paidQuote.days,
         reference,
       });
+      // A signed-out delivery stays in the outbox like a queued one, and the
+      // screen tells the buyer the same for both.
+      track(
+        'ad_request_filed',
+        { delivery: delivery === 'sent' ? 'sent' : 'queued' },
+        formRef.current,
+      );
       if (delivery !== 'sent')
         toast('Paid. Your ad details will send when the connection is back.');
     } catch (error) {
+      track('ad_request_filed', { delivery: 'failed' }, formRef.current);
       toast(
         messageOf(
           error,
@@ -447,7 +521,23 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   function onDemoPaid() {
     const uploaded = demoPhoto ?? '';
     setDemoPhoto(null);
-    if (adQuote) void saveAd(withLinks(), adQuote, uploaded, demoReference());
+    if (!adQuote) return;
+    track(
+      'ad_checkout_finished',
+      { ...checkoutOf(adQuote), status: 'completed' },
+      formRef.current,
+    );
+    void saveAd(withLinks(), adQuote, uploaded, demoReference());
+  }
+
+  function onDemoClosed() {
+    setDemoPhoto(null);
+    if (adQuote)
+      track(
+        'ad_checkout_finished',
+        { ...checkoutOf(adQuote), status: 'cancelled' },
+        formRef.current,
+      );
   }
 
   async function pickPhoto(file: File) {
@@ -456,6 +546,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       setErrors((prev) => ({ ...prev, photo: problem }));
       return;
     }
+    track('contribute_photo_added', { kind }, formRef.current);
     setPhoto(URL.createObjectURL(file));
     setPhotoId(newIdempotencyKey());
     setHosted(undefined);
@@ -474,6 +565,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   }
 
   function clearForm() {
+    touched.current.clear();
     setValues({});
     setPicked({});
     setErrors({});
@@ -500,6 +592,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         email={values.email ?? ''}
         start={values.date}
         onAgain={() => {
+          track('ad_create_another_clicked', {});
           setPaid(null);
           clearForm();
         }}
@@ -542,18 +635,20 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   return (
     <div className="page pt-6 pb-32 md:pt-14 md:pb-20">
       <div>
-        <header>
+        <header {...area('contribute_intro')}>
           <h1 className="text-[36px] leading-[1.04] font-semibold tracking-[-0.03em] md:text-[56px]">
             {titleCase(form.title)}
           </h1>
         </header>
 
         <form
+          ref={formRef}
           onSubmit={onSubmit}
           onFocus={isAd ? preloadCheckout : undefined}
           noValidate
           aria-busy={busy !== null}
           className="border-line-2 mt-10 flex flex-col gap-7 border-t pt-8 md:mt-12 md:gap-8 md:pt-10"
+          {...area('contribute_form')}
         >
           <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
             {details.map((f, i) => (
@@ -620,6 +715,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
                 agreed={agreed}
                 error={errors.agreed}
                 onChange={(v) => {
+                  track('ad_policy_toggled', { agreed: v }, formRef.current);
                   setAgreed(v);
                   setErrors((prev) => ({ ...prev, agreed: '' }));
                 }}
@@ -647,6 +743,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
                 disabled={busy !== null}
                 onClick={() => (hasInput ? setConfirmClear(true) : clearForm())}
                 className="h-12 px-5 text-base"
+                {...context({ action: 'clear_form' })}
               >
                 Clear form
               </Button>
@@ -655,6 +752,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
                 size="lg"
                 disabled={busy !== null || adsClosed}
                 className="h-12 px-6 text-base"
+                {...context({ action: isAd ? 'pay' : 'submit' })}
               >
                 {submitLabel}
               </Button>
@@ -682,17 +780,17 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       </div>
 
       {demoPhoto !== null && adQuote && (
-        <BachsDemo
-          quote={adQuote}
-          onPaid={onDemoPaid}
-          onClose={() => setDemoPhoto(null)}
-        />
+        <BachsDemo quote={adQuote} onPaid={onDemoPaid} onClose={onDemoClosed} />
       )}
 
       {confirmClear && (
         <Modal title={titleCase('Clear this form?')} onClose={closeConfirm}>
           <div className="flex justify-end gap-2.5">
-            <Button variant="ghost" onClick={closeConfirm}>
+            <Button
+              variant="ghost"
+              onClick={closeConfirm}
+              {...context({ action: 'clear_form_cancelled' })}
+            >
               Keep editing
             </Button>
             <Button
@@ -701,6 +799,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
                 clearForm();
                 closeConfirm();
               }}
+              {...context({ action: 'clear_form_confirmed' })}
             >
               Clear form
             </Button>
@@ -944,6 +1043,7 @@ function PhotoField({
             type="button"
             variant="outline"
             onClick={() => input.current?.click()}
+            {...context({ action: 'replace_photo' })}
           >
             Replace photo
           </Button>
@@ -954,6 +1054,7 @@ function PhotoField({
               if (input.current) input.current.value = '';
               onRemove();
             }}
+            {...context({ action: 'remove_photo' })}
           >
             Remove
           </Button>
@@ -1052,17 +1153,33 @@ function RunLength({
   const preset = DURATIONS.some((d) => d.days === days);
   const [custom, setCustom] = useState(!preset);
   const [text, setText] = useState(days === null ? '' : String(days));
+  const fieldset = useRef<HTMLFieldSetElement>(null);
+  // Only real changes count, and a typed custom length is reported when the
+  // box loses focus rather than on every keystroke.
+  const reported = useRef(days);
+  const report = (next: number | null, isCustom: boolean) => {
+    if (next === null || next === reported.current) return;
+    reported.current = next;
+    track(
+      'ad_run_length_changed',
+      { placement, days: next, custom: isCustom },
+      fieldset.current,
+    );
+  };
   const choose = (v: string) => {
     if (v === 'custom') {
       setCustom(true);
-      onChange(runDays(text));
+      const next = runDays(text);
+      report(next, true);
+      onChange(next);
       return;
     }
     setCustom(false);
+    report(Number(v), false);
     onChange(Number(v));
   };
   return (
-    <FieldSet data-invalid={Boolean(error)}>
+    <FieldSet ref={fieldset} data-invalid={Boolean(error)}>
       <FieldLegend variant="label" className={cn(LABEL, 'mb-1')}>
         How long should it run?
       </FieldLegend>
@@ -1126,6 +1243,7 @@ function RunLength({
                     onBlur={() => {
                       const clamped = runDays(text);
                       if (clamped !== null) setText(String(clamped));
+                      report(clamped, true);
                     }}
                     className="h-8 w-16 px-2 text-sm md:text-sm"
                   />

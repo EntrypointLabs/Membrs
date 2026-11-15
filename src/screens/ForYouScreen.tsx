@@ -1,3 +1,4 @@
+import { area } from '../lib/analytics';
 import { forYou } from '../lib/api';
 import { interestsStore } from '../lib/preferences';
 import { paths } from '../lib/router';
@@ -20,10 +21,12 @@ export function ForYouScreen() {
           count={items.length}
         />
       </TitleBar>
-      <ListingResults
-        items={items}
-        empty="Pick a few interests and your matches show up here."
-      />
+      <div {...area('for_you_listings')}>
+        <ListingResults
+          items={items}
+          empty="Pick a few interests and your matches show up here."
+        />
+      </div>
     </div>
   );
 }

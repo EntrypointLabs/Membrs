@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { area, track, type Events } from '../lib/analytics';
 import { useDialog } from '../lib/focus';
 import {
   PROVIDER_NAME,
   sessionStore,
   signIn,
+  SignInUnavailableError,
   type Provider,
 } from '../lib/auth';
 import { subscribe } from '../lib/api';
@@ -116,7 +118,9 @@ export function ProviderButton({
   );
 }
 
-export function useProviderSignIn() {
+export function useProviderSignIn(
+  placement: Events['sign_in_failed']['placement'],
+) {
   const [busy, setBusy] = useState<Provider | null>(null);
   useEffect(() => {
     const onShow = (e: PageTransitionEvent) => {
@@ -131,6 +135,12 @@ export function useProviderSignIn() {
       await signIn(provider);
       return true;
     } catch (error) {
+      track('sign_in_failed', {
+        provider,
+        reason:
+          error instanceof SignInUnavailableError ? 'unavailable' : 'error',
+        placement,
+      });
       toast(messageOf(error, 'Sign-in did not complete. Please try again.'));
       return false;
     } finally {
@@ -149,7 +159,7 @@ export function AuthModal({ initialMode }: { initialMode?: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(
     () => initialMode ?? authModeStore.get(),
   );
-  const { busy, start } = useProviderSignIn();
+  const { busy, start } = useProviderSignIn('auth_modal');
   const card = useRef<HTMLDivElement>(null);
   const up = mode === 'up';
 
@@ -165,6 +175,7 @@ export function AuthModal({ initialMode }: { initialMode?: AuthMode }) {
   }, []);
 
   async function go(provider: Provider) {
+    track('sign_in_started', { provider, mode, placement: 'auth_modal' });
     if (!(await start(provider))) return;
     // New accounts, and anyone without a digest yet, go straight on to pick a
     // city and interests: that is what the account is for.
@@ -199,6 +210,7 @@ export function AuthModal({ initialMode }: { initialMode?: AuthMode }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-title"
+        {...area('auth_modal')}
         className={`bg-panel text-fg relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg p-2.5 shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(500px,calc(100vh-48px))] md:w-[min(860px,100%)] md:grid-cols-[0.9fr_1fr] md:rounded-lg md:p-3 ${SHEET_MOTION}`}
       >
         <div className="relative min-h-[220px] overflow-hidden rounded-md">
@@ -233,7 +245,10 @@ export function AuthModal({ initialMode }: { initialMode?: AuthMode }) {
               {up ? 'Already have an account?' : 'New to MEMBRS?'}{' '}
               <button
                 type="button"
-                onClick={() => setMode(up ? 'in' : 'up')}
+                onClick={() => {
+                  track('auth_mode_switched', { mode: up ? 'in' : 'up' });
+                  setMode(up ? 'in' : 'up');
+                }}
                 className="text-accent font-semibold"
               >
                 {up ? 'Sign in' : 'Create one'}
@@ -313,6 +328,14 @@ export function PreferencesModal() {
       openOverlay('auth');
       return;
     }
+    const interests = interestsStore.get();
+    track('digest_saved', {
+      city,
+      interests,
+      interests_count: interests.length,
+      first_time: !editing,
+      queued: delivery === 'queued',
+    });
     cityStore.set(city);
     subscriptionStore.set({ email: `${provider} account`, city });
     closeOverlay();
@@ -326,6 +349,7 @@ export function PreferencesModal() {
   }
 
   function skip() {
+    track('digest_skipped', { first_time: !editing });
     closeOverlay();
     if (!editing) toast("You're in. Digest settings are in the footer.");
   }
@@ -345,6 +369,7 @@ export function PreferencesModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="prefs-title"
+        {...area('preferences_modal')}
         className={`bg-panel text-fg relative max-h-[94dvh] w-full overflow-auto rounded-t-lg px-5 pt-8 pb-6 shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9 ${SHEET_MOTION}`}
       >
         <h2
