@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { area, context, track } from '../lib/analytics';
 import { setSearchParams, useSearchParam } from '../lib/router';
 import { plural } from '../lib/text';
 import type { View } from '../lib/views';
@@ -51,7 +52,7 @@ export function FeedBody<T>({
   if (filtered) {
     const pages = Math.ceil(items.length / LIST_PAGE);
     return (
-      <>
+      <div {...area('results')}>
         {pageOf(items, page, LIST_PAGE).map((i) => (
           <div key={keyOf(i)}>{row(i)}</div>
         ))}
@@ -62,7 +63,7 @@ export function FeedBody<T>({
           noun={noun[1]}
           onChange={(p) => setSearchParams({ page: String(p) })}
         />
-      </>
+      </div>
     );
   }
 
@@ -76,7 +77,11 @@ export function FeedBody<T>({
   return (
     <>
       {rail.items.length > 0 && (
-        <section className="mt-2 md:mt-10">
+        <section
+          className="mt-2 md:mt-10"
+          {...area('lead_rail')}
+          {...context({ rail: rail.title })}
+        >
           <GroupHeading title={rail.title} />
           <div className="md:hidden">
             <Rail>{rail.items.slice(0, 10).map(card)}</Rail>
@@ -96,7 +101,12 @@ export function FeedBody<T>({
       {shown.map(({ view, items: group }) => {
         const extra = group.length - GROUP_MAX;
         return (
-          <section key={view.id} className="mt-10 md:mt-16">
+          <section
+            key={view.id}
+            className="mt-10 md:mt-16"
+            {...area('time_group')}
+            {...context({ view: view.id })}
+          >
             <GroupHeading
               title={view.label}
               count={extra > 0 ? undefined : group.length}
@@ -105,6 +115,10 @@ export function FeedBody<T>({
                   ? {
                       label: `${extra} more ${extra === 1 ? noun[0] : noun[1]}`,
                       onClick: () => {
+                        track('view_more_clicked', {
+                          view: view.id,
+                          hidden: extra,
+                        });
                         setSearchParams({
                           view: view.id,
                           type: null,
@@ -184,7 +198,10 @@ export function FilterLine({
   children: ReactNode;
 }) {
   return (
-    <div className="md:border-line mb-2 md:mb-0 md:flex md:items-center md:justify-between md:gap-6 md:border-b md:pb-6">
+    <div
+      className="md:border-line mb-2 md:mb-0 md:flex md:items-center md:justify-between md:gap-6 md:border-b md:pb-6"
+      {...area('filters')}
+    >
       <p className="hidden items-baseline gap-2.5 md:flex">
         <b className="text-5xl leading-none font-bold tracking-tight tabular-nums">
           {count}
@@ -195,7 +212,10 @@ export function FilterLine({
         {onClear && (
           <button
             type="button"
-            onClick={onClear}
+            onClick={() => {
+              track('filters_cleared', {});
+              onClear();
+            }}
             className="text-fg-3 hover:text-fg ml-2 text-[15px]"
           >
             Clear filters
@@ -245,7 +265,10 @@ export function MoreFilters({
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!open) track('filters_opened', {});
+          setOpen(!open);
+        }}
         className="bg-btn hover:bg-btn-hover flex h-10 items-center gap-2 rounded-md px-3.5 text-[15px] font-semibold whitespace-nowrap"
       >
         <Icon name="filter" className="h-4 w-4" />

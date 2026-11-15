@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { track } from '../lib/analytics';
 import { taxonomy } from '../lib/api';
 import { FOLLOW_UPS } from '../lib/followups';
 import {
@@ -80,6 +81,10 @@ export function PreferenceAccordions({
   const picked = useStore(interestsStore);
   const answers = useStore(followUpsStore);
   const t = taxonomy();
+  const openSection = (section: Section) => {
+    track('preferences_section_opened', { section });
+    onOpen(section);
+  };
   const sum = (names: string[]) => {
     const on = names.filter((n) => picked.includes(n));
     return on.length ? on.join(', ') : '';
@@ -91,6 +96,10 @@ export function PreferenceAccordions({
           key={n}
           on={picked.includes(n)}
           onClick={() => {
+            track('interest_toggled', {
+              interest: n,
+              selected: !picked.includes(n),
+            });
             toggleInterest(n);
             if (picked.includes(n) && answers[n])
               followUpsStore.set((prev) => {
@@ -111,7 +120,7 @@ export function PreferenceAccordions({
         title="City"
         summary={city}
         open={open === 'city'}
-        onToggle={() => onOpen('city')}
+        onToggle={() => open !== 'city' && openSection('city')}
       >
         <div className="flex flex-wrap gap-2">
           {MAJOR_CITIES.map((c) => (
@@ -119,6 +128,7 @@ export function PreferenceAccordions({
               key={c}
               on={city === c}
               onClick={() => {
+                track('preferences_city_picked', { city: c });
                 onCity(c);
                 onOpen('event');
               }}
@@ -132,7 +142,7 @@ export function PreferenceAccordions({
         title="Events"
         summary={sum(t.eventCategories)}
         open={open === 'event'}
-        onToggle={() => onOpen('event')}
+        onToggle={() => open !== 'event' && openSection('event')}
       >
         {chips(t.eventCategories)}
       </Accordion>
@@ -140,7 +150,7 @@ export function PreferenceAccordions({
         title="Opportunities"
         summary={sum(t.opportunityCategories)}
         open={open === 'opportunity'}
-        onToggle={() => onOpen('opportunity')}
+        onToggle={() => open !== 'opportunity' && openSection('opportunity')}
       >
         {chips(t.opportunityCategories)}
         {t.opportunityCategories
@@ -153,7 +163,7 @@ export function PreferenceAccordions({
         title="Places"
         summary={sum(t.placeTypes)}
         open={open === 'place'}
-        onToggle={() => onOpen('place')}
+        onToggle={() => open !== 'place' && openSection('place')}
       >
         {chips(t.placeTypes)}
       </Accordion>
@@ -183,7 +193,12 @@ function FollowUpBlock({ name, invalid }: { name: string; invalid: boolean }) {
             key={o}
             invalid={bad}
             on={chosen.includes(o)}
-            onClick={() =>
+            onClick={() => {
+              track('follow_up_answered', {
+                interest: name,
+                answer: o,
+                selected: !chosen.includes(o),
+              });
               followUpsStore.set((prev) => {
                 const cur = prev[name] ?? [];
                 return {
@@ -192,8 +207,8 @@ function FollowUpBlock({ name, invalid }: { name: string; invalid: boolean }) {
                     ? cur.filter((x) => x !== o)
                     : [...cur, o],
                 };
-              })
-            }
+              });
+            }}
           >
             {o}
           </Chip>

@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { shortDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
@@ -25,6 +26,9 @@ export function ListingCard({ listing, mixed = false }: ListingCardProps) {
   return (
     <Link
       href={paths.listing(listing.id)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.listing(listing), 'card')
+      }
       className="group flex h-full flex-col"
     >
       <div className="relative">

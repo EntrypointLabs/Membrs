@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { track } from '../lib/analytics';
 import { Icon } from './Icon';
 
 interface SelectProps<T extends string> {
@@ -31,7 +32,19 @@ export function Select<T extends string>({
       <select
         id={id}
         value={value}
-        onChange={(e) => onChange(e.target.value as T)}
+        onChange={(e) => {
+          const next = e.target.value as T;
+          track(
+            'filter_changed',
+            {
+              filter: label,
+              value: next,
+              label: options.find((o) => o.value === next)?.label ?? next,
+            },
+            e.currentTarget,
+          );
+          onChange(next);
+        }}
         className="absolute inset-0 cursor-pointer opacity-0"
       >
         {options.map((o) => (

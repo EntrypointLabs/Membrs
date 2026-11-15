@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { area, context, track } from '../lib/analytics';
 import { titleCase } from '../lib/text';
 import { Icon } from '../components/Icon';
 import { Link } from '../components/Link';
@@ -9,10 +10,14 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
     <nav
       aria-label="Breadcrumb"
       className="flex items-center gap-3 text-[15px]"
+      {...area('breadcrumbs')}
     >
       <button
         type="button"
-        onClick={() => history.back()}
+        onClick={() => {
+          track('back_clicked', {});
+          history.back();
+        }}
         aria-label="Back"
         className="bg-btn hover:bg-btn-hover grid h-9 w-9 place-items-center rounded-md"
       >
@@ -22,7 +27,13 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
         {trail.map(([label, href], i) => (
           <li key={href} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true">/</span>}
-            <Link href={href} className="text-fg-2 hover:text-fg font-medium">
+            <Link
+              href={href}
+              onClick={() =>
+                track('breadcrumb_clicked', { label, href, depth: i + 1 })
+              }
+              className="text-fg-2 hover:text-fg font-medium"
+            >
               {label}
             </Link>
           </li>
@@ -55,14 +66,18 @@ export function Fact({
 
 export function FactAction({
   href,
+  action,
   children,
 }: {
   href: string;
+  /** What the link does, for analytics: "add_to_calendar", "directions". */
+  action: string;
   children: string;
 }) {
   return (
     <a
       href={href}
+      {...context({ action })}
       target="_blank"
       rel="noopener noreferrer"
       className="text-brand dark:text-accent flex items-center gap-1 text-[15px] font-semibold whitespace-nowrap"
@@ -118,7 +133,10 @@ export function AboutBlock({
 /** The sticky action card in the right column. */
 export function ActionCard({ children }: { children: ReactNode }) {
   return (
-    <aside className="bg-panel border-line-2 lg:top-bar self-start rounded-lg border p-6 lg:sticky">
+    <aside
+      className="bg-panel border-line-2 lg:top-bar self-start rounded-lg border p-6 lg:sticky"
+      {...area('action_card')}
+    >
       {children}
     </aside>
   );
@@ -127,23 +145,33 @@ export function ActionCard({ children }: { children: ReactNode }) {
 export function SmallButton({
   onClick,
   href,
+  action,
   children,
 }: {
   onClick?: () => void;
   href?: string;
+  /** What an outside link does, for analytics: "add_to_calendar". */
+  action?: string;
   children: string;
 }) {
   const cls =
     'bg-btn hover:bg-btn-hover flex h-10 items-center justify-center rounded-md px-3 text-sm font-bold';
   if (href?.startsWith('/')) {
     return (
-      <Link href={href} className={cls}>
+      <Link href={href} onClick={onClick} className={cls}>
         {children}
       </Link>
     );
   }
   return href ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+      {...context({ action })}
+      className={cls}
+    >
       {children}
     </a>
   ) : (
@@ -157,7 +185,10 @@ export function SmallButton({
 export function MapCard({ name, area }: { name: string; area: string }) {
   const q = encodeURIComponent(`${name}, ${area}`);
   return (
-    <div className="bg-soft border-line-2 relative mt-10 grid aspect-[16/9] place-items-center overflow-hidden rounded-lg border">
+    <div
+      {...context({ area: 'map' })}
+      className="bg-soft border-line-2 relative mt-10 grid aspect-[16/9] place-items-center overflow-hidden rounded-lg border"
+    >
       <div className="text-center">
         <Icon name="pin" className="text-accent mx-auto h-8 w-8" />
         <p className="mt-2 font-semibold">{name}</p>
@@ -165,6 +196,7 @@ export function MapCard({ name, area }: { name: string; area: string }) {
       </div>
       <a
         href={`https://www.google.com/maps/search/?api=1&query=${q}`}
+        {...context({ action: 'open_in_maps' })}
         target="_blank"
         rel="noopener noreferrer"
         className="bg-fg text-bg absolute right-4 bottom-4 flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold"

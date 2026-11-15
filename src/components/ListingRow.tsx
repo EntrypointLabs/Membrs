@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { shortDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
@@ -17,6 +18,9 @@ export function ListingRow({ listing }: { listing: Listing }) {
   return (
     <Link
       href={paths.listing(listing.id)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.listing(listing), 'row')
+      }
       className="group border-line flex items-center gap-4 border-b py-6 md:gap-8 md:py-10"
     >
       <Photo

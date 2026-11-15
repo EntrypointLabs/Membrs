@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { deadlineUrgency } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { OpportunityListing } from '../lib/types';
@@ -17,6 +18,13 @@ export function DeadlineRow({ listing }: { listing: OpportunityListing }) {
   return (
     <Link
       href={paths.listing(listing.id)}
+      onClick={(e) =>
+        trackItemOpened(
+          e.currentTarget,
+          itemRef.listing(listing),
+          'deadline_row',
+        )
+      }
       className="group border-line grid grid-cols-[56px_1fr] items-center gap-4 border-b py-5 md:grid-cols-[96px_1fr_auto] md:gap-5 md:py-7"
     >
       <span

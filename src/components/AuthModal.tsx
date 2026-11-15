@@ -5,6 +5,7 @@ import {
   signIn,
   type Provider,
 } from '../lib/auth';
+import { area, track } from '../lib/analytics';
 import { subscribe } from '../lib/api';
 import {
   cityStore,
@@ -131,6 +132,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
   }, []);
 
   async function go(provider: Provider) {
+    track('sign_in_started', { provider, mode, placement: 'auth_modal' });
     setBusy(provider);
     await signIn(provider);
     setBusy(null);
@@ -167,6 +169,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-title"
+        {...area('auth_modal')}
         className="bg-panel text-fg relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg p-2.5 shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(500px,calc(100vh-48px))] md:w-[min(860px,100%)] md:grid-cols-[0.9fr_1fr] md:rounded-lg md:p-3"
       >
         <div className="relative min-h-[220px] overflow-hidden rounded-md">
@@ -201,7 +204,10 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
               {up ? 'Already have an account?' : 'New to MEMBRS?'}{' '}
               <button
                 type="button"
-                onClick={() => setMode(up ? 'in' : 'up')}
+                onClick={() => {
+                  track('auth_mode_switched', { mode: up ? 'in' : 'up' });
+                  setMode(up ? 'in' : 'up');
+                }}
                 className="text-accent font-semibold"
               >
                 {up ? 'Sign in' : 'Create one'}
@@ -269,6 +275,7 @@ export function PreferencesModal() {
     // match well, so saving stops, opens Opportunities and marks the gaps.
     const gaps = missingFollowUps(interestsStore.get(), followUpsStore.get());
     if (gaps.length) {
+      track('digest_save_blocked', { missing: gaps });
       setMissing(gaps);
       setOpen('opportunity');
       requestAnimationFrame(() =>
@@ -283,6 +290,13 @@ export function PreferencesModal() {
       city,
       interests: interestsStore.get(),
     });
+    const interests = interestsStore.get();
+    track('digest_saved', {
+      city,
+      interests,
+      interests_count: interests.length,
+      first_time: !editing,
+    });
     cityStore.set(city);
     subscriptionStore.set({ email: `${provider} account`, city });
     closeOverlay();
@@ -294,6 +308,7 @@ export function PreferencesModal() {
   }
 
   function skip() {
+    track('digest_skipped', { first_time: !editing });
     closeOverlay();
     if (!editing)
       toast("You're in. Set up your digest any time from the mail button.");
@@ -314,6 +329,7 @@ export function PreferencesModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="prefs-title"
+        {...area('preferences_modal')}
         className="bg-panel text-fg relative max-h-[94dvh] w-full overflow-auto rounded-t-lg px-5 pt-8 pb-6 shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
       >
         <h2

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { area, track } from '../lib/analytics';
 import { sessionStore, signOut } from '../lib/auth';
 import { themeStore, type Theme } from '../lib/preferences';
 import { openOverlay, toast } from '../lib/ui';
@@ -32,7 +33,11 @@ export function Header() {
   const active = navSection(route);
   const docked = useScrolledPast(TOP_ROW);
   return (
-    <header className="sticky z-40 hidden md:block" style={{ top: -TOP_ROW }}>
+    <header
+      className="sticky z-40 hidden md:block"
+      style={{ top: -TOP_ROW }}
+      {...area('header')}
+    >
       <div
         className="page relative flex items-center justify-center py-6"
         style={{ height: TOP_ROW }}
@@ -40,6 +45,7 @@ export function Header() {
         <Link
           href="/"
           aria-label="membrs home"
+          onClick={() => track('logo_clicked', { placement: 'header' })}
           className="text-[64px] leading-none font-black tracking-[-0.05em]"
         >
           MEMBRS
@@ -62,6 +68,9 @@ export function Header() {
             <Link
               href="/"
               aria-label="membrs home"
+              onClick={() =>
+                track('logo_clicked', { placement: 'header_docked' })
+              }
               className="absolute left-0 text-[22px] leading-none font-black tracking-[-0.05em]"
             >
               MEMBRS
@@ -72,6 +81,12 @@ export function Header() {
               <li key={item.key}>
                 <Link
                   href={item.href}
+                  onClick={() =>
+                    track('nav_clicked', {
+                      item: item.key,
+                      placement: 'header',
+                    })
+                  }
                   aria-current={active === item.key ? 'page' : undefined}
                   data-tour={item.key === 'events' ? 'nav-events' : undefined}
                   className={`relative flex h-14 items-center gap-2 text-[clamp(13px,1vw,16px)] font-bold tracking-wide uppercase transition-colors ${
@@ -96,6 +111,7 @@ export function Header() {
             <Link
               href={paths.search()}
               aria-label="Search"
+              onClick={() => track('search_opened', { placement: 'header' })}
               data-tour="search"
               className="bg-btn hover:bg-btn-hover grid h-10 w-10 place-items-center rounded-md"
             >
@@ -156,7 +172,10 @@ export function AccountButton() {
     <button
       type="button"
       onClick={() => {
-        if (!session) return openOverlay('auth');
+        if (!session) {
+          track('digest_opened', { placement: 'header_sign_in' });
+          return openOverlay('auth');
+        }
         signOut();
         toast('Signed out.');
       }}

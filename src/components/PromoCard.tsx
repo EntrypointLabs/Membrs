@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { paths } from '../lib/router';
 import type { Promo } from '../lib/types';
 import { Icon } from './Icon';
@@ -21,7 +22,13 @@ export function PromoCard({
   mixed?: boolean;
 }) {
   return (
-    <Link href={paths.promo(promo.id)} className="group flex h-full flex-col">
+    <Link
+      href={paths.promo(promo.id)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.promo(promo), 'card')
+      }
+      className="group flex h-full flex-col"
+    >
       <div className="relative">
         <Photo
           id={promo.photo}

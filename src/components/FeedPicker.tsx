@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { track } from '../lib/analytics';
 import { setSearchParams } from '../lib/router';
 import { slugify } from '../lib/text';
 import { categoryStyle } from './CategoryLabel';
@@ -45,6 +46,11 @@ export function FeedPicker({
   const typeName = types.find((t) => t.value === type)?.label;
   const current = views.find((v) => v.value === view)?.label ?? typeName;
   const pick = (next: { view?: string | null; type?: string | null }) => {
+    track('picker_option_selected', {
+      section: title,
+      view: next.view ?? null,
+      type: next.type ?? null,
+    });
     setSearchParams({
       view: next.view ?? null,
       type: next.type ?? null,
@@ -60,7 +66,10 @@ export function FeedPicker({
       <h1 className="mb-6 min-w-0 md:mb-10">
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            track('picker_opened', { section: title });
+            setOpen(true);
+          }}
           aria-haspopup="dialog"
           className={`flex max-w-full items-baseline gap-3 font-semibold tracking-tight whitespace-nowrap ${
             long ? 'text-xl md:text-[34px]' : 'text-[25px] md:text-[40px]'

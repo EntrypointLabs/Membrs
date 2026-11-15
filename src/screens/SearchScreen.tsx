@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { area, track } from '../lib/analytics';
 import { listings, places, promos, searchSuggestions } from '../lib/api';
 import { navigate, paths } from '../lib/router';
 import { search } from '../lib/search';
@@ -10,23 +11,23 @@ import { PromoCard } from '../components/PromoCard';
 
 export function SearchScreen({ query }: { query: string }) {
   const [text, setText] = useState(query);
-  const hits = useMemo(
-    () =>
-      search(query, {
-        listings: listings(),
-        places: places(),
-        promos: promos(),
-      }),
-    [query],
-  );
-  const go = (q: string) => navigate(paths.search(q), { replace: true });
+  const hits = useMemo(() => search(query, everything()), [query]);
+  const go = (q: string, source: 'form' | 'suggestion') => {
+    if (q)
+      track('search_submitted', {
+        query: q,
+        results: search(q, everything()).length,
+        source,
+      });
+    navigate(paths.search(q), { replace: true });
+  };
   return (
     <div className="page pt-6 md:pt-14">
       <form
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
-          go(text.trim());
+          go(text.trim(), 'form');
         }}
         className="bg-soft border-line-2 focus-within:border-fg flex h-16 items-center gap-3 rounded-lg border px-5"
       >
@@ -41,7 +42,7 @@ export function SearchScreen({ query }: { query: string }) {
         />
       </form>
       {!query ? (
-        <div className="mt-10">
+        <div className="mt-10" {...area('search_suggestions')}>
           <p className="text-fg-3 mb-3 text-sm font-semibold">Try</p>
           <div className="flex flex-wrap gap-2">
             {searchSuggestions().map((s) => (
@@ -50,7 +51,7 @@ export function SearchScreen({ query }: { query: string }) {
                 type="button"
                 onClick={() => {
                   setText(s);
-                  go(s);
+                  go(s, 'suggestion');
                 }}
                 className="bg-btn hover:bg-btn-hover rounded-sm px-4 py-2 text-[15px]"
               >
@@ -60,7 +61,7 @@ export function SearchScreen({ query }: { query: string }) {
           </div>
         </div>
       ) : (
-        <>
+        <div {...area('search_results')}>
           <p className="text-fg-3 border-line mt-8 border-b pb-5 text-[15px]">
             {plural(hits.length, 'result')} for “{query}”
           </p>
@@ -83,8 +84,12 @@ export function SearchScreen({ query }: { query: string }) {
               </div>
             ),
           )}
-        </>
+        </div>
       )}
     </div>
   );
+}
+
+function everything() {
+  return { listings: listings(), places: places(), promos: promos() };
 }

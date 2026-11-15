@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { openStateNow } from '../lib/hours';
 import { paths } from '../lib/router';
 import type { Place } from '../lib/types';
@@ -16,7 +17,13 @@ export function PlaceCard({
   mixed?: boolean;
 }) {
   return (
-    <Link href={paths.place(place.id)} className="group flex h-full flex-col">
+    <Link
+      href={paths.place(place.id)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.place(place), 'card')
+      }
+      className="group flex h-full flex-col"
+    >
       <Photo
         id={place.photo}
         alt={place.name}

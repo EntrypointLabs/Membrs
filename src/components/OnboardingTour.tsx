@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { track } from '../lib/analytics';
 import { subscriptionStore, tourSeenStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
 import { openDigest } from '../lib/ui';
@@ -104,6 +105,7 @@ export function OnboardingTour() {
   // the city and interests step for readers who already have an account.
   // Readers who already get the digest just finish.
   const finish = () => {
+    track('tour_completed', { total: steps.length });
     done();
     if (!subscriptionStore.get()) openDigest();
   };
@@ -113,11 +115,22 @@ export function OnboardingTour() {
       key={`${phone}-${index}`}
       step={steps[index]!}
       number={index + 1}
-      onBack={index ? () => setIndex(index - 1) : undefined}
+      total={steps.length}
+      onBack={
+        index
+          ? () => {
+              track('tour_back', { step: index + 1 });
+              setIndex(index - 1);
+            }
+          : undefined
+      }
       onNext={() =>
         index + 1 >= steps.length ? finish() : setIndex(index + 1)
       }
-      onSkip={done}
+      onSkip={() => {
+        track('tour_skipped', { step: index + 1, total: steps.length });
+        done();
+      }}
     />
   );
 }
@@ -125,17 +138,23 @@ export function OnboardingTour() {
 function Spotlight({
   step,
   number,
+  total,
   onBack,
   onNext,
   onSkip,
 }: {
   step: Step;
   number: number;
+  total: number;
   onBack?: () => void;
   onNext: () => void;
   onSkip: () => void;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // Each step mounts fresh (it is keyed by step), so this runs once a step.
+  useEffect(() => {
+    track('tour_step_viewed', { step: number, total, target: step.target });
+  }, [number, total, step.target]);
 
   useLayoutEffect(() => {
     const el = document.querySelector<HTMLElement>(

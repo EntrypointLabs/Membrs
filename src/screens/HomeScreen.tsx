@@ -9,6 +9,7 @@ import {
   promos,
   within,
 } from '../lib/api';
+import { area, track } from '../lib/analytics';
 import { cityStore } from '../lib/preferences';
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
@@ -72,7 +73,10 @@ export function HomeScreen() {
 
 function MobileTop({ city }: { city: string }) {
   return (
-    <div className="flex items-center justify-between pt-4 md:hidden">
+    <div
+      className="flex items-center justify-between pt-4 md:hidden"
+      {...area('mobile_top')}
+    >
       <label
         data-tour="city"
         className="bg-btn relative flex h-11 items-center gap-1.5 rounded-md px-3.5 font-semibold"
@@ -83,7 +87,14 @@ function MobileTop({ city }: { city: string }) {
         <select
           aria-label="City"
           value={city}
-          onChange={(e) => cityStore.set(e.target.value)}
+          onChange={(e) => {
+            track(
+              'filter_changed',
+              { filter: 'City', value: e.target.value, label: e.target.value },
+              e.currentTarget,
+            );
+            cityStore.set(e.target.value);
+          }}
           className="absolute inset-0 opacity-0"
         >
           {launchCities().map((c) => (
@@ -123,7 +134,10 @@ function ThisWeek({ city }: { city: string }) {
   const items = within(range === 'week' ? 7 : 30, kind);
   const pages = Math.ceil(items.length / 6);
   return (
-    <section className="mt-12 md:mt-[clamp(140px,11vw,200px)]">
+    <section
+      className="mt-12 md:mt-[clamp(140px,11vw,200px)]"
+      {...area('this_week')}
+    >
       <header className="mb-6 flex flex-wrap items-end justify-between gap-6 md:mb-14">
         <div>
           <h2 className="text-[30px] font-semibold tracking-tight md:text-[44px]">
@@ -134,6 +148,7 @@ function ThisWeek({ city }: { city: string }) {
                   key={r}
                   type="button"
                   onClick={() => {
+                    if (r !== range) track('range_changed', { range: r });
                     setRange(r);
                     setPage(1);
                   }}
@@ -189,7 +204,10 @@ function ClosingSoon() {
   const items = closingSoon() as OpportunityListing[];
   const pages = Math.ceil(items.length / CLOSING_PAGE);
   return (
-    <section className="mt-16 grid gap-10 md:mt-[clamp(140px,11vw,200px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-[clamp(64px,7vw,128px)]">
+    <section
+      className="mt-16 grid gap-10 md:mt-[clamp(140px,11vw,200px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-[clamp(64px,7vw,128px)]"
+      {...area('closing_soon')}
+    >
       <div className="lg:top-bar self-start lg:sticky">
         <h2 className="text-[30px] font-semibold tracking-tight md:text-[44px]">
           Closing Soon
@@ -200,6 +218,16 @@ function ClosingSoon() {
         </p>
         <Link
           href={paths.feed('opportunities')}
+          onClick={(e) =>
+            track(
+              'see_all_clicked',
+              {
+                label: 'All opportunities',
+                href: paths.feed('opportunities'),
+              },
+              e.currentTarget,
+            )
+          }
           className="bg-btn hover:bg-btn-hover mt-7 inline-flex h-11 items-center gap-2 rounded-md px-5 font-bold"
         >
           All opportunities <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
@@ -226,7 +254,10 @@ function NearYou({ city }: { city: string }) {
   const [page, setPage] = useState(1);
   const items = listings().filter((l) => l.kind === 'event' && l.city === city);
   return (
-    <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
+    <section
+      className="mt-16 md:mt-[clamp(140px,11vw,200px)]"
+      {...area('near_you')}
+    >
       <SectionHeader
         title="Near you"
         body={
@@ -262,7 +293,10 @@ function NearYou({ city }: { city: string }) {
 function PlacesToGo() {
   const [page, setPage] = useState(1);
   return (
-    <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
+    <section
+      className="mt-16 md:mt-[clamp(140px,11vw,200px)]"
+      {...area('places_to_go')}
+    >
       <SectionHeader
         title="Places to go"
         body="Beaches, parks, museums and libraries, with today's hours."
@@ -281,7 +315,10 @@ function PlacesToGo() {
 function PromosSection() {
   const [page, setPage] = useState(1);
   return (
-    <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
+    <section
+      className="mt-16 md:mt-[clamp(140px,11vw,200px)]"
+      {...area('promos')}
+    >
       <SectionHeader
         title="Promos"
         body="Deals worth leaving the house for, and how to claim them."
@@ -300,7 +337,10 @@ function PromosSection() {
 function CategoriesSection() {
   const [kind, setKind] = useState<'event' | 'opportunity'>('event');
   return (
-    <section className="mt-16 md:mt-[clamp(140px,11vw,200px)]">
+    <section
+      className="mt-16 md:mt-[clamp(140px,11vw,200px)]"
+      {...area('categories')}
+    >
       <SectionHeader
         title="Browse by category"
         actions={
@@ -355,6 +395,9 @@ export function SeeAll({ href, children }: { href: string; children: string }) {
   return (
     <Link
       href={href}
+      onClick={(e) =>
+        track('see_all_clicked', { label: children, href }, e.currentTarget)
+      }
       className="text-fg-3 hover:text-fg flex h-10 items-center gap-1 px-2 text-[15px] font-semibold"
     >
       {children} <Icon name="chevronRight" className="h-4 w-4" />

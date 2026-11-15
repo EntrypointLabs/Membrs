@@ -1,3 +1,4 @@
+import { area, track } from '../lib/analytics';
 import { navSection, paths, useRoute } from '../lib/router';
 import { Icon } from './Icon';
 import { Link } from './Link';
@@ -15,6 +16,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Sections"
+      {...area('tab_bar')}
       className="fixed inset-x-3 z-40 flex items-center gap-2 md:hidden"
       style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
     >
@@ -25,6 +27,9 @@ export function MobileTabBar() {
             <li key={tab.key}>
               <Link
                 href={tab.href}
+                onClick={() =>
+                  track('nav_clicked', { item: tab.key, placement: 'tab_bar' })
+                }
                 aria-label={tab.label}
                 aria-current={on ? 'page' : undefined}
                 className={`flex h-11 items-center gap-2 rounded-md px-3 text-[15px] font-semibold ${
@@ -40,6 +45,7 @@ export function MobileTabBar() {
       </ul>
       <Link
         href={paths.search()}
+        onClick={() => track('search_opened', { placement: 'tab_bar' })}
         aria-label="Search"
         className="border-line-2 bg-panel/90 grid h-14 w-14 place-items-center rounded-lg border shadow-xl backdrop-blur-xl"
       >

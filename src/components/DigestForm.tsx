@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { track } from '../lib/analytics';
 import { signIn, sessionStore, type Provider } from '../lib/auth';
 import { subscriptionStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
@@ -18,6 +19,7 @@ export function DigestForm() {
   const [busy, setBusy] = useState<Provider | null>(null);
 
   async function go(provider: Provider) {
+    track('sign_in_started', { provider, mode: 'up', placement: 'footer' });
     setBusy(provider);
     await signIn(provider);
     setBusy(null);
@@ -27,7 +29,10 @@ export function DigestForm() {
   const settings = (
     <button
       type="button"
-      onClick={openDigest}
+      onClick={() => {
+        track('digest_opened', { placement: 'footer_edit' });
+        openDigest();
+      }}
       aria-label="Edit your city and interests"
       title="Edit your city and interests"
       className="border-inv-fg-3 hover:border-brand hover:bg-brand grid h-[50px] w-[52px] shrink-0 place-items-center rounded-md border-[1.5px] transition-colors hover:text-white"
@@ -54,7 +59,10 @@ export function DigestForm() {
       <div>
         <button
           type="button"
-          onClick={openDigest}
+          onClick={() => {
+            track('digest_opened', { placement: 'footer_finish' });
+            openDigest();
+          }}
           className="bg-brand hover:bg-brand-hover h-[50px] w-full rounded-md px-5 text-[15px] font-bold text-white"
         >
           Choose your city and interests

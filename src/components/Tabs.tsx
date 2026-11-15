@@ -1,3 +1,5 @@
+import { track } from '../lib/analytics';
+
 interface TabsProps<T extends string> {
   value: T;
   options: readonly { value: T; label: string }[];
@@ -24,7 +26,15 @@ export function Tabs<T extends string>({
           role="tab"
           type="button"
           aria-selected={o.value === value}
-          onClick={() => onChange(o.value)}
+          onClick={(e) => {
+            if (o.value !== value)
+              track(
+                'tab_changed',
+                { tabs: label, value: o.value, label: o.label },
+                e.currentTarget,
+              );
+            onChange(o.value);
+          }}
           className={`h-9 shrink-0 rounded-sm px-4 text-[15px] font-medium whitespace-nowrap transition-colors ${
             o.value === value
               ? 'bg-panel text-fg shadow-sm'

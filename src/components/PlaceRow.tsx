@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { openStateNow } from '../lib/hours';
 import { paths } from '../lib/router';
 import type { Place } from '../lib/types';
@@ -26,6 +27,9 @@ export function PlaceRow({ place }: { place: Place }) {
   return (
     <Link
       href={paths.place(place.id)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.place(place), 'row')
+      }
       className="group border-line flex items-center gap-4 border-b py-6 md:gap-8 md:py-10"
     >
       <Photo

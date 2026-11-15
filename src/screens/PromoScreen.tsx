@@ -1,3 +1,4 @@
+import { area, context, itemRef, track } from '../lib/analytics';
 import { promoById, promos } from '../lib/api';
 import { paths } from '../lib/router';
 import { toast } from '../lib/ui';
@@ -24,13 +25,15 @@ export function PromoScreen({ id }: { id: string }) {
   const more = promos()
     .filter((p) => p.id !== promo.id)
     .slice(0, 3);
+  const item = itemRef.promo(promo);
   const copyCode = async () => {
     if (!promo.code) return;
+    track('promo_code_copied', { ...item, code: promo.code });
     await navigator.clipboard?.writeText(promo.code);
     toast(`Code ${promo.code} copied`);
   };
   return (
-    <div className="page pt-6 md:pt-10">
+    <div className="page pt-6 md:pt-10" {...context(item)}>
       <Crumbs
         trail={[
           ['Promos', paths.feed('promos')],
@@ -52,7 +55,7 @@ export function PromoScreen({ id }: { id: string }) {
       <AboutBlock title="About This Deal" paragraphs={[promo.blurb]} />
       <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-16">
         <div>
-          <dl className="border-line border-t">
+          <dl className="border-line border-t" {...area('facts')}>
             <Fact label="Offer">
               <p className="font-semibold">{promo.offer}</p>
             </Fact>
@@ -102,6 +105,10 @@ export function PromoScreen({ id }: { id: string }) {
             href={`https://${promo.host}`}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              track('listing_cta_clicked', { ...item, cta: 'go_to_merchant' })
+            }
+            {...context({ action: 'go_to_merchant' })}
             className="bg-brand hover:bg-brand-hover mt-4 flex h-12 items-center justify-center gap-1.5 rounded-md font-bold text-white"
           >
             Go to {promo.merchant}{' '}
@@ -109,16 +116,21 @@ export function PromoScreen({ id }: { id: string }) {
           </a>
           <div className="mt-3">
             <SmallButton
-              onClick={async () =>
-                (await share(promo.title)) === 'copied' && toast('Link copied')
-              }
+              onClick={async () => {
+                const method = await share(promo.title);
+                track('item_shared', {
+                  ...item,
+                  method: method === 'copied' ? 'copied' : 'share_sheet',
+                });
+                if (method === 'copied') toast('Link copied');
+              }}
             >
               Share
             </SmallButton>
           </div>
         </ActionCard>
       </div>
-      <section className="mt-[clamp(100px,8vw,160px)]">
+      <section className="mt-[clamp(100px,8vw,160px)]" {...area('more_promos')}>
         <SectionHeader
           title="More promos"
           actions={<SeeAll href={paths.feed('promos')}>All promos</SeeAll>}

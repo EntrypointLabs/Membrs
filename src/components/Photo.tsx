@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import photos from '../generated/photos.json';
+import { track } from '../lib/analytics';
 
 interface PhotoMeta {
   w: number;
@@ -75,7 +76,10 @@ export function Photo({
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
+          onError={() => {
+            track('image_failed', { photo: id });
+            setFailed(true);
+          }}
           className="h-full w-full object-cover"
         />
       </div>

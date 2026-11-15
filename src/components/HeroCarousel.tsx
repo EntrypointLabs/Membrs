@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { area, itemRef, track, trackItemOpened } from '../lib/analytics';
 import { shortDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
@@ -21,8 +22,14 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
   const pick = picks[index];
   if (!pick) return null;
   return (
-    <div>
-      <Link href={paths.listing(pick.id)} className="group block">
+    <div {...area('hero')}>
+      <Link
+        href={paths.listing(pick.id)}
+        onClick={(e) =>
+          trackItemOpened(e.currentTarget, itemRef.listing(pick), 'hero')
+        }
+        className="group block"
+      >
         <div className="relative">
           <Photo
             size="hero"
@@ -67,7 +74,14 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
               role="tab"
               aria-selected={i === index}
               aria-label={p.title}
-              onClick={() => setIndex(i)}
+              onClick={(e) => {
+                track(
+                  'hero_slide_selected',
+                  { index: i + 1, item_id: p.id },
+                  e.currentTarget,
+                );
+                setIndex(i);
+              }}
               className={`h-1.5 rounded-full transition-all ${i === index ? 'bg-fg w-6' : 'bg-fg-4 w-1.5'}`}
             />
           ))}

@@ -1,3 +1,4 @@
+import { area, context, itemRef, track } from '../lib/analytics';
 import { listingById, similar } from '../lib/api';
 import { shortDay } from '../lib/dates';
 import { paths } from '../lib/router';
@@ -45,7 +46,7 @@ export function ListingScreen({ id }: { id: string }) {
   const feed = listing.kind === 'event' ? 'events' : 'opportunities';
   const more = similar(listing);
   return (
-    <div className="page pt-6 md:pt-10">
+    <div className="page pt-6 md:pt-10" {...context(itemRef.listing(listing))}>
       <Crumbs
         trail={[
           [
@@ -80,7 +81,7 @@ export function ListingScreen({ id }: { id: string }) {
 
       <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-16">
         <div>
-          <dl className="border-line border-t">
+          <dl className="border-line border-t" {...area('facts')}>
             {listing.kind === 'event' ? (
               <EventFacts e={listing} />
             ) : (
@@ -128,7 +129,10 @@ export function ListingScreen({ id }: { id: string }) {
       </div>
 
       {more.length > 0 && (
-        <section className="mt-[clamp(100px,8vw,160px)]">
+        <section
+          className="mt-[clamp(100px,8vw,160px)]"
+          {...area('more_like_this')}
+        >
           <SectionHeader
             title="More like this"
             actions={
@@ -153,7 +157,11 @@ function EventFacts({ e }: { e: EventListing }) {
     <>
       <Fact
         label="Date"
-        action={<FactAction href={calendarHref(e)}>Add to calendar</FactAction>}
+        action={
+          <FactAction href={calendarHref(e)} action="add_to_calendar">
+            Add to calendar
+          </FactAction>
+        }
       >
         <p className="font-semibold">{shortDay(e.date)} 2026</p>
         <p className="text-fg-3 text-[15px]">{e.time}, local time</p>
@@ -163,6 +171,7 @@ function EventFacts({ e }: { e: EventListing }) {
         action={
           <FactAction
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${e.venue}, ${e.area}`)}`}
+            action="directions"
           >
             Directions
           </FactAction>
@@ -212,8 +221,14 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
 
 function Sidebar({ listing }: { listing: Listing }) {
   const event = listing.kind === 'event';
+  const item = itemRef.listing(listing);
   const onShare = async () => {
-    if ((await share(listing.title)) === 'copied') toast('Link copied');
+    const method = await share(listing.title);
+    track('item_shared', {
+      ...item,
+      method: method === 'copied' ? 'copied' : 'share_sheet',
+    });
+    if (method === 'copied') toast('Link copied');
   };
   return (
     <ActionCard>
@@ -227,6 +242,13 @@ function Sidebar({ listing }: { listing: Listing }) {
         href={listing.url}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() =>
+          track('listing_cta_clicked', {
+            ...item,
+            cta: event ? 'get_ticket' : 'apply_now',
+          })
+        }
+        {...context({ action: event ? 'get_ticket' : 'apply_now' })}
         className="bg-brand hover:bg-brand-hover mt-5 flex h-12 items-center justify-center gap-1.5 rounded-md font-bold text-white"
       >
         {event ? 'Get ticket' : 'Apply now'}{' '}
@@ -234,13 +256,22 @@ function Sidebar({ listing }: { listing: Listing }) {
       </a>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {event && (
-          <SmallButton href={calendarHref(listing)}>Calendar</SmallButton>
+          <SmallButton href={calendarHref(listing)} action="add_to_calendar">
+            Calendar
+          </SmallButton>
         )}
-        <SmallButton href={paths.category(slugify(listing.category))}>
+        <SmallButton
+          href={paths.category(slugify(listing.category))}
+          onClick={() => track('find_similar_clicked', item)}
+        >
           Find similar
         </SmallButton>
         <SmallButton onClick={onShare}>Share</SmallButton>
-        {!event && <SmallButton href={listing.url}>Details</SmallButton>}
+        {!event && (
+          <SmallButton href={listing.url} action="details">
+            Details
+          </SmallButton>
+        )}
       </div>
       <p className="text-fg-3 mt-5 text-sm">
         No account needed. Add it to your calendar and it is filled in for you.

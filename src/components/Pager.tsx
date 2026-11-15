@@ -1,3 +1,5 @@
+import type { MouseEvent } from 'react';
+import { track } from '../lib/analytics';
 import { Icon } from './Icon';
 
 interface PagerProps {
@@ -20,6 +22,12 @@ export function Pager({
   onChange,
 }: PagerProps) {
   if (pages <= 1) return null;
+  const go =
+    (next: number, method: 'number' | 'previous' | 'next') =>
+    (e: MouseEvent<HTMLButtonElement>) => {
+      track('page_changed', { page: next, pages, method }, e.currentTarget);
+      onChange(next);
+    };
   const button =
     'h-10 min-w-10 rounded-md px-3 text-[15px] font-semibold transition-colors disabled:opacity-40';
   return (
@@ -34,7 +42,7 @@ export function Pager({
         type="button"
         className={`${button} bg-btn hover:bg-btn-hover flex items-center gap-1`}
         disabled={page === 1}
-        onClick={() => onChange(page - 1)}
+        onClick={go(page - 1, 'previous')}
       >
         <Icon name="chevronLeft" className="h-4 w-4" /> Previous
       </button>
@@ -44,7 +52,7 @@ export function Pager({
           type="button"
           aria-current={n === page ? 'page' : undefined}
           className={`${button} ${n === page ? 'bg-fg text-bg' : 'bg-btn hover:bg-btn-hover'}`}
-          onClick={() => onChange(n)}
+          onClick={go(n, 'number')}
         >
           {n}
         </button>
@@ -53,7 +61,7 @@ export function Pager({
         type="button"
         className={`${button} bg-btn hover:bg-btn-hover flex items-center gap-1`}
         disabled={page === pages}
-        onClick={() => onChange(page + 1)}
+        onClick={go(page + 1, 'next')}
       >
         Next <Icon name="chevronRight" className="h-4 w-4" />
       </button>

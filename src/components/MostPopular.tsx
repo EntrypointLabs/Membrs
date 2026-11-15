@@ -1,3 +1,4 @@
+import { area, itemRef, trackItemOpened } from '../lib/analytics';
 import { shortDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
@@ -14,7 +15,11 @@ import { cardTags, listingTags } from './Tags';
  */
 export function MostPopular({ items }: { items: Listing[] }) {
   return (
-    <aside aria-labelledby="most-popular" className="relative self-start">
+    <aside
+      aria-labelledby="most-popular"
+      className="relative self-start"
+      {...area('most_popular')}
+    >
       <div className="pointer-events-none absolute top-[-6px] right-[-14px] bottom-0 hidden md:block">
         <h2
           id="most-popular"
@@ -28,6 +33,13 @@ export function MostPopular({ items }: { items: Listing[] }) {
           <li key={l.id} className="border-inv-line border-b">
             <Link
               href={paths.listing(l.id)}
+              onClick={(e) =>
+                trackItemOpened(
+                  e.currentTarget,
+                  itemRef.listing(l),
+                  'most_popular',
+                )
+              }
               className="group flex items-center gap-4 py-4"
             >
               <Photo

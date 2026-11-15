@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { paths } from '../lib/router';
 import type { Promo } from '../lib/types';
 import { Icon } from './Icon';
@@ -11,6 +12,9 @@ export function PromoRow({ promo }: { promo: Promo }) {
   return (
     <Link
       href={paths.promo(promo.id)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.promo(promo), 'row')
+      }
       className="group border-line flex items-center gap-4 border-b py-6 md:gap-8 md:py-10"
     >
       <Photo

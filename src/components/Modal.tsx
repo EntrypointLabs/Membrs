@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { track } from '../lib/analytics';
 import { Icon } from './Icon';
 
 interface ModalProps {
@@ -15,9 +16,17 @@ interface ModalProps {
  */
 export function Modal({ title, onClose, children, wide = false }: ModalProps) {
   const panel = useRef<HTMLDivElement>(null);
+  const close = (method: 'backdrop' | 'button') => {
+    track('modal_closed', { modal: title, method });
+    onClose();
+  };
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      track('modal_closed', { modal: title, method: 'escape' });
+      onClose();
+    };
     document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -26,14 +35,14 @@ export function Modal({ title, onClose, children, wide = false }: ModalProps) {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
     };
-  }, [onClose]);
+  }, [onClose, title]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
       <button
         type="button"
         aria-label="Close"
-        onClick={onClose}
+        onClick={() => close('backdrop')}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
       <div
@@ -50,7 +59,7 @@ export function Modal({ title, onClose, children, wide = false }: ModalProps) {
           <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => close('button')}
             aria-label="Close"
             className="bg-btn hover:bg-btn-hover grid h-9 w-9 place-items-center rounded-md"
           >

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -14,6 +15,7 @@ import {
   type AdQuote,
   type Placement,
 } from '../lib/ads';
+import { area, track } from '../lib/analytics';
 import { contributeForm, feed, submitContribution } from '../lib/api';
 import { CONTACT } from '../lib/config';
 import { isValidEmail } from '../lib/email';
@@ -104,7 +106,16 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   // What gets validated and sent: the form as shown, placement included.
   const filled = isAd ? { ...values, cat: placement } : values;
 
+  // Which fields have been touched, so each one is reported once and the
+  // first one marks the form as started. A funnel over these shows where
+  // people give up.
+  const touched = useRef(new Set<string>());
   const set = (name: string, value: string) => {
+    if (value.trim() && !touched.current.has(name)) {
+      if (touched.current.size === 0) track('contribute_started', { kind });
+      touched.current.add(name);
+      track('contribute_field_filled', { kind, field: name });
+    }
     setValues((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
@@ -123,33 +134,59 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       missing.agreed = 'Confirm the ad follows the policy to continue.';
     setErrors(missing);
     if (Object.keys(missing).length) {
+      track('contribute_validation_failed', {
+        kind,
+        fields: Object.keys(missing),
+      });
       document
         .querySelector('[data-invalid="true"]')
         ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
     if (!isAd) {
+      track('contribute_submitted', {
+        kind,
+        category: filled.cat ?? null,
+        city: filled.city ?? null,
+        has_photo: Boolean(photo),
+      });
       await submitContribution(kind, filled);
       setSent(true);
       return;
     }
+    const checkout = {
+      placement,
+      days,
+      total: adQuote.total,
+      demo: PAYMENTS_DEMO,
+    };
+    track('ad_checkout_started', checkout);
     if (PAYMENTS_DEMO) {
       setDemo(true);
       return;
     }
     try {
       const result = await payForAd({ quote: adQuote, values: filled });
+      track('ad_checkout_finished', { ...checkout, status: result.status });
       if (result.status === 'completed')
         setPaid({ quote: adQuote, reference: result.reference });
       else if (result.status === 'closed')
         toast('Payment cancelled. Nothing was charged.');
       else toast('That payment did not go through. Try again.');
     } catch {
+      track('ad_checkout_errored', { placement, days, total: adQuote.total });
       toast('Could not reach the payment service. Try again in a moment.');
     }
   }
 
   const onDemoPaid = useCallback(() => {
+    track('ad_checkout_finished', {
+      placement: adQuote.placement,
+      days: adQuote.days,
+      total: adQuote.total,
+      demo: true,
+      status: 'completed',
+    });
     setDemo(false);
     setPaid({ quote: adQuote, reference: demoReference() });
   }, [adQuote]);
@@ -162,6 +199,8 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         email={values.email ?? ''}
         start={values.date}
         onAgain={() => {
+          track('ad_create_another_clicked', {});
+          touched.current.clear();
           setPaid(null);
           setValues({});
           setPhoto(null);
@@ -202,7 +241,10 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
 
   return (
     <div className="page grid gap-12 pt-10 pb-20 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-16 md:pt-16 lg:gap-24">
-      <aside className="md:top-bar flex flex-col md:sticky md:self-start">
+      <aside
+        className="md:top-bar flex flex-col md:sticky md:self-start"
+        {...area('contribute_intro')}
+      >
         <p className="text-fg-3 text-sm font-semibold">Contribute</p>
         <h1 className="mt-3 text-[40px] leading-[1.02] font-semibold tracking-[-0.03em] md:text-[56px]">
           {titleCase(form.title)}
@@ -215,7 +257,10 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
             label="What are you sending?"
             value={kind}
             options={KINDS}
-            onChange={(k) => navigate(paths.contribute(k), { replace: true })}
+            onChange={(k) => {
+              track('contribute_kind_switched', { from: kind, to: k });
+              navigate(paths.contribute(k), { replace: true });
+            }}
           />
         </div>
         {isAd ? (
@@ -246,6 +291,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         onFocus={isAd ? preloadCheckout : undefined}
         noValidate
         className="flex flex-col gap-14"
+        {...area('contribute_form')}
       >
         <Section index={step('Details')} title="Details">
           <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
@@ -283,6 +329,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
             photo={photo}
             error={errors.photo}
             onChange={(url) => {
+              track('contribute_photo_added', { kind });
               setPhoto(url);
               setErrors((prev) => ({ ...prev, photo: '' }));
             }}
@@ -299,6 +346,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
                 agreed={agreed}
                 error={errors.agreed}
                 onChange={(v) => {
+                  track('ad_policy_toggled', { agreed: v });
                   setAgreed(v);
                   setErrors((prev) => ({ ...prev, agreed: '' }));
                 }}
@@ -335,7 +383,16 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         <BachsDemo
           quote={adQuote}
           onPaid={onDemoPaid}
-          onClose={() => setDemo(false)}
+          onClose={() => {
+            track('ad_checkout_finished', {
+              placement,
+              days,
+              total: adQuote.total,
+              demo: true,
+              status: 'cancelled',
+            });
+            setDemo(false);
+          }}
         />
       )}
     </div>
@@ -658,13 +715,17 @@ function RunLength({
   const [custom, setCustom] = useState(!preset);
   const [draft, setDraft] = useState(String(days));
   const choose = (v: string) => {
-    if (v === 'custom') {
-      setCustom(true);
-      onChange(Math.max(1, Math.min(90, Number(draft) || 10)));
-      return;
-    }
-    setCustom(false);
-    onChange(Number(v));
+    const next =
+      v === 'custom'
+        ? Math.max(1, Math.min(90, Number(draft) || 10))
+        : Number(v);
+    track('ad_run_length_changed', {
+      placement,
+      days: next,
+      custom: v === 'custom',
+    });
+    setCustom(v === 'custom');
+    onChange(next);
   };
   return (
     <FieldSet>

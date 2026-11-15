@@ -4,6 +4,7 @@ import {
   places as allPlaces,
   taxonomy,
 } from '../lib/api';
+import { area, track } from '../lib/analytics';
 import { paths, type FeedKind } from '../lib/router';
 import { plural, slugify, titleCase } from '../lib/text';
 import { CategoryLabel } from '../components/CategoryLabel';
@@ -23,11 +24,24 @@ export function CategoryTiles({
     .filter((c) => c.kind === kind)
     .slice(0, limit);
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6">
+    <div
+      className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6"
+      {...area('category_tiles')}
+    >
       {list.map((c) => (
         <Link
           key={c.slug}
           href={`${paths.feed(kind === 'event' ? 'events' : 'opportunities')}?type=${c.slug}`}
+          onClick={(e) =>
+            track(
+              'category_clicked',
+              {
+                category: c.name,
+                section: kind === 'event' ? 'events' : 'opportunities',
+              },
+              e.currentTarget,
+            )
+          }
           className="group relative block overflow-hidden rounded-lg"
         >
           <Photo
@@ -77,11 +91,18 @@ function TypeList({ feed }: { feed: 'places' | 'promos' }) {
   const t = taxonomy();
   const names = feed === 'places' ? t.placeTypes : t.promoCategories;
   return (
-    <ul className="border-line border-t">
+    <ul className="border-line border-t" {...area('type_list')}>
       {names.map((n) => (
         <li key={n} className="border-line border-b">
           <Link
             href={`${paths.feed(feed)}?type=${slugify(n)}`}
+            onClick={(e) =>
+              track(
+                'category_clicked',
+                { category: n, section: feed },
+                e.currentTarget,
+              )
+            }
             className="hover:text-accent flex items-baseline justify-between gap-6 py-6 text-2xl font-semibold"
           >
             <CategoryLabel name={n} dot />
@@ -113,7 +134,10 @@ export function CategoryScreen({ slug }: { slug: string }) {
       </h1>
       <p className="text-fg-2 mt-4 max-w-xl text-lg">{category.blurb}</p>
       <p className="text-fg-3 mt-2">{plural(items.length, 'listing')}</p>
-      <div className="mt-10 grid grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 md:grid-cols-3">
+      <div
+        className="mt-10 grid grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 md:grid-cols-3"
+        {...area('category_listings')}
+      >
         {items.map((l) => (
           <ListingCard key={l.id} listing={l} />
         ))}
