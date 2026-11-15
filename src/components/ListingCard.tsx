@@ -1,15 +1,22 @@
 import { itemRef, trackItemOpened } from '../lib/analytics';
-import { shortDay } from '../lib/dates';
+import { closesLine, eventDay } from '../lib/dates';
 import { paths } from '../lib/router';
+import { priceText } from '../lib/text';
 import type { Listing } from '../lib/types';
 import { Icon } from './Icon';
 import { Kicker } from './Kicker';
-import { Link } from './Link';
-import { Photo } from './Photo';
+import { MediaCard, type MediaFace } from './MediaCard';
 
 /** What a listing costs or pays, the figure on the right of a card. */
 export function priceOf(listing: Listing): string {
   return listing.kind === 'event' ? listing.price : listing.award;
+}
+
+const UNKNOWN_PRICES: ReadonlySet<string> = new Set(['See site', 'See brief']);
+
+export function shownPrice(listing: Listing): string {
+  const price = priceOf(listing);
+  return UNKNOWN_PRICES.has(price) ? '' : priceText(price);
 }
 
 interface ListingCardProps {
@@ -18,52 +25,44 @@ interface ListingCardProps {
   mixed?: boolean;
 }
 
-/**
- * The grid card. A flex column, so the date row sits at the bottom of every
- * card and a row of cards lines up no matter how long each title runs.
- */
-export function ListingCard({ listing, mixed = false }: ListingCardProps) {
-  return (
-    <Link
-      href={paths.listing(listing.id)}
-      onClick={(e) =>
-        trackItemOpened(e.currentTarget, itemRef.listing(listing), 'card')
-      }
-      className="group flex h-full flex-col"
-    >
-      <div className="relative">
-        <Photo
-          id={listing.photo}
-          src={listing.photoUrl}
-          alt={listing.title}
-          className="aspect-[4/3] rounded-md"
-        />
-      </div>
+export function listingFace(listing: Listing, mixed = false): MediaFace {
+  return {
+    href: paths.listing(listing.id),
+    photo: listing.photo,
+    photoUrl: listing.photoUrl,
+    title: listing.title,
+    tag: listing.category,
+    meta:
+      listing.kind === 'event' ? (
+        <>
+          <Meta icon="cal">{eventDay(listing)}</Meta>
+          {listing.city && <Meta icon="pin">{listing.city}</Meta>}
+        </>
+      ) : (
+        <>
+          <Meta icon="clock">{closesLine(listing)}</Meta>
+          {listing.organiser && <Meta icon="org">{listing.organiser}</Meta>}
+        </>
+      ),
+    tags: (
       <Kicker
         listing={listing}
         mixed={mixed}
-        className="mt-3 text-[13px] md:mt-5 md:text-[15px]"
+        className="min-w-0 text-[13px] md:text-[15px]"
       />
-      <h3 className="group-hover:text-accent mt-1 line-clamp-2 text-base leading-snug font-semibold tracking-tight md:mt-2.5 md:text-[23px] md:leading-tight">
-        {listing.title}
-      </h3>
-      <div className="mt-auto flex flex-col items-start gap-1.5 pt-2 text-[13px] md:pt-3 md:text-[15px]">
-        <span className="text-fg-3 flex max-w-full min-w-0 flex-col gap-1 md:flex-row md:items-center md:gap-4">
-          {listing.kind === 'event' ? (
-            <>
-              <Meta icon="cal">{shortDay(listing.date)}</Meta>
-              <Meta icon="pin">{listing.city}</Meta>
-            </>
-          ) : (
-            <>
-              <Meta icon="clock">{`Closes ${listing.deadline.day} ${listing.deadline.month}`}</Meta>
-              <Meta icon="org">{listing.organiser}</Meta>
-            </>
-          )}
-        </span>
-        <span className="text-fg font-medium">{priceOf(listing)}</span>
-      </div>
-    </Link>
+    ),
+    figure: shownPrice(listing),
+  };
+}
+
+export function ListingCard({ listing, mixed = false }: ListingCardProps) {
+  return (
+    <MediaCard
+      {...listingFace(listing, mixed)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.listing(listing), 'card')
+      }
+    />
   );
 }
 

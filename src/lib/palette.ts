@@ -1,3 +1,5 @@
+import { hashOf } from './text';
+
 /**
  * Category colours, as [light-mode, dark-mode] pairs. The dark tint is the
  * lighter of the two so a kicker stays legible on the dark surface. Anything
@@ -55,6 +57,15 @@ export const CATEGORY_COLORS: Record<string, readonly [string, string]> = {
   Groceries: ['#4f950f', '#99d079'],
   Entertainment: ['#796ce0', '#b6b4ff'],
   'Services & Apps': ['#059488', '#37d8c9'],
+  Other: ['#6b6b76', '#c4c4cc'],
+  Conferences: ['#a0522d', '#f0b48c'],
+  Research: ['#2f6f8f', '#8fc6e0'],
+  Education: ['#a88a00', '#f2d65c'],
+  Outdoors: ['#2e7d32', '#86d18a'],
+  Training: ['#7b5ea7', '#c9b3ee'],
+  Governance: ['#455a9c', '#a9b8ff'],
+  Media: ['#c2185b', '#ff8fb8'],
+  Entrepreneurship: ['#d9582a', '#ffa98a'],
 };
 
 /**
@@ -93,7 +104,5 @@ export function tagFill(name: string): string {
   const pair = CATEGORY_COLORS[section ? section[1] : name];
   if (pair) return pair[1];
   if (SECTOR_COLORS[name]) return SECTOR_COLORS[name];
-  let h = 0;
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
-  return `hsl(${h} 80% 78%)`;
+  return `hsl(${hashOf(name, 360)} 80% 78%)`;
 }

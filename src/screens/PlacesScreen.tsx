@@ -10,6 +10,7 @@ import { countBy, FeedPicker } from '../components/FeedPicker';
 import { PlaceRow } from '../components/PlaceRow';
 import { Select } from '../components/Select';
 import { PlaceCard } from '../components/PlaceCard';
+import { TitleBar } from '../components/TitleBar';
 import { FeedBody, FilterLine, MoreFilters } from './FeedLayout';
 
 type Entry = 'any' | 'free';
@@ -47,8 +48,8 @@ export function PlacesScreen() {
   );
   const types = countBy(all, (p) => p.type);
   return (
-    <div className="page pt-6 md:pt-14">
-      <div className="md:hidden">
+    <div className="page pt-0 md:pt-14">
+      <TitleBar className="mb-3">
         <FeedPicker
           title="Places"
           sheetTitle="Place types"
@@ -63,7 +64,7 @@ export function PlacesScreen() {
           type={typeSlug}
           total={all.length}
         />
-      </div>
+      </TitleBar>
       <FilterLine
         count={items.length}
         noun={['place', 'places']}

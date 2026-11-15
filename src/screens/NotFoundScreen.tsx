@@ -1,21 +1,27 @@
+import type { ReactNode } from 'react';
+import { paths } from '../lib/router';
 import { Link } from '../components/Link';
 
-export function NotFoundScreen() {
+export function NotFoundScreen({
+  title = 'That page moved or never existed.',
+  children,
+}: {
+  title?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="page grid min-h-[50vh] place-items-center text-center">
       <div>
-        <p className="text-fg-3 text-sm font-semibold tracking-wide uppercase">
-          404
-        </p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight">
-          That page moved or never existed.
-        </h1>
-        <Link
-          href="/"
-          className="bg-fg text-bg mt-6 inline-flex h-11 items-center rounded-md px-5 font-bold"
-        >
-          Back to home
-        </Link>
+        <h1 className="text-4xl font-semibold tracking-tight">{title}</h1>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link
+            href={paths.home()}
+            className="bg-fg text-bg inline-flex h-11 items-center rounded-md px-5 font-bold"
+          >
+            Back to home
+          </Link>
+          {children}
+        </div>
       </div>
     </div>
   );

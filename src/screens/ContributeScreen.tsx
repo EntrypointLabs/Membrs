@@ -8,33 +8,72 @@ import {
 } from 'react';
 import {
   DURATIONS,
+  MAX_RUN_DAYS,
+  MIN_RUN_DAYS,
+  earliestStart,
   isPlacement,
   naira,
   placementLabel,
   quote as quoteFor,
+  runDays,
   type AdQuote,
   type Placement,
 } from '../lib/ads';
-import { area, track } from '../lib/analytics';
-import { contributeForm, feed, submitContribution } from '../lib/api';
-import { CONTACT } from '../lib/config';
-import { isValidEmail } from '../lib/email';
+import { area, context, track } from '../lib/analytics';
 import {
+  PHOTO_TYPES,
+  contributeForm,
+  contributionSlot,
+  feed,
+  submitAdRequest,
+  submitContribution,
+  uploadPhoto,
+} from '../lib/api';
+import { SignedOutError, sessionStore } from '../lib/auth';
+import { API_BASE, CONTACT } from '../lib/config';
+import {
+  LINK_HINT,
+  isWebLink,
+  localIsoDate,
+  photoProblem,
+  readPhotoFacts,
+  withScheme,
+} from '../lib/contribute';
+import {
+  clearDraft,
+  deleteDraftPhoto,
+  readDraft,
+  readDraftPhoto,
+  saveDraftPhoto,
+  writeDraft,
+  type HostedPhoto,
+} from '../lib/drafts';
+import { isValidEmail } from '../lib/email';
+import { messageOf, newIdempotencyKey } from '../lib/http';
+import { consumeSent, discardSlot, sentSlotsStore } from '../lib/outbox';
+import {
+  PAYMENTS_AVAILABLE,
   PAYMENTS_DEMO,
+  PAYMENTS_UNAVAILABLE_MESSAGE,
   demoReference,
   payForAd,
   preloadCheckout,
 } from '../lib/payments';
-import { navigate, paths } from '../lib/router';
-import { titleCase } from '../lib/text';
+import { paths } from '../lib/router';
+import { useStore } from '../lib/store';
+import { plural, titleCase } from '../lib/text';
 import type { ContributeKind, FormField } from '../lib/types';
 import { toast } from '../lib/ui';
+import { openSignIn } from '../components/AuthModal';
 import { BachsDemo } from '../components/BachsDemo';
+import { CityField, WORLDWIDE } from '../components/CityField';
 import { Icon } from '../components/Icon';
 import { Chip } from '../components/InterestPicker';
-import { ListingCard } from '../components/ListingCard';
+import { ListingCard, Meta } from '../components/ListingCard';
+import { MediaCard } from '../components/MediaCard';
+import { Tags } from '../components/Tags';
 import { Link } from '../components/Link';
-import { Tabs } from '../components/Tabs';
+import { Modal } from '../components/Modal';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -52,144 +91,498 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-const KINDS: { value: ContributeKind; label: string }[] = [
-  { value: 'event', label: 'Event' },
-  { value: 'opportunity', label: 'Opportunity' },
-  { value: 'place', label: 'Place' },
-  { value: 'promo', label: 'Promo' },
-  { value: 'ad', label: 'Advertise' },
-];
-
 const CAPTION = 'text-fg-4 text-[13px]';
 
 const LABEL = 'text-fg w-full text-[15px] font-medium';
 
 const CONTROL = 'placeholder:text-fg-4 h-12 px-4 text-base md:text-base';
 
-const SEND = 'mt-auto h-12 self-start px-6 text-base';
+const DEFAULT_DAYS = 7;
 
 type Errors = Record<string, string>;
 
-/**
- * One page for everything people send in: listings, places, promos and ads.
- * Every form is built from the shadcn Field components. Ads add a run
- * length, the content rule and a total, and are paid before review.
- */
+type Busy = 'uploading' | 'sending' | 'paying' | null;
+
+const BUSY_LABEL: Record<Exclude<Busy, null>, string> = {
+  uploading: 'Uploading photo…',
+  sending: 'Sending…',
+  paying: 'Opening payment…',
+};
+
+function todayIso(): string {
+  return localIsoDate(new Date());
+}
+
+function checkoutOf(run: AdQuote) {
+  return {
+    placement: run.placement,
+    days: run.days,
+    total: run.total,
+    demo: PAYMENTS_DEMO,
+  };
+}
+
+function shortDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   const form = contributeForm(kind);
   const isAd = kind === 'ad';
-  const [values, setValues] = useState<Record<string, string>>({});
+  const slot = contributionSlot(kind);
+  const [saved] = useState(() => readDraft(kind));
+  const [values, setValues] = useState<Record<string, string>>(
+    saved?.values ?? {},
+  );
+  const [picked, setPicked] = useState<Record<string, string>>(
+    saved?.picked ?? {},
+  );
   const [errors, setErrors] = useState<Errors>({});
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoId, setPhotoId] = useState(saved?.photoId);
+  const [hosted, setHosted] = useState<HostedPhoto | undefined>(saved?.hosted);
+  const [restoring, setRestoring] = useState(Boolean(saved?.photoId));
   const [sent, setSent] = useState(false);
-  const [days, setDays] = useState(7);
-  const [agreed, setAgreed] = useState(false);
-  const [demo, setDemo] = useState(false);
+  const [days, setDays] = useState<number | null>(
+    saved ? saved.days : DEFAULT_DAYS,
+  );
+  const [agreed, setAgreed] = useState(saved?.agreed ?? false);
+  const [resume, setResume] = useState(Boolean(saved?.resume));
+  const [busy, setBusy] = useState<Busy>(null);
+  const busyRef = useRef(false);
+  const [generation, setGeneration] = useState(0);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [scrollRequest, setScrollRequest] = useState(0);
+  const [demoPhoto, setDemoPhoto] = useState<string | null>(null);
   const [paid, setPaid] = useState<{
     quote: AdQuote;
     reference: string;
   } | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const session = useStore(sessionStore);
+  const canSend = !API_BASE || Boolean(session?.accessToken);
+  const deliveredElsewhere = useStore(sentSlotsStore).includes(slot);
 
-  // The confirmation replaces the form, so it starts at the top.
   useEffect(() => {
     if (paid || sent) window.scrollTo(0, 0);
   }, [paid, sent]);
 
-  // The placement starts on its first option, so the quote does too.
+  useEffect(() => {
+    if (!scrollRequest) return;
+    document
+      .querySelector('[data-invalid="true"]')
+      ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [scrollRequest]);
+
+  useEffect(() => {
+    if (!saved?.photoId) return;
+    let current = true;
+    void readDraftPhoto(kind).then((blob) => {
+      if (!current) return;
+      if (blob) setPhoto(URL.createObjectURL(blob));
+      else {
+        setPhotoId(undefined);
+        setHosted(undefined);
+        setResume(false);
+        setErrors((prev) => ({
+          ...prev,
+          photo: 'Add the photo again.',
+        }));
+      }
+      setRestoring(false);
+    });
+    return () => {
+      current = false;
+    };
+  }, [saved, kind]);
+
+  useEffect(() => {
+    if (sent || paid || restoring) return;
+    writeDraft(kind, {
+      values,
+      picked,
+      days,
+      agreed,
+      ...(photoId ? { photoId } : {}),
+      ...(hosted ? { hosted } : {}),
+      ...(resume ? { resume } : {}),
+    });
+  }, [
+    kind,
+    values,
+    picked,
+    days,
+    agreed,
+    photoId,
+    hosted,
+    resume,
+    sent,
+    paid,
+    restoring,
+  ]);
+
   const firstPlacement = form.fields.find((f) => f.name === 'cat')
     ?.options?.[0] as Placement | undefined;
   const chosen = values.cat ?? '';
   const placement: Placement = isPlacement(chosen)
     ? chosen
     : (firstPlacement ?? 'Home');
-  const adQuote = quoteFor(placement, days);
-  // What gets validated and sent: the form as shown, placement included.
+  const adQuote = days === null ? null : quoteFor(placement, days);
   const filled = isAd ? { ...values, cat: placement } : values;
+  // Clearing the form bumps the generation, after which nothing on screen
+  // came from the draft.
+  const resumed = saved !== null && generation === 0;
 
-  // Which fields have been touched, so each one is reported once and the
-  // first one marks the form as started. A funnel over these shows where
-  // people give up.
+  // Submitted means the server has it. A send that goes through at once also
+  // lands in sentSlotsStore, so finish runs twice for it and the ref keeps
+  // that to one event.
+  const reportedSent = useRef(false);
+  const finish = useCallback(
+    (delivery: 'sent' | 'outbox') => {
+      if (!reportedSent.current) {
+        reportedSent.current = true;
+        track(
+          'contribute_submitted',
+          {
+            kind,
+            category: values.cat ?? null,
+            city: values.city ?? null,
+            has_photo: Boolean(photo),
+            resumed,
+            delivery,
+          },
+          formRef.current,
+        );
+      }
+      clearDraft(kind);
+      setResume(false);
+      setSent(true);
+    },
+    [kind, values.cat, values.city, photo, resumed],
+  );
+
+  useEffect(() => {
+    if (!deliveredElsewhere) return;
+    consumeSent(slot);
+    // While a send is in flight, the slot that landed is that send's own.
+    // Otherwise it came from a write the outbox delivered later.
+    if (!isAd) finish(busyRef.current ? 'sent' : 'outbox');
+  }, [deliveredElsewhere, slot, isAd, finish]);
+
+  // Each field is reported once and the first one marks the form as
+  // started, so a funnel over them shows where people give up.
   const touched = useRef(new Set<string>());
-  const set = (name: string, value: string) => {
-    if (value.trim() && !touched.current.has(name)) {
-      if (touched.current.size === 0) track('contribute_started', { kind });
+  const set = (name: string, value: string, complete = value.trim() !== '') => {
+    if (complete && !touched.current.has(name)) {
+      if (touched.current.size === 0)
+        track('contribute_started', { kind, resumed }, formRef.current);
       touched.current.add(name);
-      track('contribute_field_filled', { kind, field: name });
+      track('contribute_field_filled', { kind, field: name }, formRef.current);
     }
     setValues((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
+    setResume(false);
   };
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  // A typed city only counts once it is picked from the list, the same rule
+  // the form checks before sending.
+  const setCity = (name: string, value: string, wasPicked: boolean) => {
+    set(name, value, wasPicked || value === WORLDWIDE);
+    setPicked((prev) => {
+      const next = { ...prev };
+      if (wasPicked) next[name] = value;
+      else delete next[name];
+      return next;
+    });
+  };
+
+  function problems(): Errors {
     const missing: Errors = Object.fromEntries(
       form.fields
         .filter((f) => f.required && !filled[f.name]?.trim())
-        .map((f) => [f.name, 'Fill this in to continue.']),
+        .map((f) => [
+          f.name,
+          f.type === 'select'
+            ? f.multiple
+              ? 'Pick at least one.'
+              : 'Pick one to continue.'
+            : 'Fill this in to continue.',
+        ]),
     );
     if (filled.email?.trim() && !isValidEmail(filled.email))
       missing.email = 'That email does not look right.';
+    const startFrom = earliestStart(new Date());
+    for (const f of form.fields) {
+      const value = filled[f.name]?.trim();
+      if (!value) continue;
+      if (f.type === 'url' && !isWebLink(withScheme(value)))
+        missing[f.name] = `${LINK_HINT}.`;
+      if (f.type === 'date' && isAd && f.name === 'date' && value < startFrom)
+        missing[f.name] = `Pick ${shortDate(startFrom)} or later.`;
+      else if (f.type === 'date' && value < todayIso())
+        missing[f.name] = 'Pick a date from today on.';
+      if (f.type === 'city' && value !== WORLDWIDE && picked[f.name] !== value)
+        missing[f.name] = 'Pick a city from the list, or Worldwide.';
+    }
     if (isAd && !photo) missing.photo = 'Add the photo for your listing.';
+    if (isAd && days === null)
+      missing.days = `Enter ${MIN_RUN_DAYS} to ${MAX_RUN_DAYS} days.`;
     if (isAd && !agreed)
       missing.agreed = 'Confirm the ad follows the policy to continue.';
-    setErrors(missing);
-    if (Object.keys(missing).length) {
-      track('contribute_validation_failed', {
-        kind,
-        fields: Object.keys(missing),
-      });
-      document
-        .querySelector('[data-invalid="true"]')
-        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      return;
-    }
-    if (!isAd) {
-      track('contribute_submitted', {
-        kind,
-        category: filled.cat ?? null,
-        city: filled.city ?? null,
-        has_photo: Boolean(photo),
-      });
-      await submitContribution(kind, filled);
-      setSent(true);
-      return;
-    }
-    const checkout = {
-      placement,
-      days,
-      total: adQuote.total,
-      demo: PAYMENTS_DEMO,
-    };
-    track('ad_checkout_started', checkout);
-    if (PAYMENTS_DEMO) {
-      setDemo(true);
-      return;
-    }
+    return missing;
+  }
+
+  function withLinks(): Record<string, string> {
+    const next = { ...filled };
+    for (const f of form.fields)
+      if (f.type === 'url' && next[f.name])
+        next[f.name] = withScheme(next[f.name] ?? '');
+    return next;
+  }
+
+  function needSignIn() {
+    if (!isAd) setResume(true);
+    toast(
+      isAd
+        ? 'Sign in to pay. Your details are saved.'
+        : 'Sign in to send this. Your details are saved.',
+    );
+    openSignIn('in');
+  }
+
+  async function hostedPhoto(): Promise<string> {
+    if (!photo || !photoId) return '';
+    if (hosted?.source === photoId) return hosted.url;
+    setBusy('uploading');
+    const url = await uploadPhoto(photo);
+    if (url) setHosted({ source: photoId, url });
+    return url;
+  }
+
+  async function sendContribution(payload: Record<string, string>) {
     try {
-      const result = await payForAd({ quote: adQuote, values: filled });
-      track('ad_checkout_finished', { ...checkout, status: result.status });
-      if (result.status === 'completed')
-        setPaid({ quote: adQuote, reference: result.reference });
-      else if (result.status === 'closed')
-        toast('Payment cancelled. Nothing was charged.');
-      else toast('That payment did not go through. Try again.');
-    } catch {
-      track('ad_checkout_errored', { placement, days, total: adQuote.total });
-      toast('Could not reach the payment service. Try again in a moment.');
+      const url = await hostedPhoto();
+      setBusy('sending');
+      const delivery = await submitContribution(
+        kind,
+        url ? { ...payload, photo: url } : payload,
+      );
+      if (delivery === 'sent') return finish('sent');
+      if (delivery === 'signedOut') {
+        discardSlot(slot);
+        return needSignIn();
+      }
+      track('contribute_queued', { kind }, formRef.current);
+      toast('Saved. We will send it when we can.');
+    } catch (error) {
+      if (error instanceof SignedOutError) return needSignIn();
+      toast(messageOf(error, 'Could not send this. Try again in a moment.'));
     }
   }
 
-  const onDemoPaid = useCallback(() => {
-    track('ad_checkout_finished', {
-      placement: adQuote.placement,
-      days: adQuote.days,
-      total: adQuote.total,
-      demo: true,
-      status: 'completed',
-    });
-    setDemo(false);
-    setPaid({ quote: adQuote, reference: demoReference() });
-  }, [adQuote]);
+  async function sendAd(payload: Record<string, string>, run: AdQuote) {
+    let uploaded: string;
+    try {
+      uploaded = await hostedPhoto();
+    } catch (error) {
+      if (error instanceof SignedOutError) return needSignIn();
+      toast(messageOf(error, 'Could not upload the photo. Try again.'));
+      return;
+    }
+    track('ad_checkout_started', checkoutOf(run), formRef.current);
+    if (PAYMENTS_DEMO) {
+      setDemoPhoto(uploaded);
+      return;
+    }
+    setBusy('paying');
+    try {
+      const result = await payForAd({
+        quote: run,
+        values: payload,
+        photo: uploaded,
+      });
+      track(
+        'ad_checkout_finished',
+        { ...checkoutOf(run), status: result.status },
+        formRef.current,
+      );
+      if (result.status === 'completed' || result.status === 'pending') {
+        if (result.status === 'pending')
+          toast(
+            `We are still confirming payment for ${result.reference}. We will email you.`,
+          );
+        await saveAd(payload, run, uploaded, result.reference);
+      } else if (result.status === 'closed')
+        toast('Payment cancelled. Nothing was charged.');
+      else toast('That payment did not go through. Try again.');
+    } catch (error) {
+      track(
+        'ad_checkout_errored',
+        { placement: run.placement, days: run.days, total: run.total },
+        formRef.current,
+      );
+      if (error instanceof SignedOutError) return needSignIn();
+      toast(
+        messageOf(
+          error,
+          'Could not reach the payment service. Try again in a moment.',
+        ),
+      );
+    }
+  }
+
+  async function send() {
+    if (busyRef.current) return;
+    const payload = withLinks();
+    if (Object.entries(payload).some(([k, v]) => v !== filled[k]))
+      setValues((prev) => ({ ...prev, ...payload }));
+    const missing = problems();
+    setErrors(missing);
+    if (Object.keys(missing).length) {
+      track(
+        'contribute_validation_failed',
+        { kind, fields: Object.keys(missing) },
+        formRef.current,
+      );
+      setResume(false);
+      setScrollRequest((n) => n + 1);
+      return;
+    }
+    if (isAd && !PAYMENTS_AVAILABLE) {
+      toast(PAYMENTS_UNAVAILABLE_MESSAGE);
+      return;
+    }
+    if (!canSend) return needSignIn();
+    busyRef.current = true;
+    setBusy('sending');
+    try {
+      if (isAd && adQuote) await sendAd(payload, adQuote);
+      else if (!isAd) await sendContribution(payload);
+    } finally {
+      busyRef.current = false;
+      setBusy(null);
+    }
+  }
+
+  const sendRef = useRef(send);
+  useEffect(() => {
+    sendRef.current = send;
+  });
+
+  useEffect(() => {
+    if (!resume || restoring || !canSend || !API_BASE) return;
+    setResume(false);
+    void sendRef.current();
+  }, [resume, restoring, canSend]);
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    void send();
+  }
+
+  async function saveAd(
+    payload: Record<string, string>,
+    paidQuote: AdQuote,
+    uploaded: string,
+    reference: string,
+  ) {
+    try {
+      const delivery = await submitAdRequest(payload, {
+        photo: uploaded,
+        days: paidQuote.days,
+        reference,
+      });
+      // A signed-out delivery stays in the outbox like a queued one, and the
+      // screen tells the buyer the same for both.
+      track(
+        'ad_request_filed',
+        { delivery: delivery === 'sent' ? 'sent' : 'queued' },
+        formRef.current,
+      );
+      if (delivery !== 'sent')
+        toast('Paid. Your ad details will send when the connection is back.');
+    } catch (error) {
+      track('ad_request_filed', { delivery: 'failed' }, formRef.current);
+      toast(
+        messageOf(
+          error,
+          `Paid, but we could not file the ad. Email us with ${reference}.`,
+        ),
+      );
+    }
+    clearDraft(kind);
+    setPaid({ quote: paidQuote, reference });
+  }
+
+  function onDemoPaid() {
+    const uploaded = demoPhoto ?? '';
+    setDemoPhoto(null);
+    if (!adQuote) return;
+    track(
+      'ad_checkout_finished',
+      { ...checkoutOf(adQuote), status: 'completed' },
+      formRef.current,
+    );
+    void saveAd(withLinks(), adQuote, uploaded, demoReference());
+  }
+
+  function onDemoClosed() {
+    setDemoPhoto(null);
+    if (adQuote)
+      track(
+        'ad_checkout_finished',
+        { ...checkoutOf(adQuote), status: 'cancelled' },
+        formRef.current,
+      );
+  }
+
+  async function pickPhoto(file: File) {
+    const problem = photoProblem(await readPhotoFacts(file), PHOTO_TYPES);
+    if (problem) {
+      setErrors((prev) => ({ ...prev, photo: problem }));
+      return;
+    }
+    track('contribute_photo_added', { kind }, formRef.current);
+    setPhoto(URL.createObjectURL(file));
+    setPhotoId(newIdempotencyKey());
+    setHosted(undefined);
+    setRestoring(false);
+    setResume(false);
+    setErrors((prev) => ({ ...prev, photo: '' }));
+    void saveDraftPhoto(kind, file);
+  }
+
+  function removePhoto() {
+    setPhoto(null);
+    setPhotoId(undefined);
+    setHosted(undefined);
+    setRestoring(false);
+    void deleteDraftPhoto(kind);
+  }
+
+  function clearForm() {
+    touched.current.clear();
+    setValues({});
+    setPicked({});
+    setErrors({});
+    removePhoto();
+    setAgreed(false);
+    setDays(DEFAULT_DAYS);
+    setResume(false);
+    setGeneration((n) => n + 1);
+    clearDraft(kind);
+  }
+
+  const closeConfirm = useCallback(() => setConfirmClear(false), []);
+
+  const hasInput =
+    Object.values(values).some((v) => v.trim() !== '') ||
+    Boolean(photo) ||
+    agreed;
 
   if (paid) {
     return (
@@ -200,12 +593,8 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         start={values.date}
         onAgain={() => {
           track('ad_create_another_clicked', {});
-          touched.current.clear();
           setPaid(null);
-          setValues({});
-          setPhoto(null);
-          setAgreed(false);
-          setDays(7);
+          clearForm();
         }}
       />
     );
@@ -219,11 +608,10 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
             Thanks, It&apos;s in Review
           </h1>
           <p className="text-fg-3 mt-3">
-            A person checks every submission, usually within 2 working days.
             We&apos;ll email you when it goes live.
           </p>
           <Button asChild size="lg" variant="secondary" className="mt-6">
-            <Link href="/">Back to home</Link>
+            <Link href={paths.home()}>Back to home</Link>
           </Button>
         </div>
       </div>
@@ -233,85 +621,59 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   const details = form.fields.filter((f) => f.type !== 'select');
   const choices = form.fields.filter((f) => f.type === 'select');
   const spans = fullWidth(details);
-  const sections = isAd
-    ? ['Details', 'Placement', 'Photo', 'Run length', 'Content']
-    : ['Details', 'Category', 'Photo'];
-  const step = (name: string) =>
-    String(sections.indexOf(name) + 1).padStart(2, '0');
+  const adsClosed = isAd && !PAYMENTS_AVAILABLE;
+  const submitLabel = busy
+    ? BUSY_LABEL[busy]
+    : isAd
+      ? adQuote
+        ? `Pay ${naira(adQuote.total)}`
+        : 'Pay'
+      : canSend
+        ? 'Submit for review'
+        : 'Sign in to submit';
 
   return (
-    <div className="page grid gap-12 pt-10 pb-20 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-16 md:pt-16 lg:gap-24">
-      <aside
-        className="md:top-bar flex flex-col md:sticky md:self-start"
-        {...area('contribute_intro')}
-      >
-        <p className="text-fg-3 text-sm font-semibold">Contribute</p>
-        <h1 className="mt-3 text-[40px] leading-[1.02] font-semibold tracking-[-0.03em] md:text-[56px]">
-          {titleCase(form.title)}
-        </h1>
-        <p className="text-fg-2 mt-5 max-w-[42ch] text-[17px] leading-relaxed">
-          {form.lead}
-        </p>
-        <div className="mt-8">
-          <Tabs
-            label="What are you sending?"
-            value={kind}
-            options={KINDS}
-            onChange={(k) => {
-              track('contribute_kind_switched', { from: kind, to: k });
-              navigate(paths.contribute(k), { replace: true });
-            }}
-          />
-        </div>
-        {isAd ? (
-          <AdPreview
-            placement={placement}
-            title={values.title}
-            brand={values.name}
-            city={values.city}
-            photo={photo}
-          />
-        ) : (
-          <NextSteps />
-        )}
-        <p className="text-fg-3 mt-10 text-[15px]">
-          Rather talk it through?{' '}
-          <a
-            href={`mailto:${CONTACT.hello}`}
-            className="text-fg inline-flex items-center gap-1 underline underline-offset-4"
-          >
-            Email us
-            <Icon name="arrow" className="h-3.5 w-3.5" />
-          </a>
-        </p>
-      </aside>
+    <div className="page pt-6 pb-32 md:pt-14 md:pb-20">
+      <div>
+        <header {...area('contribute_intro')}>
+          <h1 className="text-[36px] leading-[1.04] font-semibold tracking-[-0.03em] md:text-[56px]">
+            {titleCase(form.title)}
+          </h1>
+        </header>
 
-      <form
-        onSubmit={onSubmit}
-        onFocus={isAd ? preloadCheckout : undefined}
-        noValidate
-        className="flex flex-col gap-14"
-        {...area('contribute_form')}
-      >
-        <Section index={step('Details')} title="Details">
+        <form
+          ref={formRef}
+          onSubmit={onSubmit}
+          onFocus={isAd ? preloadCheckout : undefined}
+          noValidate
+          aria-busy={busy !== null}
+          className="border-line-2 mt-10 flex flex-col gap-7 border-t pt-8 md:mt-12 md:gap-8 md:pt-10"
+          {...area('contribute_form')}
+        >
           <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
             {details.map((f, i) => (
               <TextField
                 key={f.name}
                 field={f}
                 wide={spans[i] ?? true}
+                min={
+                  f.type !== 'date'
+                    ? undefined
+                    : isAd && f.name === 'date'
+                      ? earliestStart(new Date())
+                      : todayIso()
+                }
                 value={filled[f.name] ?? ''}
                 error={errors[f.name]}
-                onChange={(v) => set(f.name, v)}
+                onChange={(v, wasPicked) =>
+                  f.type === 'city'
+                    ? setCity(f.name, v, wasPicked)
+                    : set(f.name, v)
+                }
               />
             ))}
           </div>
-        </Section>
 
-        <Section
-          index={step(isAd ? 'Placement' : 'Category')}
-          title={isAd ? 'Placement' : 'Category'}
-        >
           {choices.map((f) => (
             <ChoiceField
               key={f.name}
@@ -321,137 +683,130 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
               onChange={(v) => set(f.name, v)}
             />
           ))}
-        </Section>
 
-        <Section index={step('Photo')} title="Photo" optional={!isAd}>
           <PhotoField
             ad={isAd}
             photo={photo}
             error={errors.photo}
-            onChange={(url) => {
-              track('contribute_photo_added', { kind });
-              setPhoto(url);
-              setErrors((prev) => ({ ...prev, photo: '' }));
-            }}
+            onPick={(file) => void pickPhoto(file)}
+            onRemove={removePhoto}
           />
-        </Section>
 
-        {isAd && (
-          <>
-            <Section index={step('Run length')} title="Run length">
-              <RunLength placement={placement} days={days} onChange={setDays} />
-            </Section>
-            <Section index={step('Content')} title="Content">
+          {isAd && (
+            <>
+              <RunLength
+                key={generation}
+                placement={placement}
+                days={days}
+                error={errors.days}
+                onChange={(next) => {
+                  setDays(next);
+                  setErrors((prev) => ({ ...prev, days: '' }));
+                }}
+              />
+              <AdPreview
+                placement={placement}
+                title={values.title}
+                brand={values.name}
+                city={values.city}
+                photo={photo}
+              />
               <ContentPolicy
                 agreed={agreed}
                 error={errors.agreed}
                 onChange={(v) => {
-                  track('ad_policy_toggled', { agreed: v });
+                  track('ad_policy_toggled', { agreed: v }, formRef.current);
                   setAgreed(v);
                   setErrors((prev) => ({ ...prev, agreed: '' }));
                 }}
               />
-            </Section>
-          </>
-        )}
+              <Bill quote={adQuote} />
+            </>
+          )}
 
-        {isAd ? (
-          <SendCard title="Ready to go live?">
-            <Total quote={adQuote} />
-          </SendCard>
-        ) : (
-          <SendCard title="Ready to send?">
-            <p className="text-inv-fg-3 max-w-[46ch] text-[15px] leading-relaxed">
-              Check the details once more. Submissions follow our{' '}
-              <Link
-                href={paths.legal('guidelines')}
-                className="text-inv-fg underline underline-offset-2"
-              >
-                Listing Guidelines
-              </Link>
-              .
-            </p>
-            <Button type="submit" size="lg" className={SEND}>
-              Submit for review
-              <Icon name="arrow" className="size-4" />
+          <footer className="border-line-2 flex flex-col-reverse gap-3 border-t pt-6 md:flex-row md:items-center">
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="h-12 px-5 text-base"
+            >
+              <a href={`mailto:${isAd ? CONTACT.ads : CONTACT.hello}`}>
+                Email us instead
+              </a>
             </Button>
-          </SendCard>
-        )}
-      </form>
+            <div className="flex flex-col-reverse gap-3 md:ml-auto md:flex-row">
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                disabled={busy !== null}
+                onClick={() => (hasInput ? setConfirmClear(true) : clearForm())}
+                className="h-12 px-5 text-base"
+                {...context({ action: 'clear_form' })}
+              >
+                Clear form
+              </Button>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={busy !== null || adsClosed}
+                className="h-12 px-6 text-base"
+                {...context({ action: isAd ? 'pay' : 'submit' })}
+              >
+                {submitLabel}
+              </Button>
+            </div>
+          </footer>
+          <p className="text-fg-3 -mt-3 text-sm">
+            {adsClosed ? (
+              PAYMENTS_UNAVAILABLE_MESSAGE
+            ) : isAd ? (
+              'Payments are handled by Bachs.'
+            ) : (
+              <>
+                Submissions follow our{' '}
+                <Link
+                  href={paths.legal('guidelines')}
+                  className="text-fg underline underline-offset-2"
+                >
+                  Listing Guidelines
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        </form>
+      </div>
 
-      {demo && (
-        <BachsDemo
-          quote={adQuote}
-          onPaid={onDemoPaid}
-          onClose={() => {
-            track('ad_checkout_finished', {
-              placement,
-              days,
-              total: adQuote.total,
-              demo: true,
-              status: 'cancelled',
-            });
-            setDemo(false);
-          }}
-        />
+      {demoPhoto !== null && adQuote && (
+        <BachsDemo quote={adQuote} onPaid={onDemoPaid} onClose={onDemoClosed} />
+      )}
+
+      {confirmClear && (
+        <Modal title={titleCase('Clear this form?')} onClose={closeConfirm}>
+          <div className="flex justify-end gap-2.5">
+            <Button
+              variant="ghost"
+              onClick={closeConfirm}
+              {...context({ action: 'clear_form_cancelled' })}
+            >
+              Keep editing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                clearForm();
+                closeConfirm();
+              }}
+              {...context({ action: 'clear_form_confirmed' })}
+            >
+              Clear form
+            </Button>
+          </div>
+        </Modal>
       )}
     </div>
-  );
-}
-
-const STEPS = [
-  ['Send it in', 'Fill in the form. It takes about two minutes.'],
-  ['We check it', 'A person reviews it, usually within 2 working days.'],
-  ['It goes live', 'We email you the moment it is on membrs.'],
-] as const;
-
-function NextSteps() {
-  return (
-    <section className="border-line-2 mt-12 border-t pt-6">
-      <h2 className="text-fg text-[15px] font-semibold">What happens next</h2>
-      <ol className="mt-5 grid gap-5">
-        {STEPS.map(([title, body], i) => (
-          <li key={title} className="grid grid-cols-[28px_1fr] gap-x-3">
-            <span className="text-fg-4 text-[15px] tabular-nums">{i + 1}</span>
-            <span>
-              <span className="text-fg block text-[15px] font-medium">
-                {title}
-              </span>
-              <span className="text-fg-3 mt-0.5 block text-[15px]">{body}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function Section({
-  index,
-  title,
-  optional = false,
-  children,
-}: {
-  index: string;
-  title: string;
-  optional?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <section className="border-line-2 flex flex-col gap-7 border-t pt-6">
-      <header className="flex items-baseline gap-4">
-        <span className="text-fg-4 text-[15px] font-medium tabular-nums">
-          {index}
-        </span>
-        <h2 className="text-fg text-[24px] leading-tight font-semibold tracking-tight">
-          {title}
-        </h2>
-        {optional && (
-          <span className="text-fg-4 ml-auto text-sm">Optional</span>
-        )}
-      </header>
-      {children}
-    </section>
   );
 }
 
@@ -498,19 +853,20 @@ function fullWidth(fields: FormField[]): boolean[] {
     return !paired;
   });
 }
-
 function TextField({
   field,
   wide,
+  min,
   value,
   error,
   onChange,
 }: {
   field: FormField;
   wide: boolean;
+  min?: string;
   value: string;
   error?: string;
-  onChange: (v: string) => void;
+  onChange: (v: string, picked: boolean) => void;
 }) {
   const id = `f-${field.name}`;
   const invalid = Boolean(error);
@@ -522,24 +878,42 @@ function TextField({
       <FieldName htmlFor={id} optional={!field.required}>
         {field.label}
       </FieldName>
-      {field.type === 'textarea' ? (
+      {field.type === 'city' ? (
+        <CityField
+          id={id}
+          value={value}
+          placeholder={field.placeholder}
+          invalid={invalid}
+          className={CONTROL}
+          onChange={onChange}
+        />
+      ) : field.type === 'textarea' ? (
         <Textarea
           id={id}
           value={value}
           placeholder={field.placeholder}
           aria-invalid={invalid}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value, false)}
           className="placeholder:text-fg-4 min-h-28 px-4 text-base md:text-base"
         />
       ) : (
         <Input
           id={id}
           type={field.type}
+          min={min}
           value={value}
           placeholder={field.placeholder}
           aria-invalid={invalid}
           autoComplete={field.type === 'email' ? 'email' : undefined}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value, false)}
+          onBlur={
+            field.type === 'url'
+              ? () => {
+                  const fixed = withScheme(value);
+                  if (fixed !== value) onChange(fixed, false);
+                }
+              : undefined
+          }
           className={CONTROL}
         />
       )}
@@ -561,17 +935,27 @@ function ChoiceField({
 }) {
   const id = `f-${field.name}`;
   const invalid = Boolean(error);
+  const picked = field.multiple ? splitPicks(value) : [value];
   return (
     <Field data-invalid={invalid} className="gap-3">
-      <FieldName id={id}>{field.label}</FieldName>
+      <FieldName id={id}>
+        {field.label}
+        {field.multiple && (
+          <span className="text-fg-4 ml-auto font-normal">
+            Pick all that fit
+          </span>
+        )}
+      </FieldName>
       <div role="group" aria-labelledby={id} className="flex flex-wrap gap-2">
         {field.options?.map((o) => (
           <Chip
             key={o}
-            on={value === o}
-            mark={false}
+            on={picked.includes(o)}
+            mark={Boolean(field.multiple)}
             invalid={invalid}
-            onClick={() => onChange(o)}
+            onClick={() =>
+              onChange(field.multiple ? toggled(picked, o).join(', ') : o)
+            }
           >
             {o}
           </Chip>
@@ -582,65 +966,116 @@ function ChoiceField({
   );
 }
 
+function splitPicks(value: string): string[] {
+  return value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+function toggled(picked: string[], option: string): string[] {
+  return picked.includes(option)
+    ? picked.filter((p) => p !== option)
+    : [...picked, option];
+}
+
 function PhotoField({
   ad,
   photo,
   error,
-  onChange,
+  onPick,
+  onRemove,
 }: {
   ad: boolean;
   photo: string | null;
   error?: string;
-  onChange: (url: string) => void;
+  onPick: (file: File) => void;
+  onRemove: () => void;
 }) {
   const invalid = Boolean(error);
+  const [dragging, setDragging] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const label = ad ? 'Listing photo' : 'Photo';
   return (
     <Field data-invalid={invalid} className="gap-2">
+      <FieldName htmlFor="f-photo" optional={!ad}>
+        {label}
+      </FieldName>
       <label
         htmlFor="f-photo"
-        className={`bg-soft hover:bg-soft-hover flex min-h-44 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed p-6 text-center transition-colors ${invalid ? 'border-destructive' : 'border-line-2'}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          const file = e.dataTransfer.files[0];
+          if (file) onPick(file);
+        }}
+        className={`${dragging ? 'bg-soft-hover border-accent' : ''} bg-soft hover:bg-soft-hover flex min-h-52 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed p-6 text-center transition-colors ${invalid ? 'border-destructive' : 'border-line-2'}`}
       >
         {photo ? (
-          <img src={photo} alt="Your upload" className="max-h-56 rounded-md" />
+          <img
+            src={photo}
+            alt="Your upload"
+            className="rounded-photo max-h-56"
+          />
         ) : (
           <>
-            <Icon name="image" className="text-fg-3 h-6 w-6" />
-            <span className="text-[15px] font-semibold">
-              {ad ? 'Choose your listing photo' : 'Choose a file'}
+            <Icon name="image" className="text-fg-3 h-7 w-7" />
+            <span className="mt-1 text-[15px] font-semibold">
+              Choose a file or drag and drop it here
             </span>
             <span className="text-fg-3 text-sm">
-              {ad
-                ? 'JPG or PNG, 4:3 like every listing, at least 1200px wide'
-                : 'JPG or PNG, landscape works best'}
+              JPG, PNG or WebP, up to 10 MB
+            </span>
+            <span className="bg-btn mt-3 rounded-sm px-4 py-2 text-[15px] font-medium">
+              Browse files
             </span>
           </>
         )}
       </label>
+      {photo && (
+        <div className="flex gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => input.current?.click()}
+            {...context({ action: 'replace_photo' })}
+          >
+            Replace photo
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              if (input.current) input.current.value = '';
+              onRemove();
+            }}
+            {...context({ action: 'remove_photo' })}
+          >
+            Remove
+          </Button>
+        </div>
+      )}
       <input
+        ref={input}
         id="f-photo"
         type="file"
-        accept="image/*"
-        aria-label={ad ? 'Listing photo' : 'Photo'}
+        accept="image/jpeg,image/png,image/webp"
+        aria-label={label}
         aria-invalid={invalid}
         className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) onChange(URL.createObjectURL(file));
+          e.target.value = '';
+          if (file) onPick(file);
         }}
       />
       {error && <FieldError>{error}</FieldError>}
     </Field>
-  );
-}
-
-function SendCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="bg-inv text-inv-fg flex min-h-60 flex-col gap-3 rounded-md p-6 md:p-8">
-      <h2 className="text-[28px] leading-tight font-semibold tracking-tight md:text-[32px]">
-        {titleCase(title)}
-      </h2>
-      {children}
-    </div>
   );
 }
 
@@ -665,32 +1100,36 @@ function AdPreview({
     placement === 'Opportunities' ? 'opportunity' : 'event',
   ).slice(0, 1);
   return (
-    <section className="border-line-2 mt-12 border-t pt-6">
-      <p className={cn(CAPTION, 'mb-5')}>
-        Preview: your ad is the first listing
-      </p>
+    <section>
+      <p className={cn(LABEL, 'mb-1')}>Preview</p>
+      <p className={cn(CAPTION, 'mb-4')}>Your ad is the first listing</p>
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-6">
-        <div className="flex flex-col">
-          <div className="bg-btn ring-primary grid aspect-[4/3] place-items-center overflow-hidden rounded-md ring-2 ring-offset-4 ring-offset-[var(--soft)]">
-            {photo ? (
-              <img src={photo} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <Icon name="image" className="text-fg-4 h-8 w-8" />
-            )}
-          </div>
-          <p className="text-fg-3 mt-3 text-[13px]">{brand || 'Your brand'}</p>
-          <h3 className="mt-1 line-clamp-2 text-base leading-snug font-semibold tracking-tight md:text-lg md:leading-tight">
-            {title || 'Your headline'}
-          </h3>
-          <p className="text-fg-3 mt-auto pt-2 text-[13px]">
-            {city || 'Your city'}
-          </p>
+        <div aria-hidden="true" className="pointer-events-none flex flex-col">
+          <MediaCard
+            href={paths.contribute('ad')}
+            photo=""
+            photoUrl={photo ?? undefined}
+            title={title?.trim() || 'Your headline'}
+            tag={placement === 'Opportunities' ? 'Opportunity' : 'Event'}
+            meta={
+              <>
+                <Meta icon="org">{brand?.trim() || 'Your brand'}</Meta>
+                <Meta icon="pin">{city?.trim() || 'Your city'}</Meta>
+              </>
+            }
+            tags={
+              <Tags
+                names={['Sponsored']}
+                className="text-[13px] md:text-[15px]"
+              />
+            }
+          />
         </div>
         {after.map((l) => (
           <div
             key={l.id}
             aria-hidden="true"
-            className="pointer-events-none opacity-40"
+            className="pointer-events-none flex flex-col opacity-50"
           >
             <ListingCard listing={l} />
           </div>
@@ -700,35 +1139,47 @@ function AdPreview({
   );
 }
 
-/** Run length as choice cards. Each shows its own total, so nobody multiplies. */
 function RunLength({
   placement,
   days,
+  error,
   onChange,
 }: {
   placement: Placement;
-  days: number;
-  onChange: (days: number) => void;
+  days: number | null;
+  error?: string;
+  onChange: (days: number | null) => void;
 }) {
-  // Any run from 1 to 90 days. The presets cover most buyers; Custom covers the rest.
   const preset = DURATIONS.some((d) => d.days === days);
   const [custom, setCustom] = useState(!preset);
-  const [draft, setDraft] = useState(String(days));
+  const [text, setText] = useState(days === null ? '' : String(days));
+  const fieldset = useRef<HTMLFieldSetElement>(null);
+  // Only real changes count, and a typed custom length is reported when the
+  // box loses focus rather than on every keystroke.
+  const reported = useRef(days);
+  const report = (next: number | null, isCustom: boolean) => {
+    if (next === null || next === reported.current) return;
+    reported.current = next;
+    track(
+      'ad_run_length_changed',
+      { placement, days: next, custom: isCustom },
+      fieldset.current,
+    );
+  };
   const choose = (v: string) => {
-    const next =
-      v === 'custom'
-        ? Math.max(1, Math.min(90, Number(draft) || 10))
-        : Number(v);
-    track('ad_run_length_changed', {
-      placement,
-      days: next,
-      custom: v === 'custom',
-    });
-    setCustom(v === 'custom');
-    onChange(next);
+    if (v === 'custom') {
+      setCustom(true);
+      const next = runDays(text);
+      report(next, true);
+      onChange(next);
+      return;
+    }
+    setCustom(false);
+    report(Number(v), false);
+    onChange(Number(v));
   };
   return (
-    <FieldSet>
+    <FieldSet ref={fieldset} data-invalid={Boolean(error)}>
       <FieldLegend variant="label" className={cn(LABEL, 'mb-1')}>
         How long should it run?
       </FieldLegend>
@@ -777,16 +1228,22 @@ function RunLength({
                   <Input
                     type="number"
                     inputMode="numeric"
-                    min={1}
-                    max={90}
-                    value={draft}
+                    min={MIN_RUN_DAYS}
+                    max={MAX_RUN_DAYS}
+                    step={1}
+                    value={text}
                     aria-label="Number of days"
+                    aria-invalid={Boolean(error)}
                     autoFocus
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => {
-                      setDraft(e.target.value);
-                      const n = Number(e.target.value);
-                      if (n >= 1) onChange(Math.min(90, Math.round(n)));
+                      setText(e.target.value);
+                      onChange(runDays(e.target.value));
+                    }}
+                    onBlur={() => {
+                      const clamped = runDays(text);
+                      if (clamped !== null) setText(String(clamped));
+                      report(clamped, true);
                     }}
                     className="h-8 w-16 px-2 text-sm md:text-sm"
                   />
@@ -794,7 +1251,7 @@ function RunLength({
                 </span>
               ) : (
                 <FieldDescription className="text-fg-3 text-sm">
-                  Pick the days
+                  {MIN_RUN_DAYS} to {MAX_RUN_DAYS} days
                 </FieldDescription>
               )}
             </FieldContent>
@@ -802,6 +1259,7 @@ function RunLength({
           </Field>
         </FieldLabel>
       </RadioGroup>
+      {error && <FieldError className="-mt-3">{error}</FieldError>}
     </FieldSet>
   );
 }
@@ -859,35 +1317,25 @@ function ContentPolicy({
   );
 }
 
-/** The bill, then the button that pays it. */
-function Total({ quote }: { quote: AdQuote }) {
+function Bill({ quote }: { quote: AdQuote | null }) {
+  if (!quote) return null;
   return (
-    <>
-      <dl className="text-inv-fg-2 mt-2 grid max-w-[420px] grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-[15px]">
-        <dt>
-          {placementLabel(quote.placement)}, {quote.days}{' '}
-          {quote.days === 1 ? 'day' : 'days'}
-        </dt>
-        <dd className="tabular-nums">{naira(quote.subtotal)}</dd>
-        {quote.discount > 0 && (
-          <>
-            <dt>Longer run</dt>
-            <dd className="tabular-nums">−{naira(quote.discount)}</dd>
-          </>
-        )}
-        <dt className="text-inv-fg mt-2 font-semibold">Due now</dt>
-        <dd className="text-inv-fg mt-2 text-xl font-semibold tabular-nums">
-          {naira(quote.total)}
-        </dd>
-      </dl>
-      <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-8">
-        <Button type="submit" size="lg" className={cn(SEND, 'mt-0')}>
-          Pay {naira(quote.total)}
-          <Icon name="arrow" className="size-4" />
-        </Button>
-        <p className="text-inv-fg-3 text-sm">Payments are handled by Bachs.</p>
-      </div>
-    </>
+    <dl className="bg-soft grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 rounded-md p-4 text-[15px] md:p-5">
+      <dt className="text-fg-2">
+        {placementLabel(quote.placement)}, {plural(quote.days, 'day')}
+      </dt>
+      <dd className="text-fg-2 tabular-nums">{naira(quote.subtotal)}</dd>
+      {quote.discount > 0 && (
+        <>
+          <dt className="text-fg-2">Longer run</dt>
+          <dd className="text-fg-2 tabular-nums">−{naira(quote.discount)}</dd>
+        </>
+      )}
+      <dt className="text-fg mt-2 font-semibold">Due now</dt>
+      <dd className="text-fg mt-2 text-xl font-semibold tabular-nums">
+        {naira(quote.total)}
+      </dd>
+    </dl>
   );
 }
 
@@ -905,19 +1353,13 @@ function AdPaid({
   start?: string;
   onAgain: () => void;
 }) {
-  const from = start
-    ? new Date(`${start}T12:00:00`).toLocaleDateString('en-GB', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-      })
-    : 'your start date';
+  const from = start ? shortDate(start) : 'your start date';
   const rows: [string, string][] = [
     ['Reference', reference],
     ['Paid', naira(quote.total)],
     [
       'Placement',
-      `${placementLabel(quote.placement)}, ${quote.days} {quote.days === 1 ? 'day' : 'days'}`,
+      `${placementLabel(quote.placement)}, ${plural(quote.days, 'day')}`,
     ],
     ['Starts', from],
     ['Status', 'In review'],
@@ -949,7 +1391,7 @@ function AdPaid({
             Create another ad
           </Button>
           <Button asChild size="lg" variant="ghost">
-            <Link href="/">Back to home</Link>
+            <Link href={paths.home()}>Back to home</Link>
           </Button>
         </div>
       </div>

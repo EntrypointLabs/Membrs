@@ -24,10 +24,10 @@ export function LegalScreen({ doc }: { doc: LegalSlug }) {
   return (
     <article className="page mx-auto max-w-[860px] pt-10 pb-10 text-center md:pt-20">
       <p className="text-fg-3 flex justify-center gap-2.5 font-medium">
-        Legal <span className="opacity-50">·</span> Last updated {d.updated}
+        Last updated {d.updated}
       </p>
       <h1 className="mt-4 mb-9 text-[clamp(36px,5vw,72px)] leading-none font-semibold tracking-tight">
-        {d.title}
+        {titleCase(d.title)}
       </h1>
       <Tabs
         label="Legal documents"

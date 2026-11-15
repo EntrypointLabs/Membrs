@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { listings, places, promos } from './api';
+import listingsFixture from '../fixtures/listings.json';
+import placesFixture from '../fixtures/places.json';
+import promosFixture from '../fixtures/promos.json';
 import { search } from './search';
+import type { Listing, Place, Promo } from './types';
 
-const data = { listings: listings(), places: places(), promos: promos() };
+const data = {
+  listings: listingsFixture as Listing[],
+  places: placesFixture as Place[],
+  promos: promosFixture as Promo[],
+};
 
 describe('search', () => {
   it('finds a listing by title', () => {

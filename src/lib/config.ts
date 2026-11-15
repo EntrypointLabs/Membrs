@@ -1,16 +1,12 @@
 /**
- * Base URL for the membrs API. Empty, the default, means the app reads the
- * bundled fixtures, which is how the lite rollout ships until a backend
- * exists. Set it and every function in ./api fetches from there instead.
+ * Base URL for the membrs API. Every listing, place and promo comes from it;
+ * with it empty the app shows no listings rather than sample data.
  */
 export const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
-/**
- * The day every relative label is measured from. The fixtures were captured
- * on this date, so "Tonight" and "4d left" stay true to them. A live API
- * replaces this with the real date.
- */
-export const REFERENCE_DATE = '2026-11-05';
+export const API_TIMEOUT_MS = 5000;
+
+export const ADS_CHECKOUT = import.meta.env.VITE_ADS_CHECKOUT === 'true';
 
 /** Where the digest and contact emails go. */
 export const CONTACT = {

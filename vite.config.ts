@@ -26,7 +26,9 @@ function posthogProxy(region: string) {
 
 export default defineConfig(({ mode }) => {
   const root = fileURLToPath(new URL('.', import.meta.url));
-  const proxy = posthogProxy(loadEnv(mode, root).VITE_POSTHOG_REGION ?? 'us');
+  const analytics = posthogProxy(
+    loadEnv(mode, root).VITE_POSTHOG_REGION ?? 'us',
+  );
   return {
     plugins: [react(), tailwindcss()],
     // A single React instance, so hooks always resolve to the same copy.
@@ -35,8 +37,15 @@ export default defineConfig(({ mode }) => {
       // shadcn components import from @/, so the CLI can add more later.
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
-    server: { port: 5173, strictPort: true, proxy },
-    preview: { proxy },
+    server: {
+      port: 5173,
+      strictPort: true,
+      proxy: {
+        '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:24081',
+        ...analytics,
+      },
+    },
+    preview: { proxy: analytics },
     build: {
       target: 'es2022',
       // React changes far less often than our code, so it gets its own chunk

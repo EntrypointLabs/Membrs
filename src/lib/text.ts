@@ -56,3 +56,51 @@ export function slugify(input: string): string {
 export function plural(n: number, noun: string, many = `${noun}s`): string {
   return `${n.toLocaleString('en-US')} ${n === 1 ? noun : many}`;
 }
+
+export function hashOf(text: string, buckets: number): number {
+  let h = 0;
+  for (const ch of text) h = (h * 31 + ch.charCodeAt(0)) % buckets;
+  return h;
+}
+
+export function daysLeftLine(days: number): string {
+  if (days <= 0) return 'Closes today';
+  return `${plural(days, 'day')} left`;
+}
+
+const SOURCE_NAMES: Record<string, string> = {
+  eventbrite: 'Eventbrite',
+  luma: 'Luma',
+  meetup: 'Meetup',
+  nairabox: 'Nairabox',
+  ticketmaster: 'Ticketmaster',
+  tivavo: 'Tivavo',
+  tix: 'Tix',
+  membrs: 'MEMBRS',
+};
+
+export function sourceName(source: string): string {
+  const name = source.trim();
+  const known = SOURCE_NAMES[name.toLowerCase()];
+  if (known) return known;
+  return name === name.toLowerCase() && name
+    ? name[0]!.toUpperCase() + name.slice(1)
+    : name;
+}
+
+export function priceText(price: string): string {
+  return price.replace(
+    /(\d)\.(\d)(?!\d)/g,
+    (_, whole: string, tenth: string) => `${whole}.${tenth}0`,
+  );
+}
+
+export function distinctParts(lead: string, parts: string[]): string[] {
+  const seen = [lead.toLowerCase()];
+  return parts.filter((part) => {
+    const text = part.trim().toLowerCase();
+    if (!text || seen.some((s) => s.includes(text))) return false;
+    seen.push(text);
+    return true;
+  });
+}

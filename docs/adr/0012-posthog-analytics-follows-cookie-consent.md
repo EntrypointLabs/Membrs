@@ -40,6 +40,12 @@ accepting analytics opts in (storage, replays, funnels across visits),
 rejecting or an expired choice goes back to cookieless. Readers are never
 identified, and replays mask every input.
 
+Ask membrs conversations are the reader's own words, so their events carry
+only the shape of a question and its answer (length, how long it took, how
+many listings it showed), never the text, and replays mask the conversation.
+Errors caught by the page error boundary are reported with
+`reportError()`, because they never reach the browser's global error handler.
+
 Events go to `/ingest` on our own origin. Vite forwards it in development and
 the rewrites in `vercel.json` forward it in production.
 

@@ -1,53 +1,45 @@
-import { area, context, itemRef, track } from '../lib/analytics';
+import { area, context, itemRef, track, type Events } from '../lib/analytics';
 import { listingById, similar } from '../lib/api';
-import { shortDay } from '../lib/dates';
+import {
+  deadlineCalendarHref,
+  downloadIcs,
+  googleCalendarHref,
+} from '../lib/calendar';
+import { eventDay, hasDeadline } from '../lib/dates';
 import { paths } from '../lib/router';
-import { slugify } from '../lib/text';
-import { toast } from '../lib/ui';
+import { daysLeftLine, distinctParts, slugify, sourceName } from '../lib/text';
 import type { EventListing, Listing, OpportunityListing } from '../lib/types';
-import { Icon } from '../components/Icon';
-import { ListingCard, priceOf } from '../components/ListingCard';
-import { Photo } from '../components/Photo';
+import { ListingCard, shownPrice } from '../components/ListingCard';
 import { Rail } from '../components/Rail';
 import { SectionHeader } from '../components/SectionHeader';
 import {
   AboutBlock,
   ActionCard,
-  Block,
-  Crumbs,
+  DetailBody,
+  DetailHead,
   Fact,
   FactAction,
+  LinkRow,
   MapCard,
-  share,
+  OverlayButton,
+  OverlayMenu,
+  PrimaryLink,
+  shareAndConfirm,
   SmallButton,
 } from './DetailParts';
 import { SeeAll } from './HomeScreen';
 import { NotFoundScreen } from './NotFoundScreen';
-
-/** A Google Calendar link for an event, prefilled from the listing. */
-function calendarHref(e: EventListing): string {
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: e.title,
-    details: `${e.blurb}\n\n${e.url}`,
-    location: `${e.venue}, ${e.area}`,
-  });
-  if (e.startsAt && e.endsAt) {
-    const compact = (iso: string) =>
-      iso.replace(/[-:]/g, '').replace('.000', '');
-    params.set('dates', `${compact(e.startsAt)}/${compact(e.endsAt)}`);
-  }
-  return `https://calendar.google.com/calendar/render?${params}`;
-}
 
 export function ListingScreen({ id }: { id: string }) {
   const listing = listingById(id);
   if (!listing) return <NotFoundScreen />;
   const feed = listing.kind === 'event' ? 'events' : 'opportunities';
   const more = similar(listing);
+  const item = itemRef.listing(listing);
+  const cta = listing.kind === 'event' ? 'get_ticket' : 'apply_now';
   return (
-    <div className="page pt-6 md:pt-10" {...context(itemRef.listing(listing))}>
-      <Crumbs
+    <div className="page max-md:pt-0 md:pt-10" {...context(item)}>
+      <DetailHead
         trail={[
           [
             listing.kind === 'event' ? 'Events' : 'Opportunities',
@@ -55,78 +47,88 @@ export function ListingScreen({ id }: { id: string }) {
           ],
           [listing.category, paths.category(slugify(listing.category))],
         ]}
-      />
-      <header className="mt-8">
-        <h1 className="text-[clamp(34px,4vw,68px)] leading-[1.04] font-semibold tracking-tight text-pretty">
-          {listing.title}
-        </h1>
-      </header>
-      <Photo
-        size="wide"
-        id={listing.photo}
-        src={listing.photoUrl}
-        alt={listing.title}
-        priority
-        className="mt-10 aspect-[2/1] rounded-lg"
+        title={listing.title}
+        photo={{
+          id: listing.photo,
+          src: listing.photoUrl,
+          cover: { title: listing.title, tag: listing.category },
+        }}
+        tools={<HeadTools listing={listing} />}
       />
 
-      <AboutBlock
-        title={
-          listing.kind === 'event'
-            ? 'About This Event'
-            : 'About This Opportunity'
-        }
-        paragraphs={listing.about ?? [listing.blurb]}
-      />
-
-      <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_clamp(360px,24vw,460px)] lg:gap-16">
-        <div>
-          <dl className="border-line border-t" {...area('facts')}>
-            {listing.kind === 'event' ? (
-              <EventFacts e={listing} />
-            ) : (
-              <OpportunityFacts o={listing} />
-            )}
-          </dl>
-          {listing.kind === 'opportunity' && listing.eligibility.length > 0 && (
-            <Block title="Who can apply">
-              <ul className="text-fg-2 flex flex-col gap-3">
-                {listing.eligibility.map((line) => (
-                  <li key={line} className="flex gap-3">
-                    <Icon name="check" className="text-open mt-1 shrink-0" />
-                    <span className="min-w-0 break-words">{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </Block>
-          )}
-          <div className="mt-10 flex flex-wrap gap-2">
-            {[
-              listing.category,
-              listing.city,
+      <DetailBody
+        about={
+          <AboutBlock
+            title={
               listing.kind === 'event'
-                ? listing.free
-                  ? 'Free'
-                  : 'Paid'
-                : listing.mode,
-            ].map((t) => (
-              <span
-                key={t}
-                className="bg-btn rounded-sm px-3 py-1.5 text-sm font-medium"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-          {listing.kind === 'event' && listing.venue !== 'Venue TBA' && (
-            <MapCard
-              name={listing.venue}
-              area={`${listing.area}, ${listing.city}`}
+                ? 'About This Event'
+                : 'About This Opportunity'
+            }
+            paragraphs={listing.about ?? [listing.blurb]}
+            className=""
+          />
+        }
+        action={<Sidebar listing={listing} />}
+        primary={
+          <PrimaryLink href={listing.url} item={item} cta={cta}>
+            {listing.kind === 'event' ? 'Get ticket' : 'Apply now'}
+          </PrimaryLink>
+        }
+        links={
+          <>
+            <LinkRow
+              icon="spark"
+              label="Find similar"
+              action="find_similar"
+              href={paths.category(slugify(listing.category))}
+              onClick={(e) =>
+                track('find_similar_clicked', item, e.currentTarget)
+              }
             />
+            <LinkRow
+              icon="share"
+              label="Share with a friend"
+              action="share"
+              onClick={(e) =>
+                shareAndConfirm(listing.title, item, e.currentTarget)
+              }
+            />
+          </>
+        }
+      >
+        <dl {...area('facts')}>
+          {listing.kind === 'event' ? (
+            <EventFacts e={listing} />
+          ) : (
+            <OpportunityFacts o={listing} />
           )}
+        </dl>
+        <div className="mt-10 flex flex-wrap gap-2">
+          {[
+            ...new Set(
+              [
+                listing.category,
+                listing.city,
+                listing.kind === 'event'
+                  ? listing.free
+                    ? 'Free'
+                    : shownPrice(listing) && 'Paid'
+                  : listing.mode,
+              ].filter(Boolean),
+            ),
+          ].map((t) => (
+            <span
+              key={t}
+              className="bg-btn rounded-sm px-3 py-1.5 text-sm font-medium"
+            >
+              {t}
+            </span>
+          ))}
         </div>
-        <Sidebar listing={listing} />
-      </div>
+        {listing.kind === 'event' && listing.venue !== 'Venue TBA' && (
+          <MapCard name={listing.venue} area={whereLine(listing)} />
+        )}
+      </DetailBody>
 
       {more.length > 0 && (
         <section
@@ -135,6 +137,7 @@ export function ListingScreen({ id }: { id: string }) {
         >
           <SectionHeader
             title="More like this"
+            count={more.length}
             actions={
               <SeeAll
                 href={paths.category(slugify(listing.category))}
@@ -152,44 +155,76 @@ export function ListingScreen({ id }: { id: string }) {
   );
 }
 
+function calendarAdded(
+  listing: Listing,
+  method: Events['calendar_added']['method'],
+  from: Element,
+): void {
+  track('calendar_added', { ...itemRef.listing(listing), method }, from);
+}
+
+function whereLine(e: EventListing): string {
+  return distinctParts(e.venue, [e.area, e.city]).join(', ');
+}
+
 function EventFacts({ e }: { e: EventListing }) {
   return (
     <>
       <Fact
         label="Date"
         action={
-          <FactAction href={calendarHref(e)} action="add_to_calendar">
+          <FactAction
+            href={googleCalendarHref(e)}
+            action="add_to_calendar_google"
+            onClick={(ev) => calendarAdded(e, 'google', ev.currentTarget)}
+          >
             Add to calendar
           </FactAction>
         }
       >
-        <p className="font-semibold">{shortDay(e.date)} 2026</p>
+        <p className="font-semibold">{eventDay(e, true)}</p>
         <p className="text-fg-3 text-[15px]">{e.time}, local time</p>
       </Fact>
-      <Fact
-        label="Venue"
-        action={
-          <FactAction
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${e.venue}, ${e.area}`)}`}
-            action="directions"
-          >
-            Directions
-          </FactAction>
-        }
-      >
-        <p className="font-semibold">{e.venue}</p>
-        <p className="text-fg-3 text-[15px]">
-          {e.area}, {e.city}
-        </p>
-      </Fact>
+      {e.mode === 'Remote' ? (
+        <Fact label="Venue">
+          <p className="font-semibold">Online</p>
+        </Fact>
+      ) : (
+        <Fact
+          label="Venue"
+          action={
+            e.venue !== 'Venue TBA' && (
+              <FactAction
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([e.venue, whereLine(e)].filter(Boolean).join(', '))}`}
+                action="directions"
+              >
+                Directions
+              </FactAction>
+            )
+          }
+        >
+          <p className="font-semibold">{e.venue}</p>
+          {whereLine(e) && (
+            <p className="text-fg-3 text-[15px]">{whereLine(e)}</p>
+          )}
+        </Fact>
+      )}
       <Fact label="Format">
         <p className="font-semibold">{e.mode}</p>
-        <p className="text-fg-3 text-[15px]">Hosted by {e.host}</p>
+        {e.host.trim() && (
+          <p className="text-fg-3 text-[15px]">Hosted by {e.host}</p>
+        )}
       </Fact>
-      <Fact label="Price">
-        <p className="font-semibold">{e.price}</p>
-        <p className="text-fg-3 text-[15px]">Sold by {e.source}</p>
-      </Fact>
+      {shownPrice(e) && (
+        <Fact label="Price">
+          <p className="font-semibold">{shownPrice(e)}</p>
+          {!e.free && e.source.trim() && (
+            <p className="text-fg-3 text-[15px]">
+              Sold by {sourceName(e.source)}
+            </p>
+          )}
+        </Fact>
+      )}
     </>
   );
 }
@@ -197,23 +232,111 @@ function EventFacts({ e }: { e: EventListing }) {
 function OpportunityFacts({ o }: { o: OpportunityListing }) {
   return (
     <>
-      <Fact label="Deadline">
-        <p className="font-semibold">{o.deadline.label}</p>
-        <p className="text-fg-3 text-[15px]">{o.daysLeft} days left</p>
+      <Fact
+        label="Deadline"
+        action={
+          hasDeadline(o) &&
+          o.daysLeft >= 0 && (
+            <FactAction
+              href={deadlineCalendarHref(o)}
+              action="remind_me"
+              onClick={(e) =>
+                calendarAdded(o, 'deadline_reminder', e.currentTarget)
+              }
+            >
+              Remind me
+            </FactAction>
+          )
+        }
+      >
+        <p className="font-semibold">Closes {o.deadline.label}</p>
+        {hasDeadline(o) && (
+          <p className="text-fg-3 text-[15px]">{daysLeftLine(o.daysLeft)}</p>
+        )}
       </Fact>
-      <Fact label="Award">
-        <p className="font-semibold">{o.award}</p>
-      </Fact>
-      <Fact label="Offered by">
-        <p className="font-semibold">{o.organiser}</p>
-        <p className="text-fg-3 text-[15px]">
-          {o.remote ? 'Remote, open internationally' : o.city}
-        </p>
-      </Fact>
+      {shownPrice(o) && (
+        <Fact label="Award">
+          <p className="font-semibold">{shownPrice(o)}</p>
+        </Fact>
+      )}
+      {o.organiser && (
+        <Fact label="Offered by">
+          <p className="font-semibold">{o.organiser}</p>
+          <p className="text-fg-3 text-[15px]">
+            {o.remote ? 'Remote' : o.city}
+          </p>
+        </Fact>
+      )}
       {o.level && (
         <Fact label="Level">
           <p className="font-semibold">{o.level}</p>
         </Fact>
+      )}
+      {o.eligibility.length > 0 && (
+        <Fact label="Who can apply">
+          <p className="font-semibold">Who can apply</p>
+          {o.eligibility.map((line) => (
+            <p key={line} className="text-fg-3 text-[15px] break-words">
+              {line}
+            </p>
+          ))}
+        </Fact>
+      )}
+    </>
+  );
+}
+
+function HeadTools({ listing }: { listing: Listing }) {
+  const item = itemRef.listing(listing);
+  const shareButton = (
+    <OverlayButton
+      icon="share"
+      label="Share"
+      action="share"
+      onClick={(e) => shareAndConfirm(listing.title, item, e.currentTarget)}
+    />
+  );
+  if (listing.kind === 'event') {
+    return (
+      <>
+        {shareButton}
+        <OverlayMenu
+          icon="cal"
+          label="Add to calendar"
+          action="calendar_menu"
+          items={[
+            {
+              label: 'Google Calendar',
+              action: 'add_to_calendar_google',
+              href: googleCalendarHref(listing),
+              onSelect: (from) => calendarAdded(listing, 'google', from),
+            },
+            {
+              label: 'Apple or Outlook',
+              action: 'add_to_calendar_ics',
+              onSelect: (from) => {
+                calendarAdded(listing, 'ics', from);
+                downloadIcs(listing);
+              },
+            },
+          ]}
+        />
+      </>
+    );
+  }
+  return (
+    <>
+      {shareButton}
+      {hasDeadline(listing) && listing.daysLeft >= 0 && (
+        <OverlayButton
+          icon="cal"
+          label="Remind me before it closes"
+          action="remind_me"
+          href={deadlineCalendarHref(listing)}
+          onClick={(e) =>
+            calendarAdded(listing, 'deadline_reminder', e.currentTarget)
+          }
+        />
       )}
     </>
   );
@@ -222,60 +345,50 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
 function Sidebar({ listing }: { listing: Listing }) {
   const event = listing.kind === 'event';
   const item = itemRef.listing(listing);
-  const onShare = async () => {
-    const method = await share(listing.title);
-    track('item_shared', {
-      ...item,
-      method: method === 'copied' ? 'copied' : 'share_sheet',
-    });
-    if (method === 'copied') toast('Link copied');
-  };
   return (
     <ActionCard>
-      <p className="text-fg-3 text-sm">
-        {event ? (listing.free ? 'Entry' : 'From') : 'Award'}
-      </p>
-      <p className="text-3xl font-semibold tracking-tight">
-        {priceOf(listing)}
-      </p>
-      <a
+      <PrimaryLink
         href={listing.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() =>
-          track('listing_cta_clicked', {
-            ...item,
-            cta: event ? 'get_ticket' : 'apply_now',
-          })
-        }
-        {...context({ action: event ? 'get_ticket' : 'apply_now' })}
-        className="bg-brand hover:bg-brand-hover mt-5 flex h-12 items-center justify-center gap-1.5 rounded-md font-bold text-white"
+        item={item}
+        cta={event ? 'get_ticket' : 'apply_now'}
       >
-        {event ? 'Get ticket' : 'Apply now'}{' '}
-        <Icon name="arrowUpRight" className="h-3.5 w-3.5" />
-      </a>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+        {event ? 'Get ticket' : 'Apply now'}
+      </PrimaryLink>
+      <div className="mt-3 grid grid-cols-2 gap-2 [&>:last-child:nth-child(odd)]:col-span-2">
         {event && (
-          <SmallButton href={calendarHref(listing)} action="add_to_calendar">
-            Calendar
+          <SmallButton
+            href={googleCalendarHref(listing)}
+            action="add_to_calendar_google"
+            onClick={(e) => calendarAdded(listing, 'google', e.currentTarget)}
+          >
+            Google Calendar
+          </SmallButton>
+        )}
+        {event && (
+          <SmallButton
+            onClick={(e) => {
+              calendarAdded(listing, 'ics', e.currentTarget);
+              downloadIcs(listing);
+            }}
+            action="add_to_calendar_ics"
+          >
+            Apple or Outlook
           </SmallButton>
         )}
         <SmallButton
           href={paths.category(slugify(listing.category))}
-          onClick={() => track('find_similar_clicked', item)}
+          action="find_similar"
+          onClick={(e) => track('find_similar_clicked', item, e.currentTarget)}
         >
           Find similar
         </SmallButton>
-        <SmallButton onClick={onShare}>Share</SmallButton>
-        {!event && (
-          <SmallButton href={listing.url} action="details">
-            Details
-          </SmallButton>
-        )}
+        <SmallButton
+          action="share"
+          onClick={(e) => shareAndConfirm(listing.title, item, e.currentTarget)}
+        >
+          Share
+        </SmallButton>
       </div>
-      <p className="text-fg-3 mt-5 text-sm">
-        No account needed. Add it to your calendar and it is filled in for you.
-      </p>
     </ActionCard>
   );
 }

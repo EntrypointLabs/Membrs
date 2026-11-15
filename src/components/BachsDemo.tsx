@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { naira, placementLabel, type AdQuote } from '../lib/ads';
+import { titleCase } from '../lib/text';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -47,7 +48,7 @@ export function BachsDemo({
         className="bg-panel border-line-2 relative w-full max-w-[420px] rounded-lg border p-6 shadow-2xl"
       >
         <h2 id="test-checkout" className="text-xl font-semibold">
-          Test checkout
+          {titleCase('Test checkout')}
         </h2>
         <p className="text-fg-3 mt-2 text-[15px] leading-relaxed">
           No payment server is connected yet, so this stands in for the Bachs

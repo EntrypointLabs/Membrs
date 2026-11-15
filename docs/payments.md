@@ -12,11 +12,11 @@ sequenceDiagram
   participant S as membrs API
   participant X as Bachs
   participant R as AI reviewer
-  B->>S: POST /v1/ads/checkout {placement, days, values}
+  B->>S: POST /v1/ads/checkout {placement, days, values, photo}
   S->>S: Recompute total from DAY_RATE, save ad as "awaiting payment"
   S->>X: POST /v1/checkout-sessions (secret key)
   X-->>S: checkout_url, checkout_id
-  S-->>B: checkout_url, reference
+  S-->>B: checkoutUrl, reference
   B->>X: Bachs.Checkout.open({ checkoutUrl })
   X-->>B: checkout.completed (UI only)
   X->>S: webhook checkout.completed (signed)
@@ -26,11 +26,21 @@ sequenceDiagram
 ```
 
 The browser event only moves the screen on to "Paid. Your ad is in review."
-The ad is fulfilled from the signed webhook, never from the browser.
+The ad is fulfilled from the signed webhook, never from the browser. After the
+overlay reports completion the browser polls `GET /v1/me/ads/orders/:reference`
+until the webhook has marked it `paid`; if that takes too long it still files
+the ad request and tells the buyer payment is being confirmed.
+
+The order of a purchase is: sign in, upload the photo (`/v1/media/uploads`, PUT,
+then `/complete`), start checkout, pay, then file the ad request through
+`/v1/me/contributions` with `photo`, `days` and the checkout `reference`.
 
 ## Server endpoint
 
-`POST /v1/ads/checkout` is the one endpoint the frontend calls. It must:
+`POST /v1/ads/checkout` needs `X-Auth-Token` and an `Idempotency-Key` (the
+browser reuses the key for the same order, so a retry never opens a second
+session). It answers `{"data":{"checkoutUrl","reference","total"}}`, and 503
+when Bachs is not configured. It must:
 
 1. Validate the fields and that `placement` is one of the day-rate keys:
    `Home`, `Events`, `Opportunities`, `Places` or `Promos`.
@@ -75,9 +85,10 @@ through Bachs and the advertiser gets an email with the reason.
 
 ## Frontend settings
 
-| Variable        | Effect                                                                                          |
-| --------------- | ----------------------------------------------------------------------------------------------- |
-| `VITE_API_BASE` | Set: real checkout through the API. Empty: a plain "Test checkout" dialog that charges nothing. |
+| Variable            | Effect                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE`     | Set: real checkout through the API. Empty: a plain "Test checkout" dialog that charges nothing. |
+| `VITE_ADS_CHECKOUT` | `true` turns on the real Bachs checkout. Anything else keeps the test dialog, even with an API. |
 
 The Bachs script (`https://checkout.bachs.io/bachs.js`) loads on first focus
 inside the ad form, not on page load. If a Content Security Policy is added,

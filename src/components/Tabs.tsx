@@ -18,7 +18,7 @@ export function Tabs<T extends string>({
     <div
       role="tablist"
       aria-label={label}
-      className="bg-soft no-scrollbar inline-flex max-w-full gap-1 overflow-x-auto rounded-md p-1"
+      className="bg-soft no-scrollbar flex w-full max-w-full gap-0.5 overflow-x-auto rounded-md p-1 md:inline-flex md:w-auto md:gap-1"
     >
       {options.map((o) => (
         <button
@@ -35,7 +35,7 @@ export function Tabs<T extends string>({
               );
             onChange(o.value);
           }}
-          className={`h-9 shrink-0 rounded-sm px-4 text-[15px] font-medium whitespace-nowrap transition-colors ${
+          className={`h-9 shrink-0 grow rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-[color,background-color,scale] duration-150 ease-out active:scale-[0.97] md:grow-0 md:px-4 md:text-[15px] ${
             o.value === value
               ? 'bg-panel text-fg shadow-sm'
               : 'text-fg-3 hover:text-fg'

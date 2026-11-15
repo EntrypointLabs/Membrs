@@ -1,20 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
+import { area, track, type Events } from '../lib/analytics';
+import { useDialog } from '../lib/focus';
 import {
   PROVIDER_NAME,
   sessionStore,
   signIn,
+  SignInUnavailableError,
   type Provider,
 } from '../lib/auth';
-import { area, track } from '../lib/analytics';
 import { subscribe } from '../lib/api';
+import { messageOf } from '../lib/http';
 import {
   cityStore,
-  followUpsStore,
+  fieldsStore,
   interestsStore,
   subscriptionStore,
   themeStore,
 } from '../lib/preferences';
-import { useStore } from '../lib/store';
+import { createStore, useStore } from '../lib/store';
 
 /**
  * The sign-up cards contrast the page: white over dark mode, near-black over
@@ -25,14 +28,21 @@ function useInverseTheme(): 'light' | 'dark' {
   return useStore(themeStore) === 'dark' ? 'light' : 'dark';
 }
 import { PreferenceAccordions } from './InterestPicker';
-import { missingFollowUps } from '../lib/followups';
 import { paths } from '../lib/router';
+import { BACKDROP_MOTION, SHEET_MOTION } from '../lib/motion';
 import { closeOverlay, openOverlay, toast } from '../lib/ui';
 import { Icon } from './Icon';
 import { Link } from './Link';
 import { Photo } from './Photo';
 
 export type AuthMode = 'up' | 'in';
+
+const authModeStore = createStore<AuthMode>(null, 'up');
+
+export function openSignIn(mode: AuthMode = 'in'): void {
+  authModeStore.set(mode);
+  openOverlay('auth');
+}
 
 function GoogleMark() {
   return (
@@ -88,7 +98,7 @@ export function ProviderButton({
       type="button"
       onClick={onClick}
       disabled={busy !== null}
-      className={`flex h-[50px] items-center justify-center gap-3 rounded-md border px-4 text-[15px] font-semibold transition hover:-translate-y-px disabled:cursor-progress disabled:opacity-75 disabled:hover:translate-y-0 ${
+      className={`flex h-[50px] items-center justify-center gap-3 rounded-md border px-4 text-[15px] font-semibold transition-[translate,scale,background-color,border-color] duration-150 ease-out hover:-translate-y-px active:scale-[0.98] disabled:cursor-progress disabled:opacity-75 disabled:hover:translate-y-0 ${
         provider === 'google'
           ? 'border-black/10 bg-white text-[#1f1f1f]'
           : 'border-white/10 bg-[#1c1c1e] text-white'
@@ -108,34 +118,65 @@ export function ProviderButton({
   );
 }
 
+export function useProviderSignIn(
+  placement: Events['sign_in_failed']['placement'],
+) {
+  const [busy, setBusy] = useState<Provider | null>(null);
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setBusy(null);
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
+  async function start(provider: Provider): Promise<boolean> {
+    setBusy(provider);
+    try {
+      await signIn(provider);
+      return true;
+    } catch (error) {
+      track('sign_in_failed', {
+        provider,
+        reason:
+          error instanceof SignInUnavailableError ? 'unavailable' : 'error',
+        placement,
+      });
+      toast(messageOf(error, 'Sign-in did not complete. Please try again.'));
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+  return { busy, start };
+}
+
 /**
  * Create an account or sign in, with Google or Apple and nothing else. A photo
  * panel on the left, the two buttons on the right; a bottom sheet on phones.
  */
-export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
+export function AuthModal({ initialMode }: { initialMode?: AuthMode }) {
   const inverse = useInverseTheme();
-  const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [busy, setBusy] = useState<Provider | null>(null);
+  const [mode, setMode] = useState<AuthMode>(
+    () => initialMode ?? authModeStore.get(),
+  );
+  const { busy, start } = useProviderSignIn('auth_modal');
   const card = useRef<HTMLDivElement>(null);
   const up = mode === 'up';
 
+  useDialog(card, closeOverlay);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeOverlay();
-    document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     card.current?.focus();
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
+      authModeStore.reset();
     };
   }, []);
 
   async function go(provider: Provider) {
     track('sign_in_started', { provider, mode, placement: 'auth_modal' });
-    setBusy(provider);
-    await signIn(provider);
-    setBusy(null);
+    if (!(await start(provider))) return;
     // New accounts, and anyone without a digest yet, go straight on to pick a
     // city and interests: that is what the account is for.
     if (up || !subscriptionStore.get()) {
@@ -160,7 +201,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
         type="button"
         aria-label="Close"
         onClick={closeOverlay}
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className={`absolute inset-0 bg-black/60 backdrop-blur-md ${BACKDROP_MOTION}`}
       />
       <div
         ref={card}
@@ -170,7 +211,7 @@ export function AuthModal({ initialMode = 'up' }: { initialMode?: AuthMode }) {
         aria-modal="true"
         aria-labelledby="auth-title"
         {...area('auth_modal')}
-        className="bg-panel text-fg relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg p-2.5 shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(500px,calc(100vh-48px))] md:w-[min(860px,100%)] md:grid-cols-[0.9fr_1fr] md:rounded-lg md:p-3"
+        className={`bg-panel text-fg relative grid max-h-[94dvh] w-full overflow-auto rounded-t-lg p-2.5 shadow-2xl outline-none focus-visible:outline-none md:min-h-[min(500px,calc(100vh-48px))] md:w-[min(860px,100%)] md:grid-cols-[0.9fr_1fr] md:rounded-lg md:p-3 ${SHEET_MOTION}`}
       >
         <div className="relative min-h-[220px] overflow-hidden rounded-md">
           <Photo
@@ -253,65 +294,64 @@ export function PreferencesModal() {
   const [open, setOpen] = useState<'city' | 'event' | 'opportunity' | 'place'>(
     savedCity ? 'event' : 'city',
   );
-  const [missing, setMissing] = useState<string[]>([]);
   const card = useRef<HTMLDivElement>(null);
   const editing = joined !== null;
   const provider = session?.provider ?? 'google';
 
+  useDialog(card, closeOverlay);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeOverlay();
-    document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     card.current?.focus();
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
     };
   }, []);
 
   async function save() {
-    // Types like Scholarships need their follow-up answered before we can
-    // match well, so saving stops, opens Opportunities and marks the gaps.
-    const gaps = missingFollowUps(interestsStore.get(), followUpsStore.get());
-    if (gaps.length) {
-      track('digest_save_blocked', { missing: gaps });
-      setMissing(gaps);
-      setOpen('opportunity');
-      requestAnimationFrame(() =>
-        card.current
-          ?.querySelector(`[data-followup="${gaps[0]}"]`)
-          ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+    let delivery;
+    try {
+      delivery = await subscribe({
+        email: `${provider} account`,
+        city,
+        interests: interestsStore.get(),
+        fields: fieldsStore.get(),
+      });
+    } catch (error) {
+      toast(
+        messageOf(error, 'Could not save your digest. Try again in a moment.'),
       );
       return;
     }
-    await subscribe({
-      email: `${provider} account`,
-      city,
-      interests: interestsStore.get(),
-    });
+    if (delivery === 'signedOut') {
+      toast('Sign in to save your digest.');
+      openOverlay('auth');
+      return;
+    }
     const interests = interestsStore.get();
     track('digest_saved', {
       city,
       interests,
       interests_count: interests.length,
       first_time: !editing,
+      queued: delivery === 'queued',
     });
     cityStore.set(city);
     subscriptionStore.set({ email: `${provider} account`, city });
     closeOverlay();
     toast(
-      editing
-        ? `Saved. Your digest now follows ${city}.`
-        : `All set. Your first digest for ${city} lands Sunday at 7 AM.`,
+      delivery === 'queued'
+        ? 'Saved on this device. We will sync it when the connection is back.'
+        : editing
+          ? `Saved. Your digest now follows ${city}.`
+          : `All set. Your first digest for ${city} lands Sunday at 7 AM.`,
     );
   }
 
   function skip() {
     track('digest_skipped', { first_time: !editing });
     closeOverlay();
-    if (!editing)
-      toast("You're in. Set up your digest any time from the mail button.");
+    if (!editing) toast("You're in. Digest settings are in the footer.");
   }
 
   return (
@@ -320,7 +360,7 @@ export function PreferencesModal() {
         type="button"
         aria-label="Close"
         onClick={skip}
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className={`absolute inset-0 bg-black/60 backdrop-blur-md ${BACKDROP_MOTION}`}
       />
       <div
         ref={card}
@@ -330,7 +370,7 @@ export function PreferencesModal() {
         aria-modal="true"
         aria-labelledby="prefs-title"
         {...area('preferences_modal')}
-        className="bg-panel text-fg relative max-h-[94dvh] w-full overflow-auto rounded-t-lg px-5 pt-8 pb-6 shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9"
+        className={`bg-panel text-fg relative max-h-[94dvh] w-full overflow-auto rounded-t-lg px-5 pt-8 pb-6 shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9 ${SHEET_MOTION}`}
       >
         <h2
           id="prefs-title"
@@ -342,11 +382,16 @@ export function PreferencesModal() {
           <PreferenceAccordions
             city={city}
             onCity={setCity}
-            missing={missing}
             open={open}
             onOpen={setOpen}
           />
         </div>
+        {!editing && (
+          <p className="text-fg-4 mt-8 text-[13px]">
+            Saving subscribes you to the Sunday digest and our promotional
+            emails. Unsubscribe any time from any email.
+          </p>
+        )}
         <div className="mt-8 flex items-center justify-between gap-3 md:justify-end">
           <button
             type="button"

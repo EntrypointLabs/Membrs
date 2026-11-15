@@ -9,20 +9,22 @@ import { readStored, writeStored } from './storage';
 export interface Store<T> {
   get(): T;
   set(next: T | ((prev: T) => T)): void;
+  reset(): void;
   subscribe(listener: () => void): () => void;
 }
 
 export function createStore<T>(key: string | null, initial: T): Store<T> {
   let value = key ? readStored(key, initial) : initial;
   const listeners = new Set<() => void>();
+  const set = (next: T | ((prev: T) => T)) => {
+    value = typeof next === 'function' ? (next as (prev: T) => T)(value) : next;
+    if (key) writeStored(key, value);
+    listeners.forEach((l) => l());
+  };
   return {
     get: () => value,
-    set(next) {
-      value =
-        typeof next === 'function' ? (next as (prev: T) => T)(value) : next;
-      if (key) writeStored(key, value);
-      listeners.forEach((l) => l());
-    },
+    set,
+    reset: () => set(initial),
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

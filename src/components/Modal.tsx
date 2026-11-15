@@ -1,5 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { track } from '../lib/analytics';
+import { useDialog } from '../lib/focus';
+import { BACKDROP_MOTION, SHEET_MOTION } from '../lib/motion';
+import { titleCase } from '../lib/text';
 import { Icon } from './Icon';
 
 interface ModalProps {
@@ -16,26 +19,19 @@ interface ModalProps {
  */
 export function Modal({ title, onClose, children, wide = false }: ModalProps) {
   const panel = useRef<HTMLDivElement>(null);
-  const close = (method: 'backdrop' | 'button') => {
+  const close = (method: 'escape' | 'backdrop' | 'button') => {
     track('modal_closed', { modal: title, method });
     onClose();
   };
+  useDialog(panel, () => close('escape'));
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      track('modal_closed', { modal: title, method: 'escape' });
-      onClose();
-    };
-    document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    panel.current?.focus();
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
     };
-  }, [onClose, title]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
@@ -43,20 +39,22 @@ export function Modal({ title, onClose, children, wide = false }: ModalProps) {
         type="button"
         aria-label="Close"
         onClick={() => close('backdrop')}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${BACKDROP_MOTION}`}
       />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={titleCase(title)}
         tabIndex={-1}
-        className={`bg-panel border-line-2 relative max-h-[92dvh] w-full overflow-y-auto rounded-t-lg border p-6 shadow-2xl outline-none md:rounded-lg md:p-8 ${
+        className={`bg-panel border-line-2 relative max-h-[92dvh] w-full overflow-y-auto rounded-t-lg border p-6 shadow-2xl outline-none md:rounded-lg md:p-8 ${SHEET_MOTION} ${
           wide ? 'md:max-w-[1080px]' : 'md:max-w-[520px]'
         }`}
       >
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {titleCase(title)}
+          </h2>
           <button
             type="button"
             onClick={() => close('button')}

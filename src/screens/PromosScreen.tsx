@@ -7,6 +7,7 @@ import { countBy, FeedPicker } from '../components/FeedPicker';
 import { PromoCard } from '../components/PromoCard';
 import { PromoRow } from '../components/PromoRow';
 import { Select } from '../components/Select';
+import { TitleBar } from '../components/TitleBar';
 import { FeedBody, FilterLine, MoreFilters } from './FeedLayout';
 
 /** Promos, ending soonest first. */
@@ -31,8 +32,8 @@ export function PromosScreen() {
   const filtered = Boolean(view || typeSlug);
   const ending = items.filter((p) => !p.startsInDays).slice(0, 5);
   return (
-    <div className="page pt-6 md:pt-14">
-      <div className="md:hidden">
+    <div className="page pt-0 md:pt-14">
+      <TitleBar className="mb-3">
         <FeedPicker
           title="Promos"
           sheetTitle="Promo categories"
@@ -47,7 +48,7 @@ export function PromosScreen() {
           type={typeSlug}
           total={all.length}
         />
-      </div>
+      </TitleBar>
       <FilterLine
         count={items.length}
         noun={['promo', 'promos']}

@@ -39,7 +39,7 @@ export interface EventListing extends ListingBase {
   time: string;
   price: string;
   free: boolean;
-  mode: 'In person' | 'Remote';
+  mode: 'In person' | 'Hybrid' | 'Remote';
   /** Whole days from the reference date. 0 is tonight. */
   inDays: number;
   host: string;
@@ -51,6 +51,8 @@ export interface OpportunityListing extends ListingBase {
   kind: 'opportunity';
   deadline: DayLabel & { label: string };
   daysLeft: number;
+  /** Set by the API: the deadline is within the next 5 days. */
+  closingSoon: boolean;
   award: string;
   level: string | null;
   remote: boolean;
@@ -106,7 +108,6 @@ export interface Category {
   kind: ListingKind | 'place';
   slug: string;
   count: number;
-  blurb: string;
   photo: string;
 }
 
@@ -129,8 +130,10 @@ export type LegalSlug =
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'select' | 'date' | 'time' | 'url' | 'textarea' | 'email';
+  type:
+    'text' | 'select' | 'city' | 'date' | 'time' | 'url' | 'textarea' | 'email';
   options?: string[];
+  multiple?: boolean;
   placeholder?: string;
   required: boolean;
 }
@@ -152,7 +155,6 @@ export interface Taxonomy {
   eventCategories: string[];
   opportunityCategories: string[];
   placeTypes: string[];
-  placeTypeBlurbs: Record<string, string>;
   promoCategories: string[];
   placeGroups: { slug: string; label: string }[];
   onboardingInterests: {

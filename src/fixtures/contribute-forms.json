@@ -34,14 +34,15 @@
           "Family",
           "Festivals"
         ],
-        "required": true
+        "required": true,
+        "multiple": true
       },
       {
         "name": "city",
         "label": "City",
-        "type": "select",
-        "options": ["Lagos", "Abuja", "Accra", "Nairobi", "London", "Lisbon"],
-        "required": true
+        "type": "city",
+        "required": true,
+        "placeholder": "Start typing a city, or pick Worldwide"
       },
       {
         "name": "date",
@@ -110,7 +111,8 @@
           "Calls for Speakers",
           "Awards"
         ],
-        "required": true
+        "required": true,
+        "multiple": true
       },
       {
         "name": "org",
@@ -174,14 +176,15 @@
           "Museums & galleries",
           "Lakes & nature"
         ],
-        "required": true
+        "required": true,
+        "multiple": true
       },
       {
         "name": "city",
         "label": "City",
-        "type": "select",
-        "options": ["Lagos", "Abuja", "Accra", "Nairobi", "London", "Lisbon"],
-        "required": true
+        "type": "city",
+        "required": true,
+        "placeholder": "Start typing a city, or pick Worldwide"
       },
       {
         "name": "area",
@@ -238,7 +241,8 @@
           "Entertainment",
           "Services & Apps"
         ],
-        "required": true
+        "required": true,
+        "multiple": true
       },
       {
         "name": "biz",
@@ -305,9 +309,9 @@
       {
         "name": "city",
         "label": "City",
-        "type": "select",
-        "options": ["Lagos", "Abuja", "Accra", "Nairobi", "London", "Lisbon"],
-        "required": true
+        "type": "city",
+        "required": true,
+        "placeholder": "Start typing a city, or pick Worldwide"
       },
       {
         "name": "date",

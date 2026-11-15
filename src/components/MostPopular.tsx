@@ -1,5 +1,5 @@
 import { area, itemRef, trackItemOpened } from '../lib/analytics';
-import { shortDay } from '../lib/dates';
+import { closesLine, eventDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
 import { Meta } from './ListingCard';
@@ -9,8 +9,8 @@ import { cardTags, listingTags } from './Tags';
 
 /**
  * The Most Popular panel, ten entries in one column. It takes the opposite
- * colour mode to the page (white over dark, near-black over light), and only
- * the large vertical title on its right edge is membrs blue. It is a
+ * colour mode to the page (white over dark, near-black over light), and the
+ * large vertical title on its right edge is membrs blue in both modes. It is a
  * showcase, not a grid of cards, so its tags read as plain text.
  */
 export function MostPopular({ items }: { items: Listing[] }) {
@@ -23,7 +23,7 @@ export function MostPopular({ items }: { items: Listing[] }) {
       <div className="pointer-events-none absolute top-[-6px] right-[-14px] bottom-0 hidden md:block">
         <h2
           id="most-popular"
-          className="text-brand dark:text-accent top-bar sticky text-[clamp(64px,5.2vw,92px)] leading-[0.82] font-black tracking-tight [writing-mode:vertical-rl]"
+          className="text-brand top-bar sticky text-[clamp(64px,5.2vw,92px)] leading-[0.82] font-black tracking-tight [writing-mode:vertical-rl]"
         >
           Most Popular
         </h2>
@@ -46,8 +46,9 @@ export function MostPopular({ items }: { items: Listing[] }) {
                 size="thumb"
                 id={l.photo}
                 src={l.photoUrl}
+                cover={{ title: l.title, tag: l.category }}
                 alt=""
-                className="h-[72px] w-[72px] shrink-0 rounded-md"
+                className="rounded-photo h-[72px] w-[72px] shrink-0"
               />
               <span className="min-w-0">
                 <span className="text-inv-fg-3 block text-sm">
@@ -59,11 +60,11 @@ export function MostPopular({ items }: { items: Listing[] }) {
                 <span className="text-inv-fg-3 mt-1 flex gap-4 text-sm">
                   {l.kind === 'event' ? (
                     <>
-                      <Meta icon="cal">{shortDay(l.date)}</Meta>
+                      <Meta icon="cal">{eventDay(l)}</Meta>
                       <Meta icon="pin">{l.city}</Meta>
                     </>
                   ) : (
-                    <Meta icon="clock">{`Closes ${shortDay(l.deadline)}`}</Meta>
+                    <Meta icon="clock">{closesLine(l)}</Meta>
                   )}
                 </span>
               </span>

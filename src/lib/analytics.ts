@@ -1,5 +1,11 @@
 import type { CaptureResult, PostHog, Properties } from 'posthog-js';
-import { categoryBySlug, listingById, placeById, promoById } from './api';
+import {
+  catalogueStore,
+  categoryBySlug,
+  listingById,
+  placeById,
+  promoById,
+} from './api';
 import { sessionStore } from './auth';
 import { API_BASE } from './config';
 import { cookieStore, isChoiceCurrent, type CookieChoice } from './cookies';
@@ -80,16 +86,25 @@ export interface Events {
   overlay_opened: { overlay: string };
   overlay_closed: { overlay: string; seconds_open: number };
   modal_closed: { modal: string; method: 'escape' | 'backdrop' | 'button' };
-  image_failed: { photo: string };
+  image_failed: { photo: string; src_host: string | null };
 
   // Preferences kept on the device.
   theme_changed: { theme: string; previous: string };
   city_changed: { city: string; previous: string };
+  city_suggestion_picked: {
+    option: 'worldwide' | 'suggestion';
+    method: 'click' | 'keyboard';
+    position: number;
+  };
 
   // Accounts and the Sunday Digest.
   sign_in_started: {
     provider: string;
     mode: 'up' | 'in';
+  } & Placement<'auth_modal' | 'footer'>;
+  sign_in_failed: {
+    provider: string;
+    reason: string;
   } & Placement<'auth_modal' | 'footer'>;
   signed_in: { provider: string };
   signed_out: None;
@@ -99,12 +114,12 @@ export interface Events {
   preferences_city_picked: { city: string };
   interest_toggled: { interest: string; selected: boolean };
   follow_up_answered: { interest: string; answer: string; selected: boolean };
-  digest_save_blocked: { missing: string[] };
   digest_saved: {
     city: string;
     interests: string[];
     interests_count: number;
     first_time: boolean;
+    queued: boolean;
   };
   digest_skipped: { first_time: boolean };
 
@@ -118,10 +133,18 @@ export interface Events {
 
   // Finding things.
   item_opened: ItemRef & {
-    component: 'card' | 'row' | 'hero' | 'most_popular' | 'deadline_row';
+    component:
+      | 'card'
+      | 'row'
+      | 'hero'
+      | 'most_popular'
+      | 'deadline_row'
+      | 'search_tile'
+      | 'assistant';
     position?: number;
   };
   hero_slide_selected: { index: number; item_id: string };
+  hero_paused: { paused: boolean };
   category_clicked: { category: string; section: string };
   tab_changed: { tabs: string; value: string; label: string };
   range_changed: { range: string };
@@ -134,6 +157,8 @@ export interface Events {
     method: 'number' | 'previous' | 'next';
   };
   view_more_clicked: { view: string; hidden: number };
+  // Phones load more as the reader scrolls, in place of a pager.
+  list_extended: { shown: number; total: number };
   picker_opened: { section: string };
   picker_option_selected: {
     section: string;
@@ -143,13 +168,23 @@ export interface Events {
   search_submitted: {
     query: string;
     results: number;
+    has_more: boolean;
     source: 'form' | 'suggestion';
+  };
+  search_more_loaded: {
+    query: string;
+    page: number;
+    results: number;
+    has_more: boolean;
   };
 
   // On a listing, place or promo.
   listing_cta_clicked: ItemRef & { cta: string };
   item_shared: ItemRef & { method: 'share_sheet' | 'copied' };
   find_similar_clicked: ItemRef;
+  calendar_added: ItemRef & {
+    method: 'google' | 'ics' | 'deadline_reminder';
+  };
   promo_code_copied: ItemRef & { code: string };
 
   // Onboarding.
@@ -159,8 +194,9 @@ export interface Events {
   tour_completed: { total: number };
 
   // Contributing and ads.
+  contribute_menu_selected: { kind: ContributeKind; placement: string };
   contribute_kind_switched: { from: ContributeKind; to: ContributeKind };
-  contribute_started: { kind: ContributeKind };
+  contribute_started: { kind: ContributeKind; resumed: boolean };
   contribute_field_filled: { kind: ContributeKind; field: string };
   contribute_photo_added: { kind: ContributeKind };
   contribute_validation_failed: { kind: ContributeKind; fields: string[] };
@@ -169,7 +205,10 @@ export interface Events {
     category: string | null;
     city: string | null;
     has_photo: boolean;
+    resumed: boolean;
+    delivery: 'sent' | 'outbox';
   };
+  contribute_queued: { kind: ContributeKind };
   ad_run_length_changed: { placement: string; days: number; custom: boolean };
   ad_policy_toggled: { agreed: boolean };
   ad_checkout_started: {
@@ -183,10 +222,36 @@ export interface Events {
     days: number;
     total: number;
     demo: boolean;
-    status: 'completed' | 'closed' | 'failed' | 'expired' | 'cancelled';
+    status:
+      'completed' | 'pending' | 'closed' | 'failed' | 'expired' | 'cancelled';
   };
   ad_checkout_errored: { placement: string; days: number; total: number };
+  ad_request_filed: { delivery: 'sent' | 'queued' | 'failed' };
   ad_create_another_clicked: None;
+
+  // Ask membrs. Questions and answers are the reader's own words, so only
+  // their shape is sent, never the text.
+  assistant_question_asked: {
+    source: 'composer' | 'suggestion';
+    length: number;
+    message_number: number;
+  };
+  assistant_answered: {
+    outcome: 'answered' | 'stopped' | 'failed';
+    seconds: number;
+    listings_shown: number;
+    steps: number;
+    messages_left: number | null;
+    error: string | null;
+  };
+  assistant_stopped: { seconds: number };
+  assistant_new_chat: { conversations_left: number };
+  assistant_expanded: { expanded: boolean };
+  assistant_retry_clicked: None;
+
+  // Reliability.
+  catalogue_load_failed: None;
+  catalogue_recovered: None;
 }
 
 export type EventName = keyof Events;
@@ -195,6 +260,8 @@ let client: PostHog | null = null;
 /** Events sent before PostHog has loaded. Null while analytics is off. */
 let queue: [string, Properties, Date][] | null = null;
 let currentRoute: Route = { page: 'home' };
+/** Errors caught before PostHog has loaded. */
+const pendingErrors: [unknown, Properties][] = [];
 
 /**
  * Send one event. Pass the element the reader acted on and the event picks
@@ -295,6 +362,17 @@ export function trackItemOpened(
     { ...item, component, position: positionOf(link) },
     link,
   );
+}
+
+/**
+ * Report an error a React error boundary caught. Those never reach
+ * window.onerror, so exception autocapture would miss them.
+ */
+export function reportError(error: unknown, properties: Properties = {}): void {
+  if (!queue && !client) return;
+  const props = { route: currentRoute.page, ...properties };
+  if (client) client.captureException(error, props);
+  else if (pendingErrors.length < 20) pendingErrors.push([error, props]);
 }
 
 export type Consent = 'granted' | 'denied' | 'pending';
@@ -413,6 +491,16 @@ function watch<T>(store: Store<T>, onChange: (next: T, prev: T) => void) {
 }
 
 function watchStores(): void {
+  let catalogueFailed = false;
+  watch(catalogueStore, ({ status }) => {
+    if (status === 'failed') {
+      catalogueFailed = true;
+      send('catalogue_load_failed', {});
+    } else if (status === 'ready' && catalogueFailed) {
+      catalogueFailed = false;
+      send('catalogue_recovered', {});
+    }
+  });
   watch(cookieStore, () => client && applyConsent(client));
   watch(themeStore, (theme, previous) =>
     send('theme_changed', { theme, previous }),
@@ -510,7 +598,10 @@ function observeAreas(): void {
   const scan = () => {
     scheduled = false;
     for (const el of document.querySelectorAll(`[${PREFIX}area]`)) {
-      if (observed.has(el)) continue;
+      // Menus copy their trigger's area so their clicks keep context, but
+      // they are not sections of the page.
+      if (observed.has(el) || el.closest('[data-radix-popper-content-wrapper]'))
+        continue;
       observed.add(el);
       io.observe(el);
     }
@@ -523,8 +614,14 @@ function observeAreas(): void {
   scan();
 }
 
-/** Start analytics once, before the app renders. Safe to call without a key. */
-export function initAnalytics(): void {
+/**
+ * Start analytics once, before the app renders. Safe to call without a key.
+ * The first pageview waits for `ready`, so it can name the item a detail
+ * page shows.
+ */
+export function initAnalytics(
+  ready: Promise<unknown> = Promise.resolve(),
+): void {
   if (!KEY || queue || client) return;
   queue = [];
   watchStores();
@@ -532,7 +629,7 @@ export function initAnalytics(): void {
   window.addEventListener('popstate', () => pageview('back_forward'));
   document.addEventListener('click', onLinkClick, true);
   document.addEventListener('auxclick', onLinkClick, true);
-  pageview('initial');
+  void ready.catch(() => undefined).then(() => pageview('initial'));
   if (document.body) observeAreas();
   else document.addEventListener('DOMContentLoaded', observeAreas);
 
@@ -555,7 +652,12 @@ export function initAnalytics(): void {
         capture_heatmaps: true,
         capture_exceptions: true,
         capture_performance: { web_vitals: true, network_timing: true },
-        session_recording: { maskAllInputs: true },
+        // Replays mask every input, and the text of anything marked
+        // data-ph-mask, such as Ask membrs conversations.
+        session_recording: {
+          maskAllInputs: true,
+          maskTextSelector: '[data-ph-mask]',
+        },
         before_send: withLiveProperties,
         loaded: () => {
           applyConsent(posthog);
@@ -563,6 +665,8 @@ export function initAnalytics(): void {
           for (const [event, properties, timestamp] of queue ?? [])
             posthog.capture(event, properties, { timestamp });
           queue = [];
+          for (const [error, properties] of pendingErrors.splice(0))
+            posthog.captureException(error, properties);
         },
       });
     })

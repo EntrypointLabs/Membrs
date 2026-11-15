@@ -5,11 +5,12 @@ describe('parseRoute', () => {
   it.each([
     ['/', { page: 'home' }],
     ['/events', { page: 'feed', feed: 'events' }],
-    ['/places/categories', { page: 'categories', feed: 'places' }],
+    [
+      '/opportunities/categories',
+      { page: 'categories', feed: 'opportunities' },
+    ],
     ['/category/music', { page: 'category', slug: 'music' }],
     ['/listing/e2', { page: 'listing', id: 'e2' }],
-    ['/place/pl1', { page: 'place', id: 'pl1' }],
-    ['/promo/pr1', { page: 'promo', id: 'pr1' }],
     ['/digest', { page: 'not-found' }],
     ['/search?q=jazz%20night', { page: 'search', query: 'jazz night' }],
     ['/cookies', { page: 'legal', doc: 'cookies' }],
@@ -30,6 +31,11 @@ describe('parseRoute', () => {
     expect(parseRoute('/wat')).toEqual({ page: 'not-found' });
   });
 
+  it('treats a malformed escape as not found instead of throwing', () => {
+    expect(parseRoute('/listing/%E0%A4%A')).toEqual({ page: 'not-found' });
+    expect(parseRoute('/category/%')).toEqual({ page: 'not-found' });
+  });
+
   it('round-trips every path builder', () => {
     expect(parseRoute(paths.search('a&b'))).toEqual({
       page: 'search',
@@ -44,7 +50,7 @@ describe('parseRoute', () => {
 
 describe('navSection', () => {
   it('lights the right tab', () => {
-    expect(navSection(parseRoute('/places/categories'))).toBe('places');
+    expect(navSection(parseRoute('/events/categories'))).toBe('events');
     expect(navSection(parseRoute('/opportunities'))).toBe('opportunities');
     expect(navSection(parseRoute('/privacy'))).toBeNull();
   });

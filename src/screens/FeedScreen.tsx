@@ -1,60 +1,101 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { feed, launchCities } from '../lib/api';
 import { bySoonest } from '../lib/dates';
-import { cityStore } from '../lib/preferences';
 import { setSearchParams, useSearchParam } from '../lib/router';
-import { useStore } from '../lib/store';
 import { slugify } from '../lib/text';
 import type { Listing } from '../lib/types';
 import { EVENT_VIEWS, OPPORTUNITY_VIEWS, findView } from '../lib/views';
 import { countBy, FeedPicker } from '../components/FeedPicker';
-import { ListingCard } from '../components/ListingCard';
+import { ListingCard, shownPrice } from '../components/ListingCard';
 import { ListingRow } from '../components/ListingRow';
 import { Select } from '../components/Select';
+import { TitleBar } from '../components/TitleBar';
 import { FeedBody, FilterLine, MoreFilters } from './FeedLayout';
 
 type Budget = 'any' | 'free' | 'paid';
+const BUDGETS: readonly Budget[] = ['any', 'free', 'paid'];
+const REMOTE = 'Remote';
+
+function budgetOf(listing: Listing): Budget {
+  if (listing.kind !== 'event') return 'any';
+  if (listing.free) return 'free';
+  return shownPrice(listing) ? 'paid' : 'any';
+}
 
 /**
  * Events and Opportunities. Type and City sit on the one filter line (City
- * starts on the reader's own city); When and Budget live under Filters. With
+ * starts on All); When and Budget live under Filters. With
  * nothing else picked the page opens on a rail of cards and the time groups.
  */
 export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
   const event = kind === 'event';
   const views = event ? EVENT_VIEWS : OPPORTUNITY_VIEWS;
   const viewId = useSearchParam('view');
-  const typeSlug = useSearchParam('type');
-  const home = useStore(cityStore);
-  const [city, setCity] = useState(event ? home : 'all');
-  const [budget, setBudget] = useState<Budget>('any');
+  const all = useMemo(() => [...feed(kind)].sort(bySoonest), [kind]);
+  const types = countBy(all, (l) => l.category);
+  const cities = [
+    ...launchCities()
+      .filter((c) => c.status === 'live')
+      .map((c) => c.name),
+    REMOTE,
+  ];
+  const typeParam = useSearchParam('type');
+  const typeSlug = types.some((t) => t.value === typeParam) ? typeParam : null;
+  const cityParam = useSearchParam('city');
+  const city = cityParam && cities.includes(cityParam) ? cityParam : 'all';
+  const budgetParam = useSearchParam('budget');
+  const budget: Budget =
+    event && BUDGETS.includes(budgetParam as Budget)
+      ? (budgetParam as Budget)
+      : 'any';
+  const setCity = (c: string) => setSearchParams({ city: c, page: null });
+  const setBudget = (b: Budget) =>
+    setSearchParams({ budget: b === 'any' ? null : b, page: null });
 
-  const all = useMemo(() => feed(kind), [kind]);
   const view = findView(views, viewId);
   const items = all.filter(
     (l) =>
       (!view || view.test(l)) &&
       (!typeSlug || slugify(l.category) === typeSlug) &&
       (city === 'all' || l.city === city) &&
-      (budget === 'any' ||
-        (l.kind === 'event' && l.free === (budget === 'free'))),
+      (budget === 'any' || budgetOf(l) === budget),
   );
   const filtered = Boolean(
-    view ||
-    typeSlug ||
-    budget !== 'any' ||
-    (city !== 'all' && city !== (event ? home : 'all')),
+    view || typeSlug || budget !== 'any' || city !== 'all',
   );
-  const types = countBy(all, (l) => l.category);
   const rail = [...items]
     .filter((l) =>
       l.kind === 'event' ? l.inDays <= 3 : l.daysLeft >= 0 && l.daysLeft <= 31,
     )
     .sort(bySoonest);
 
+  const cityFilter = (
+    <Select
+      label="City"
+      value={city}
+      onChange={setCity}
+      options={[
+        { value: 'all', label: 'All' },
+        ...cities.map((c) => ({ value: c, label: c })),
+      ]}
+    />
+  );
+  const budgetFilter = event && (
+    <Select
+      label="Budget"
+      value={budget}
+      onChange={setBudget}
+      options={[
+        { value: 'any', label: 'Any' },
+        { value: 'free', label: 'Free' },
+        { value: 'paid', label: 'Paid' },
+      ]}
+    />
+  );
+
   return (
-    <div className="page pt-6 md:pt-14">
-      <div className="md:hidden">
+    <div className="page pt-0 md:pt-14">
+      <TitleBar className="mb-3">
         <FeedPicker
           title={event ? 'Events' : 'Opportunities'}
           sheetTitle={event ? 'Event categories' : 'Opportunity types'}
@@ -70,17 +111,27 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
           view={view ? view.id : null}
           type={typeSlug}
           total={all.length}
+          filters={
+            <>
+              {cityFilter}
+              {budgetFilter}
+            </>
+          }
         />
-      </div>
+      </TitleBar>
       <FilterLine
         count={items.length}
         noun={event ? ['event', 'events'] : ['opportunity', 'opportunities']}
         onClear={
           filtered
             ? () => {
-                setSearchParams({ view: null, type: null, page: null });
-                setBudget('any');
-                setCity(event ? home : 'all');
+                setSearchParams({
+                  view: null,
+                  type: null,
+                  city: null,
+                  budget: null,
+                  page: null,
+                });
               }
             : undefined
         }
@@ -94,16 +145,7 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
             ...types.map((t) => ({ value: t.value, label: t.label })),
           ]}
         />
-        <Select
-          label="City"
-          value={city}
-          onChange={setCity}
-          options={[
-            { value: 'all', label: 'All' },
-            ...launchCities().map((c) => ({ value: c.name, label: c.name })),
-            { value: 'Remote', label: 'Remote' },
-          ]}
-        />
+        {cityFilter}
         <MoreFilters active={Number(Boolean(view)) + Number(budget !== 'any')}>
           <Select
             label={event ? 'When' : 'Closing'}
@@ -114,18 +156,7 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
               ...views.map((v) => ({ value: v.id, label: v.label })),
             ]}
           />
-          {event && (
-            <Select
-              label="Budget"
-              value={budget}
-              onChange={setBudget}
-              options={[
-                { value: 'any', label: 'Any' },
-                { value: 'free', label: 'Free' },
-                { value: 'paid', label: 'Paid' },
-              ]}
-            />
-          )}
+          {budgetFilter}
         </MoreFilters>
       </FilterLine>
       <FeedBody

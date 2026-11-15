@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { area, track } from '../lib/analytics';
 import {
   acceptAll,
@@ -9,36 +9,52 @@ import {
 } from '../lib/cookies';
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
+import { titleCase } from '../lib/text';
 import { closeOverlay, openOverlay } from '../lib/ui';
 import { Link } from './Link';
 import { Modal } from './Modal';
 
-/**
- * The first-visit cookie notice. Only essential cookies run until the reader
- * answers; it stays answered for twelve months.
- */
+const FIELDS = 'input, textarea, select, [contenteditable="true"]';
+
+function useTyping(): boolean {
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    const check = () =>
+      setTyping(document.activeElement?.matches(FIELDS) ?? false);
+    document.addEventListener('focusin', check);
+    document.addEventListener('focusout', check);
+    return () => {
+      document.removeEventListener('focusin', check);
+      document.removeEventListener('focusout', check);
+    };
+  }, []);
+  return typing;
+}
+
 export function CookieBanner() {
   const choice = useStore(cookieStore);
+  const typing = useTyping();
   if (isChoiceCurrent(choice)) return null;
+  const button = 'rounded-md px-3 py-2 text-sm font-bold md:px-4 md:py-2.5';
   return (
     <section
       aria-label="Cookie notice"
       {...area('cookie_banner')}
-      className="bg-inv text-inv-fg fixed right-3 bottom-[calc(84px+env(safe-area-inset-bottom,0px))] left-3 z-40 rounded-lg p-5 shadow-2xl md:right-auto md:bottom-6 md:left-6 md:w-[420px]"
+      className={`bg-inv text-inv-fg fixed right-3 bottom-[calc(84px+env(safe-area-inset-bottom,0px))] left-3 z-40 rounded-lg p-3 shadow-2xl md:right-auto md:bottom-6 md:left-6 md:w-[420px] md:p-5 ${typing ? 'max-md:hidden' : ''}`}
     >
-      <h2 className="mb-1.5 text-[17px] font-bold">Cookies on membrs</h2>
-      <p className="text-inv-fg-2 mb-4 text-sm leading-relaxed">
-        We use essential cookies to make membrs work. With your OK we also use
-        analytics and marketing cookies to improve it. Read our{' '}
+      <h2 className="mb-1.5 hidden text-[17px] font-bold md:block">
+        {titleCase('Cookies on MEMBRS')}
+      </h2>
+      <p className="text-inv-fg-2 text-[13px] leading-snug md:mb-4 md:text-sm">
+        Essential cookies always. Analytics and marketing only with your OK.{' '}
         <Link
           href={paths.legal('cookies')}
           className="text-accent font-semibold"
         >
           Cookie Policy
         </Link>
-        .
       </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="mt-2.5 flex gap-2 md:mt-0 md:flex-wrap">
         <button
           type="button"
           onClick={() => {
@@ -50,9 +66,10 @@ export function CookieBanner() {
               placement: 'banner',
             });
           }}
-          className="border-inv-line flex-1 rounded-md border px-4 py-2.5 text-sm font-bold"
+          className={`border-inv-line flex-1 border ${button}`}
         >
-          Reject optional
+          <span className="md:hidden">Reject</span>
+          <span className="hidden md:inline">Reject optional</span>
         </button>
         <button
           type="button"
@@ -65,16 +82,18 @@ export function CookieBanner() {
               placement: 'banner',
             });
           }}
-          className="bg-inv-fg text-inv flex-1 rounded-md px-4 py-2.5 text-sm font-bold"
+          className={`bg-inv-fg text-inv flex-1 ${button}`}
         >
-          Accept all
+          <span className="md:hidden">Accept</span>
+          <span className="hidden md:inline">Accept all</span>
         </button>
         <button
           type="button"
           onClick={() => openOverlay('cookies')}
-          className="text-inv-fg-3 w-full pt-1 text-sm font-semibold"
+          className="text-inv-fg-3 px-3 py-2 text-sm font-semibold md:w-full md:px-0 md:py-0 md:pt-1"
         >
-          Manage preferences
+          <span className="md:hidden">Manage</span>
+          <span className="hidden md:inline">Manage preferences</span>
         </button>
       </div>
     </section>
@@ -124,13 +143,9 @@ export function CookieSettings() {
   const [marketing, setMarketing] = useState(choice?.marketing ?? false);
   return (
     <Modal title="Cookie settings" onClose={closeOverlay}>
-      <p className="text-fg-3 mb-2 text-sm">
-        Choose which cookies membrs can use. You can change this any time from
-        the footer.
-      </p>
       <Switch
         label="Essential"
-        detail="Keep membrs working: your city, theme, saved items and security. Always on."
+        detail="Keep MEMBRS working: your city, theme, sign-in and security. Always on."
         on
         locked
       />
@@ -145,7 +160,7 @@ export function CookieSettings() {
       />
       <Switch
         label="Marketing"
-        detail="Measure our own campaigns on other sites. Advertisers on membrs never track you."
+        detail="Measure our own campaigns on other sites. Advertisers on MEMBRS never track you."
         on={marketing}
         onChange={(on) => {
           track('cookie_toggle_changed', { category: 'marketing', on });

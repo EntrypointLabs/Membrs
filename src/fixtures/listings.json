@@ -1358,10 +1358,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Initiatives addressing indifference",
-      "Open globally"
-    ],
+    "eligibility": ["Initiatives addressing indifference", "Open globally"],
     "sector": "Governance"
   },
   {
@@ -1448,10 +1445,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Community youth leaders",
-      "Working on a local issue"
-    ],
+    "eligibility": ["Community youth leaders", "Working on a local issue"],
     "sector": "Governance"
   },
   {
@@ -1508,10 +1502,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Six online courses",
-      "Africa focused"
-    ],
+    "eligibility": ["Six online courses", "Africa focused"],
     "sector": "Technology"
   },
   {
@@ -1568,9 +1559,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African-owned growth-stage agribusinesses"
-    ],
+    "eligibility": ["African-owned growth-stage agribusinesses"],
     "sector": "Agriculture"
   },
   {
@@ -1597,9 +1586,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Young energy professionals"
-    ],
+    "eligibility": ["Young energy professionals"],
     "sector": "Climate"
   },
   {
@@ -1626,9 +1613,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Emerging young leaders in food systems"
-    ],
+    "eligibility": ["Emerging young leaders in food systems"],
     "sector": "Agriculture"
   },
   {
@@ -1655,9 +1640,7 @@
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "BSc and MSc students in computer science"
-    ],
+    "eligibility": ["BSc and MSc students in computer science"],
     "sector": "Research"
   },
   {
@@ -1684,9 +1667,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African start-ups in livestock"
-    ],
+    "eligibility": ["African start-ups in livestock"],
     "sector": "Agriculture"
   },
   {
@@ -1713,9 +1694,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Researchers from the Global South"
-    ],
+    "eligibility": ["Researchers from the Global South"],
     "sector": "Research"
   },
   {
@@ -1742,9 +1721,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Economists, one position"
-    ],
+    "eligibility": ["Economists, one position"],
     "sector": "Finance"
   },
   {
@@ -1771,9 +1748,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "EdTech ventures in Uganda"
-    ],
+    "eligibility": ["EdTech ventures in Uganda"],
     "sector": "Education"
   },
   {
@@ -1800,9 +1775,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African journalists"
-    ],
+    "eligibility": ["African journalists"],
     "sector": "Finance"
   },
   {
@@ -1829,9 +1802,7 @@
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Doctoral students"
-    ],
+    "eligibility": ["Doctoral students"],
     "sector": "Research"
   },
   {
@@ -1858,9 +1829,7 @@
     "level": "Founders",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Early-stage start-ups worldwide"
-    ],
+    "eligibility": ["Early-stage start-ups worldwide"],
     "sector": "Technology"
   },
   {
@@ -1887,9 +1856,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Real estate and urban development"
-    ],
+    "eligibility": ["Real estate and urban development"],
     "sector": "Design"
   },
   {
@@ -1916,9 +1883,7 @@
     "level": "Graduate",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Master's applicants from partner countries"
-    ],
+    "eligibility": ["Master's applicants from partner countries"],
     "sector": "Education"
   },
   {
@@ -1945,9 +1910,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Young climate leaders"
-    ],
+    "eligibility": ["Young climate leaders"],
     "sector": "Climate"
   },
   {
@@ -1974,9 +1937,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "African universities and research centres"
-    ],
+    "eligibility": ["African universities and research centres"],
     "sector": "Education"
   },
   {
@@ -2003,9 +1964,7 @@
     "level": "Under 30",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Young social entrepreneurs"
-    ],
+    "eligibility": ["Young social entrepreneurs"],
     "sector": "Entrepreneurship"
   },
   {
@@ -2032,9 +1991,7 @@
     "level": "Any level",
     "remote": true,
     "mode": "Remote",
-    "eligibility": [
-      "Researchers in social, economic and policy fields"
-    ],
+    "eligibility": ["Researchers in social, economic and policy fields"],
     "sector": "Research"
   }
 ]

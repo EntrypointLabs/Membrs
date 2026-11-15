@@ -1,5 +1,15 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { eventListing } from './testing';
+
+// The catalogue comes from the API at runtime, so lookups are stubbed here.
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./api')>()),
+  listingById: (id: string) =>
+    id === 'e7' ? eventListing({ id: 'e7', category: 'Theatre' }) : undefined,
+  placeById: () => undefined,
+}));
+
 import {
   consentFor,
   context,

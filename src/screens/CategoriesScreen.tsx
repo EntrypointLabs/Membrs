@@ -1,16 +1,22 @@
 import {
   categories,
-  listingsInCategory,
+  listings,
   places as allPlaces,
   taxonomy,
 } from '../lib/api';
 import { area, track } from '../lib/analytics';
-import { paths, type FeedKind } from '../lib/router';
+import { bySoonest } from '../lib/dates';
+import { paths, useSearchParam, type FeedKind } from '../lib/router';
+import { EVENT_VIEWS, findView, OPPORTUNITY_VIEWS } from '../lib/views';
 import { plural, slugify, titleCase } from '../lib/text';
 import { CategoryLabel } from '../components/CategoryLabel';
 import { Link } from '../components/Link';
-import { ListingCard } from '../components/ListingCard';
 import { Photo } from '../components/Photo';
+import { FeedPicker, viewOptions } from '../components/FeedPicker';
+import { PageTitle } from '../components/PageTitle';
+import { TitleBar } from '../components/TitleBar';
+import { ListingResults } from './FeedLayout';
+import { NotFoundScreen } from './NotFoundScreen';
 
 /** Big photo tiles, one per category, with the name and a count on the photo. */
 export function CategoryTiles({
@@ -31,7 +37,7 @@ export function CategoryTiles({
       {list.map((c) => (
         <Link
           key={c.slug}
-          href={`${paths.feed(kind === 'event' ? 'events' : 'opportunities')}?type=${c.slug}`}
+          href={paths.category(c.slug)}
           onClick={(e) =>
             track(
               'category_clicked',
@@ -42,7 +48,7 @@ export function CategoryTiles({
               e.currentTarget,
             )
           }
-          className="group relative block overflow-hidden rounded-lg"
+          className="group rounded-photo relative block overflow-hidden"
         >
           <Photo
             size="tile"
@@ -66,18 +72,24 @@ export function CategoryTiles({
 }
 
 /** /events/categories and friends: every category for one section. */
+const SECTION_NAMES: Record<FeedKind, [string, string]> = {
+  events: ['Events', 'Categories'],
+  opportunities: ['Opportunities', 'Types'],
+  places: ['Places', 'Types'],
+  promos: ['Promos', 'Categories'],
+};
+
 export function CategoriesScreen({ feed }: { feed: FeedKind }) {
-  const title = {
-    events: 'Event categories',
-    opportunities: 'Opportunity types',
-    places: 'Place types',
-    promos: 'Promo categories',
-  }[feed];
+  const [section, current] = SECTION_NAMES[feed];
   return (
-    <div className="page pt-8 md:pt-16">
-      <h1 className="mb-10 text-4xl font-semibold tracking-tight md:text-6xl">
-        {titleCase(title)}
-      </h1>
+    <div className="page pt-0 md:pt-16">
+      <TitleBar desktop className="mb-6 md:mb-0">
+        <PageTitle
+          section={section}
+          sectionHref={paths.feed(feed)}
+          current={current}
+        />
+      </TitleBar>
       {feed === 'events' || feed === 'opportunities' ? (
         <CategoryTiles kind={feed === 'events' ? 'event' : 'opportunity'} />
       ) : (
@@ -108,7 +120,10 @@ function TypeList({ feed }: { feed: 'places' | 'promos' }) {
             <CategoryLabel name={n} dot />
             <span className="text-fg-3 text-base font-normal">
               {feed === 'places'
-                ? `${allPlaces().filter((p) => p.type === n).length} places · ${t.placeTypeBlurbs[n] ?? ''}`
+                ? plural(
+                    allPlaces().filter((p) => p.type === n).length,
+                    'place',
+                  )
                 : ''}
             </span>
           </Link>
@@ -118,29 +133,37 @@ function TypeList({ feed }: { feed: 'places' | 'promos' }) {
   );
 }
 
-/** One category: its blurb and everything in it, soonest first. */
 export function CategoryScreen({ slug }: { slug: string }) {
-  const category = categories().find((c) => c.slug === slug);
-  if (!category) return null;
-  const items = listingsInCategory(category.name);
+  const known = categories().find((c) => c.slug === slug);
+  const all = listings()
+    .filter((l) => slugify(l.category) === slug || l.category === known?.name)
+    .sort(bySoonest);
+  const events = all.filter((l) => l.kind === 'event').length;
+  const kind =
+    known?.kind ?? (events * 2 >= all.length ? 'event' : 'opportunity');
+  const views = kind === 'event' ? EVENT_VIEWS : OPPORTUNITY_VIEWS;
+  const view = findView(views, useSearchParam('view'));
+  const items = view ? all.filter(view.test) : all;
+  const name = known?.name ?? all[0]?.category;
+  if (!name) return <NotFoundScreen />;
   return (
-    <div className="page pt-8 md:pt-16">
-      <CategoryLabel
-        name={category.kind === 'event' ? 'Events' : 'Opportunities'}
-        className="text-sm font-semibold uppercase"
-      />
-      <h1 className="mt-2 text-4xl font-semibold tracking-tight md:text-6xl">
-        {category.name}
-      </h1>
-      <p className="text-fg-2 mt-4 max-w-xl text-lg">{category.blurb}</p>
-      <p className="text-fg-3 mt-2">{plural(items.length, 'listing')}</p>
-      <div
-        className="mt-10 grid grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 md:grid-cols-3"
-        {...area('category_listings')}
-      >
-        {items.map((l) => (
-          <ListingCard key={l.id} listing={l} />
-        ))}
+    <div className="page pt-0 md:pt-16">
+      <TitleBar desktop>
+        <FeedPicker
+          title={kind === 'event' ? 'Events' : 'Opportunities'}
+          placeholder={titleCase(name)}
+          allLabel={`All ${titleCase(name)}`}
+          sheetTitle={titleCase(name)}
+          typeLabel="Categories"
+          views={viewOptions(views, all)}
+          types={[]}
+          view={view ? view.id : null}
+          type={null}
+          total={all.length}
+        />
+      </TitleBar>
+      <div {...area('category_listings')}>
+        <ListingResults items={items} />
       </div>
     </div>
   );

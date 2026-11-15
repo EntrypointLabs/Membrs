@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react';
-import { track } from '../lib/analytics';
+import { area, track } from '../lib/analytics';
 import { setSearchParams } from '../lib/router';
 import { slugify } from '../lib/text';
-import { categoryStyle } from './CategoryLabel';
 import { Icon } from './Icon';
+import { categoryStyle } from './CategoryLabel';
 import { Modal } from './Modal';
+import { PageTitle } from './PageTitle';
+import { Presence } from './Presence';
 
 export interface PickerOption {
   value: string;
@@ -24,6 +26,11 @@ interface FeedPickerProps {
   view: string | null;
   type: string | null;
   total: number;
+  filters?: ReactNode;
+  /** What the title shows with nothing picked: "Categories", "For You". */
+  placeholder?: string;
+  /** The first option in the sheet, "All events" by default. */
+  allLabel?: string;
 }
 
 /**
@@ -41,6 +48,9 @@ export function FeedPicker({
   view,
   type,
   total,
+  filters,
+  placeholder = 'Categories',
+  allLabel,
 }: FeedPickerProps) {
   const [open, setOpen] = useState(false);
   const typeName = types.find((t) => t.value === type)?.label;
@@ -59,72 +69,67 @@ export function FeedPicker({
     setOpen(false);
     window.scrollTo({ top: 0 });
   };
-  const long = (title + (current ?? 'Categories')).length > 24;
 
   return (
     <>
-      <h1 className="mb-6 min-w-0 md:mb-10">
-        <button
-          type="button"
-          onClick={() => {
-            track('picker_opened', { section: title });
-            setOpen(true);
-          }}
-          aria-haspopup="dialog"
-          className={`flex max-w-full items-baseline gap-3 font-semibold tracking-tight whitespace-nowrap ${
-            long ? 'text-xl md:text-[34px]' : 'text-[25px] md:text-[40px]'
-          }`}
-        >
-          {title}
-          <span
-            className={`flex min-w-0 items-center gap-1.5 ${type ? 'cat-color' : current ? 'text-fg' : 'text-fg-3'}`}
-            style={typeName ? categoryStyle(typeName) : undefined}
-          >
-            {type && (
-              <i className="cat-bg inline-block h-2 w-2 shrink-0 rounded-full" />
-            )}
-            <span className="truncate">{current ?? 'Categories'}</span>
-            <Icon name="chevronRight" className="h-5 w-5 shrink-0" />
-          </span>
-        </button>
-      </h1>
-      {open && (
-        <Modal title={sheetTitle} onClose={() => setOpen(false)}>
-          <Group>
-            <Option
-              label={`All ${title.toLowerCase()}`}
-              count={total}
-              on={!view && !type}
-              onClick={() => pick({})}
-            />
-          </Group>
-          <Heading icon="clock">By date</Heading>
-          <Group>
-            {views.map((v) => (
-              <Option
-                key={v.value}
-                label={v.label}
-                count={v.count}
-                on={view === v.value}
-                onClick={() => pick({ view: v.value })}
-              />
-            ))}
-          </Group>
-          <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
-          <Group>
-            {types.map((t) => (
-              <Option
-                key={t.value}
-                label={t.label}
-                count={t.count}
-                dot
-                on={type === t.value}
-                onClick={() => pick({ type: t.value })}
-              />
-            ))}
-          </Group>
-        </Modal>
-      )}
+      <PageTitle
+        section={title}
+        current={current ?? placeholder}
+        muted={!current && !allLabel}
+        category={type ? typeName : undefined}
+        onOpen={() => {
+          track('picker_opened', { section: title });
+          setOpen(true);
+        }}
+      />
+      <Presence value={open}>
+        {() => (
+          <Modal title={sheetTitle} onClose={() => setOpen(false)}>
+            <div {...area('picker')}>
+              {filters && (
+                <div className="mb-5 flex flex-wrap gap-2">{filters}</div>
+              )}
+              <Group>
+                <Option
+                  label={allLabel ?? `All ${title.toLowerCase()}`}
+                  count={total}
+                  on={!view && !type}
+                  onClick={() => pick({})}
+                />
+              </Group>
+              <Heading icon="clock">By date</Heading>
+              <Group>
+                {views.map((v) => (
+                  <Option
+                    key={v.value}
+                    label={v.label}
+                    count={v.count}
+                    on={view === v.value}
+                    onClick={() => pick({ view: v.value })}
+                  />
+                ))}
+              </Group>
+              {types.length > 0 && (
+                <>
+                  <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
+                  <Group>
+                    {types.map((t) => (
+                      <Option
+                        key={t.value}
+                        label={t.label}
+                        count={t.count}
+                        dot
+                        on={type === t.value}
+                        onClick={() => pick({ type: t.value })}
+                      />
+                    ))}
+                  </Group>
+                </>
+              )}
+            </div>
+          </Modal>
+        )}
+      </Presence>
     </>
   );
 }
@@ -193,6 +198,20 @@ function Option({
       </button>
     </li>
   );
+}
+
+/** The time views that have anything in them, with their counts. */
+export function viewOptions<T>(
+  views: readonly { id: string; label: string; test: (item: T) => boolean }[],
+  items: T[],
+): PickerOption[] {
+  return views
+    .map((v) => ({
+      value: v.id,
+      label: v.label,
+      count: items.filter(v.test).length,
+    }))
+    .filter((v) => v.count);
 }
 
 /** Count items per key, for the picker's numbers. */
