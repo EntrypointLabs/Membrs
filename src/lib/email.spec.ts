@@ -3,7 +3,7 @@ import { emailError, isValidEmail } from './email';
 
 describe('isValidEmail', () => {
   it('accepts ordinary addresses', () => {
-    expect(isValidEmail('ada@membrs.app')).toBe(true);
+    expect(isValidEmail('ada@membrs.xyz')).toBe(true);
     expect(isValidEmail('  ada.l+digest@mail.co.uk ')).toBe(true);
   });
 

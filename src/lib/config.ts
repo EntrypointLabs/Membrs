@@ -10,10 +10,10 @@ export const ADS_CHECKOUT = import.meta.env.VITE_ADS_CHECKOUT === 'true';
 
 /** Where the digest and contact emails go. */
 export const CONTACT = {
-  hello: 'hello@membrs.app',
-  privacy: 'privacy@membrs.app',
-  report: 'report@membrs.app',
-  ads: 'ads@membrs.app',
+  hello: 'hello@membrs.xyz',
+  privacy: 'privacy@membrs.xyz',
+  report: 'report@membrs.xyz',
+  ads: 'ads@membrs.xyz',
 } as const;
 
 /** Cards per row on web, wherever cards sit in a grid. */

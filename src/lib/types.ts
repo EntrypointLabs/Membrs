@@ -146,10 +146,16 @@ export interface Category {
   coverUrl?: string;
 }
 
+/** A clause that introduces a lettered list, such as "You must not:". */
+export interface LegalListClause {
+  text: string;
+  items: string[];
+}
+
 export interface LegalSection {
   heading: string;
   /** Plain text with <b> and <a href> only. Rendered by RichText. */
-  paragraphs: string[];
+  paragraphs: (string | LegalListClause)[];
 }
 
 export interface LegalDocument {

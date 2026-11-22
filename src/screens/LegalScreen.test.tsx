@@ -16,12 +16,21 @@ describe('LegalScreen', () => {
     'guidelines',
     'advertising',
   ] as const)(
-    'renders %s with numbered sections and every document as a tab',
+    'renders %s with numbered clauses and every document as a tab',
     async (doc) => {
       const html = await render(<LegalScreen doc={doc} />);
       expect(html).toContain('Last updated');
-      expect(html).toContain('>01<');
+      expect(html).toContain('>1.<');
+      expect(html).toContain('>1.1<');
       expect(html.match(/role="tab"/g)).toHaveLength(5);
+    },
+  );
+
+  it.each(['terms', 'privacy'] as const)(
+    'letters the items of a list clause in %s',
+    async (doc) => {
+      const html = await render(<LegalScreen doc={doc} />);
+      expect(html).toContain('>(a)<');
     },
   );
 });
