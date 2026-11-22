@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { track } from '../lib/analytics';
 import { refreshForReader } from '../lib/api';
 import { useDialog } from '../lib/focus';
 import { locationChoiceStore, shareLocation } from '../lib/location';
@@ -125,7 +126,11 @@ function TourDialog({ steps }: { steps: Step[] }) {
     tourSeenStore.set(true);
     void refreshForReader();
   };
-  useDialog(box, done);
+  const skip = () => {
+    track('tour_skipped', { step: index + 1, total: steps.length });
+    done();
+  };
+  useDialog(box, skip);
   const step = steps[Math.min(index, steps.length - 1)]!;
   const last = index + 1 >= steps.length;
   return (
@@ -136,9 +141,20 @@ function TourDialog({ steps }: { steps: Step[] }) {
         number={index + 1}
         total={steps.length}
         last={last}
-        onBack={index ? () => setIndex(index - 1) : undefined}
-        onNext={() => (last ? done() : setIndex(index + 1))}
-        onSkip={done}
+        onBack={
+          index
+            ? () => {
+                track('tour_back', { step: index + 1 });
+                setIndex(index - 1);
+              }
+            : undefined
+        }
+        onNext={() => {
+          if (!last) return setIndex(index + 1);
+          track('tour_completed', { total: steps.length });
+          done();
+        }}
+        onSkip={skip}
       />
     </div>
   );
@@ -163,6 +179,14 @@ function Spotlight({
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const city = useStore(cityStore);
+  // Each step mounts fresh (it is keyed by step), so this runs once a step.
+  useEffect(() => {
+    track('tour_step_viewed', {
+      step: number,
+      total,
+      target: step.target ?? (step.locate ? 'location' : 'page'),
+    });
+  }, [number, total, step.target, step.locate]);
 
   useLayoutEffect(() => {
     const el = targetOf(step);

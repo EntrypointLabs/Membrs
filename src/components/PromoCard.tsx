@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { paths } from '../lib/router';
 import type { Promo } from '../lib/types';
 import { Meta } from './ListingCard';
@@ -42,5 +43,12 @@ export function PromoCard({
   promo: Promo;
   mixed?: boolean;
 }) {
-  return <MediaCard {...promoFace(promo, mixed)} />;
+  return (
+    <MediaCard
+      {...promoFace(promo, mixed)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.promo(promo), 'card')
+      }
+    />
+  );
 }

@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { area, context, track } from '../lib/analytics';
 import { listingByKey } from '../lib/api';
 import { PHONE_PILL, PILL_SPRING } from '../lib/motion';
 import { navSection, paths, type Route, useRoute } from '../lib/router';
@@ -39,6 +40,7 @@ export function MobileTabBar() {
       />
       <nav
         aria-label="Sections"
+        {...area('tab_bar')}
         className="fixed inset-x-3 z-40 md:hidden"
         style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
       >
@@ -54,6 +56,12 @@ export function MobileTabBar() {
               <li key={tab.key}>
                 <Link
                   href={tab.href}
+                  onClick={() =>
+                    track('nav_clicked', {
+                      item: tab.key,
+                      placement: 'tab_bar',
+                    })
+                  }
                   aria-label={tab.label}
                   aria-current={on ? 'page' : undefined}
                   className={`${ITEM} ${on ? ON : OFF}`}
@@ -70,6 +78,7 @@ export function MobileTabBar() {
               aria-haspopup="dialog"
               aria-expanded={asking}
               onClick={() => openOverlay('assistant')}
+              {...context({ action: 'ask_membrs' })}
               className={`${ITEM} ${asking ? ON : OFF}`}
             >
               <span
@@ -81,6 +90,7 @@ export function MobileTabBar() {
           <li>
             <Link
               href={paths.search()}
+              onClick={() => track('search_opened', { placement: 'tab_bar' })}
               aria-label="Search"
               aria-current={searching ? 'page' : undefined}
               className={`${ITEM} ${searching && !asking ? ON : OFF}`}

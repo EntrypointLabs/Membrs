@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { openStateNow } from '../lib/hours';
 import type { Place } from '../lib/types';
 import { MediaRow } from './MediaRow';
@@ -19,5 +20,12 @@ export function OpenDot({ place }: { place: Place }) {
 }
 
 export function PlaceRow({ place }: { place: Place }) {
-  return <MediaRow {...placeFace(place)} />;
+  return (
+    <MediaRow
+      {...placeFace(place)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.place(place), 'row')
+      }
+    />
+  );
 }

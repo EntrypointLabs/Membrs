@@ -5,7 +5,11 @@ import { EmailStep } from './EmailStep';
 describe('EmailStep', () => {
   it('asks for an email next to the feature action, never for a sign-in', () => {
     const html = renderToString(
-      <EmailStep actionLabel="Get the weekly email" onContinue={() => {}} />,
+      <EmailStep
+        actionLabel="Get the weekly email"
+        onContinue={() => {}}
+        placement="footer"
+      />,
     );
     expect(html).toContain('type="email"');
     expect(html).toContain('Get the weekly email');

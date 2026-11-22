@@ -3,8 +3,10 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { useRef } from 'react';
 import { Select as SelectPrimitive } from 'radix-ui';
 import { createContext, useContext } from 'react';
+import { track } from '../lib/analytics';
 import { Icon, type IconName } from './Icon';
 
 export interface DrillMenu {
@@ -46,19 +48,35 @@ export function Select<T extends string>({
   icon,
   className = 'h-11',
 }: SelectProps<T>) {
+  const trigger = useRef<HTMLButtonElement>(null);
   const current = options.find((o) => o.value === value)?.label ?? value;
+  const pick = (next: T) => {
+    // The menu renders in a portal, outside the page's areas, so the event
+    // takes its area from the trigger instead.
+    track(
+      'filter_changed',
+      {
+        filter: label,
+        value: next,
+        label: options.find((o) => o.value === next)?.label ?? next,
+      },
+      trigger.current,
+    );
+    onChange(next);
+  };
   const drill = useContext(SelectDrill);
   if (drill)
     return (
       <li>
         <button
+          ref={trigger}
           type="button"
           onClick={() =>
             drill({
               label,
               value,
               options,
-              onChange: (v) => onChange(v as T),
+              onChange: (v) => pick(v as T),
             })
           }
           className="hover:bg-soft-hover flex w-full items-center justify-between gap-4 px-4 py-[15px] text-left text-[16.5px]"
@@ -72,8 +90,9 @@ export function Select<T extends string>({
       </li>
     );
   return (
-    <Root value={value} onValueChange={(v) => onChange(v as T)}>
+    <Root value={value} onValueChange={(v) => pick(v as T)}>
       <SelectPrimitive.Trigger
+        ref={trigger}
         aria-label={`${label}: ${current}`}
         className={`bg-btn hover:bg-btn-hover data-[state=open]:bg-btn-hover focus-visible:ring-accent flex ${className} shrink-0 cursor-pointer items-center gap-2 rounded-md px-4 text-base whitespace-nowrap transition-colors outline-none focus-visible:ring-2`}
       >

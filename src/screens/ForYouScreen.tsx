@@ -1,3 +1,4 @@
+import { area } from '../lib/analytics';
 import { forYou, forYouStore } from '../lib/api';
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
@@ -19,10 +20,12 @@ export function ForYouScreen() {
           onOpen={() => openOverlay('prefs')}
         />
       </TitleBar>
-      <ListingResults
-        items={items}
-        empty="Pick a few interests and your matches show up here."
-      />
+      <div {...area('for_you_listings')}>
+        <ListingResults
+          items={items}
+          empty="Pick a few interests and your matches show up here."
+        />
+      </div>
     </div>
   );
 }

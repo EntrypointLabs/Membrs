@@ -1,3 +1,4 @@
+import { area, track } from '../lib/analytics';
 import { titleCase } from '../lib/text';
 import type { Listing } from '../lib/types';
 import { HeadingCount } from './HeadingCount';
@@ -45,6 +46,7 @@ export function PhoneList({
   link,
   tour,
   aside,
+  areaName = title.toLowerCase().replace(/\s+/g, '_'),
 }: {
   title: string;
   items: Listing[];
@@ -52,10 +54,12 @@ export function PhoneList({
   link?: string;
   tour?: string;
   aside?: string;
+  /** The analytics area, for lists whose title changes with the reader. */
+  areaName?: string;
 }) {
   if (!items.length) return null;
   return (
-    <section data-tour={tour} className="mt-12 md:hidden">
+    <section data-tour={tour} className="mt-12 md:hidden" {...area(areaName)}>
       <PhoneSectionHead
         title={title}
         href={href}
@@ -84,6 +88,9 @@ export function SeeAll({
   return (
     <Link
       href={href}
+      onClick={(e) =>
+        track('see_all_clicked', { label: children, href }, e.currentTarget)
+      }
       className={`text-fg-3 hover:text-fg flex h-10 items-center gap-1 px-2 text-[15px] font-semibold ${className}`}
     >
       {children} <Icon name="chevronRight" className="h-4 w-4" />

@@ -9,6 +9,13 @@ import {
 } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { DropdownMenu } from 'radix-ui';
+import {
+  area,
+  context,
+  itemRef,
+  track,
+  trackItemOpened,
+} from '../lib/analytics';
 import { categories, listingByKey } from '../lib/api';
 import {
   ASSISTANT_UNAVAILABLE,
@@ -100,6 +107,49 @@ import {
 const TITLE = 'Ask membrs';
 const NEAR_LIMIT = 200;
 
+let askedAt = 0;
+let stopRequested = false;
+
+const secondsSince = (start: number) => Math.round((Date.now() - start) / 1000);
+
+/** Ask, then record how the answer went, by its shape rather than its words. */
+async function askTracked(
+  text: string,
+  source: 'composer' | 'suggestion',
+): Promise<boolean> {
+  const before = assistantStore.get();
+  const asked =
+    before.conversation?.messages.filter((m) => m.role === 'user').length ?? 0;
+  track('assistant_question_asked', {
+    source,
+    length: text.trim().length,
+    message_number: asked + 1,
+  });
+  askedAt = Date.now();
+  stopRequested = false;
+  const ok = await ask(text);
+  const after = assistantStore.get();
+  const last = after.conversation?.messages.at(-1);
+  const reply = ok && last?.role === 'assistant' ? last : null;
+  track('assistant_answered', {
+    outcome: stopRequested ? 'stopped' : reply ? 'answered' : 'failed',
+    seconds: secondsSince(askedAt),
+    listings_shown: reply?.listingIds.length ?? 0,
+    steps: reply?.steps?.length ?? 0,
+    messages_left: after.messagesLeft,
+    error: reply
+      ? null
+      : (after.error ?? (after.messagesLeft === 0 ? 'message_limit' : null)),
+  });
+  return ok;
+}
+
+function stopTracked() {
+  stopRequested = true;
+  track('assistant_stopped', { seconds: secondsSince(askedAt) });
+  stop();
+}
+
 const launcherHiddenStore = createStore<boolean>(null, false);
 
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -133,6 +183,7 @@ export function AskLauncher() {
         aria-haspopup="dialog"
         aria-keyshortcuts={MAC ? 'Meta+/' : 'Control+/'}
         onClick={() => openOverlay('assistant')}
+        {...context({ action: 'open_assistant' })}
         className="hover:bg-soft-hover flex items-center gap-3 rounded-sm py-1 pr-2 pl-1 text-[15px] font-semibold transition-colors"
       >
         <ToolLogo src={MEMBRS_LOGO} size="large" />
@@ -145,6 +196,7 @@ export function AskLauncher() {
         type="button"
         aria-label="Hide Ask membrs"
         onClick={() => launcherHiddenStore.set(true)}
+        {...context({ action: 'hide_launcher' })}
         className="text-fg-3 hover:bg-soft-hover hover:text-fg grid size-8 place-items-center rounded-sm transition-colors"
       >
         <Icon name="x" className="h-4 w-4" />
@@ -244,7 +296,14 @@ function ListingCards({ ids }: { ids: string[] }) {
           key={listing.id}
           {...listingFace(listing)}
           compact
-          onClick={closeOnPhone}
+          onClick={(e) => {
+            trackItemOpened(
+              e.currentTarget,
+              itemRef.listing(listing),
+              'assistant',
+            );
+            closeOnPhone();
+          }}
         />
       ))}
     </div>
@@ -308,7 +367,14 @@ function OpenedName({ step }: { step: AssistantStep }) {
       {listing ? (
         <Link
           href={paths.listing(listing.slug)}
-          onClick={closeOnPhone}
+          onClick={(e) => {
+            trackItemOpened(
+              e.currentTarget,
+              itemRef.listing(listing),
+              'assistant',
+            );
+            closeOnPhone();
+          }}
           className="text-fg-2 font-medium hover:underline"
         >
           {name}
@@ -457,6 +523,7 @@ function Starters({
           type="button"
           disabled={disabled}
           onClick={() => onPick(pick.ask)}
+          {...context({ action: 'suggestion' })}
           className="bg-soft text-fg-2 hover:bg-soft-hover hover:text-fg flex items-center gap-3 rounded-lg px-4 py-3.5 text-left text-[15px] transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           <Icon
@@ -513,7 +580,10 @@ function ToolMenu() {
           {ASK_TOOLS.map((option) => (
             <DropdownMenu.Item
               key={option.id}
-              onSelect={() => pickTool(option.id)}
+              onSelect={() => {
+                track('assistant_tool_picked', { tool: option.id });
+                pickTool(option.id);
+              }}
               className="data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-[15px] outline-none"
             >
               <ToolLogo src={option.logo} />
@@ -541,6 +611,7 @@ function Conversation() {
         <MessageScrollerViewport>
           <MessageScrollerContent
             aria-busy={Boolean(state.streaming)}
+            data-ph-mask
             className="gap-6 px-4 pt-5 pb-4"
           >
             {messages.map((m) =>
@@ -677,7 +748,7 @@ function Composer({
                 size="icon-sm"
                 variant="secondary"
                 aria-label="Stop"
-                onClick={stop}
+                onClick={stopTracked}
                 className="size-11 rounded-md"
               >
                 <Icon name="stop" className="size-4" />
@@ -722,7 +793,7 @@ function MembrsComposer() {
   ].filter(Boolean);
   return (
     <Composer
-      onSend={ask}
+      onSend={(text) => askTracked(text, 'composer')}
       allowed={canSend(state)}
       busy={streaming || state.starting}
       streaming={streaming}
@@ -755,14 +826,20 @@ function OutsideBody({ tool }: { tool: OutsideTool }) {
   const state = useStore(assistantStore);
   const chat = state.conversation?.messages ?? [];
   const name = ASK_TOOLS.find((t) => t.id === tool)?.name ?? tool;
-  const send = (question: string) => {
+  const send = (question: string, source: 'composer' | 'suggestion') => {
+    track('assistant_outside_opened', {
+      tool,
+      source,
+      length: question.trim().length,
+      carried_messages: chat.length,
+    });
     openOutside(tool, question, chat);
     return Promise.resolve(true);
   };
   return (
     <>
       <Starters
-        onPick={(text) => void send(text)}
+        onPick={(text) => void send(text, 'suggestion')}
         note={carriedNote(
           tool,
           chat,
@@ -770,7 +847,7 @@ function OutsideBody({ tool }: { tool: OutsideTool }) {
         )}
       />
       <Composer
-        onSend={send}
+        onSend={(text) => send(text, 'composer')}
         allowed
         busy={false}
         streaming={false}
@@ -838,7 +915,11 @@ function MembrsBody() {
           deadlines.
         </p>
         <div className="w-full max-w-xs">
-          <EmailStep actionLabel="Continue" onContinue={() => undefined} />
+          <EmailStep
+            actionLabel="Continue"
+            onContinue={() => undefined}
+            placement="assistant"
+          />
         </div>
         <div className="text-fg-3 flex items-center gap-3 text-[15px]">
           <ToolMenu />
@@ -859,7 +940,10 @@ function MembrsBody() {
         <Button
           type="button"
           variant="secondary"
-          onClick={() => void loadAssistant()}
+          onClick={() => {
+            track('assistant_retry_clicked', {});
+            void loadAssistant();
+          }}
         >
           Try again
         </Button>
@@ -871,7 +955,7 @@ function MembrsBody() {
       {empty ? (
         <Starters
           disabled={!canSend(state) || state.starting}
-          onPick={(text) => void ask(text)}
+          onPick={(text) => void askTracked(text, 'suggestion')}
         />
       ) : (
         <Conversation />
@@ -913,6 +997,7 @@ export function AssistantPanel() {
   useDialog(panel, closeOverlay);
 
   const toggleExpanded = () => {
+    track('assistant_expanded', { expanded: !expanded });
     setExpanded((was) => {
       writeExpanded(!was);
       return !was;
@@ -943,6 +1028,7 @@ export function AssistantPanel() {
         aria-modal="true"
         aria-labelledby="ask-title"
         tabIndex={-1}
+        {...area('assistant')}
         className={cn(
           'bg-bg text-fg md:bg-panel md:border-line-2 relative flex min-w-0 flex-1 flex-col overflow-hidden pb-[calc(84px+env(safe-area-inset-bottom,0px))] outline-none md:flex-none md:border md:pb-0',
           PHONE_SHEET,
@@ -985,11 +1071,14 @@ export function AssistantPanel() {
                       state.starting ||
                       state.conversationsLeftToday <= 0
                     }
-                    onClick={() =>
+                    onClick={() => {
+                      track('assistant_new_chat', {
+                        conversations_left: state.conversationsLeftToday,
+                      });
                       void newChat().then(
                         (started) => started && pickTool('membrs'),
-                      )
-                    }
+                      );
+                    }}
                     className="text-fg-2"
                   >
                     <Icon name="compose" className="h-5 w-5" />

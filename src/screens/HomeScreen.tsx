@@ -1,6 +1,7 @@
 import { useHomeFilters } from './HomeFilters';
 import { shown } from '../lib/sections';
 import { useEffect, useState } from 'react';
+import { area, context, track } from '../lib/analytics';
 import {
   alternated,
   closingSoon,
@@ -223,42 +224,49 @@ function idsOf(listings: Listing[]): Set<string> {
 
 function MobileTop({ city }: { city: string }) {
   return (
-    <TitleBar className="flex items-center justify-between">
-      <span data-tour="city" className="flex items-center gap-2">
-        <Select
-          label="City"
-          icon="pin"
-          value={city}
-          onChange={chooseCity}
-          className="h-11 font-semibold"
-          options={withCity(placeOptions(), city)}
-        />
-        <UseMyLocation iconOnly className="bg-btn h-11 w-11 rounded-md" />
-      </span>
-      <span className="flex gap-2">
-        <ContributeMenu
-          align="end"
-          trigger={
-            <button
-              type="button"
-              aria-label="Contribute"
-              className="bg-btn grid h-11 w-11 place-items-center rounded-md"
-            >
-              <Icon name="plus" className="h-5 w-5" />
-            </button>
-          }
-        />
-        <button
-          type="button"
-          data-tour="plans"
-          onClick={() => openOverlay('plans')}
-          aria-label="Your plans"
-          className="bg-btn grid h-11 w-11 place-items-center rounded-md"
-        >
-          <Icon name="cal" className="h-5 w-5" />
-        </button>
-        <PhoneSettings />
-      </span>
+    <TitleBar>
+      <div
+        className="flex items-center justify-between"
+        {...area('mobile_top')}
+      >
+        <span data-tour="city" className="flex items-center gap-2">
+          <Select
+            label="City"
+            icon="pin"
+            value={city}
+            onChange={chooseCity}
+            className="h-11 font-semibold"
+            options={withCity(placeOptions(), city)}
+          />
+          <UseMyLocation iconOnly className="bg-btn h-11 w-11 rounded-md" />
+        </span>
+        <span className="flex gap-2">
+          <ContributeMenu
+            align="end"
+            trigger={
+              <button
+                type="button"
+                aria-label="Contribute"
+                className="bg-btn grid h-11 w-11 place-items-center rounded-md"
+                {...context({ action: 'contribute_menu' })}
+              >
+                <Icon name="plus" className="h-5 w-5" />
+              </button>
+            }
+          />
+          <button
+            type="button"
+            data-tour="plans"
+            onClick={() => openOverlay('plans')}
+            {...context({ action: 'plans' })}
+            aria-label="Your plans"
+            className="bg-btn grid h-11 w-11 place-items-center rounded-md"
+          >
+            <Icon name="cal" className="h-5 w-5" />
+          </button>
+          <PhoneSettings />
+        </span>
+      </div>
     </TitleBar>
   );
 }
@@ -298,7 +306,7 @@ function HappeningSoon({ items: all }: { items: Listing[] }) {
   const items = all.slice(0, HOME_LIST);
   if (!items.length) return null;
   return (
-    <section className="mt-12 md:hidden">
+    <section className="mt-12 md:hidden" {...area('happening_soon')}>
       <PhoneSectionHead
         title="Happening Soon"
         href={paths.feed('events')}
@@ -326,7 +334,7 @@ function PopularSection({
   const [page, setPage] = useState(1);
   if (!items.length && kind === 'all') return null;
   return (
-    <section className="mt-[clamp(140px,11vw,200px)]">
+    <section className="mt-[clamp(140px,11vw,200px)]" {...area('popular')}>
       <SectionHeader
         title="Popular"
         count={items.length}
@@ -356,7 +364,7 @@ function JustAddedSection({ items }: { items: Listing[] }) {
   const [page, setPage] = useState(1);
   if (!items.length) return null;
   return (
-    <section className="mt-[clamp(140px,11vw,200px)]">
+    <section className="mt-[clamp(140px,11vw,200px)]" {...area('just_added')}>
       <SectionHeader title="Just Added" count={items.length} />
       <PagedGrid
         items={items}
@@ -385,7 +393,10 @@ function ThisWeek({
   const pages = Math.ceil(items.length / PAGE_SIZE);
   if (!items.length && kind === 'all' && range === 'week') return null;
   return (
-    <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+    <section
+      className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+      {...area('this_week')}
+    >
       <header className="mb-14 flex flex-wrap items-end justify-between gap-6">
         <div>
           <h2 className="text-[44px] font-semibold tracking-tight">
@@ -395,6 +406,7 @@ function ThisWeek({
                   key={r}
                   type="button"
                   onClick={() => {
+                    if (r !== range) track('range_changed', { range: r });
                     onRange(r);
                     setPage(1);
                   }}
@@ -445,6 +457,7 @@ function ClosingSoon({ items: listed }: { items: Listing[] }) {
     <section
       data-tour="closing"
       className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+      {...area('closing_soon')}
     >
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-[clamp(64px,7vw,128px)]">
         <div className="lg:top-bar self-start lg:sticky">
@@ -454,6 +467,16 @@ function ClosingSoon({ items: listed }: { items: Listing[] }) {
           </h2>
           <Link
             href={paths.feed('opportunities')}
+            onClick={(e) =>
+              track(
+                'see_all_clicked',
+                {
+                  label: 'All opportunities',
+                  href: paths.feed('opportunities'),
+                },
+                e.currentTarget,
+              )
+            }
             className="bg-btn hover:bg-btn-hover mt-7 inline-flex h-11 items-center gap-2 rounded-md px-5 font-bold"
           >
             All opportunities{' '}
@@ -484,7 +507,7 @@ function PlacesToGo() {
   return (
     <>
       {openNow.length > 0 && (
-        <section className="mt-12 md:hidden">
+        <section className="mt-12 md:hidden" {...area('open_now')}>
           <PhoneSectionHead
             title="Open Now"
             href={paths.feed('places')}
@@ -499,7 +522,10 @@ function PlacesToGo() {
         </section>
       )}
       {places().length > 0 && (
-        <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+        <section
+          className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+          {...area('places_to_go')}
+        >
           <SectionHeader
             title="Places to go"
             count={places().length}
@@ -523,7 +549,7 @@ function PromosSection() {
   return (
     <>
       {endingSoon.length > 0 && (
-        <section className="mt-12 md:hidden">
+        <section className="mt-12 md:hidden" {...area('deals_ending_soon')}>
           <PhoneSectionHead
             title="Deals Ending Soon"
             href={paths.feed('promos')}
@@ -538,7 +564,10 @@ function PromosSection() {
         </section>
       )}
       {promos().length > 0 && (
-        <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+        <section
+          className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+          {...area('promos')}
+        >
           <SectionHeader
             title="Promos"
             count={promos().length}
@@ -559,7 +588,10 @@ function PromosSection() {
 function CategoriesSection() {
   const [kind, setKind] = useState<'event' | 'opportunity'>('event');
   return (
-    <section className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block">
+    <section
+      className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+      {...area('categories')}
+    >
       <SectionHeader
         title="Browse by category"
         actions={

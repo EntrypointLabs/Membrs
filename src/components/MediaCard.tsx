@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Link } from './Link';
 import { Photo } from './Photo';
@@ -53,7 +53,10 @@ export function MediaCard({
   figure,
   compact = false,
   onClick,
-}: MediaFace & { compact?: boolean; onClick?: () => void }) {
+}: MediaFace & {
+  compact?: boolean;
+  onClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
+}) {
   return (
     <Link href={href} onClick={onClick} className="group flex flex-col">
       <Photo

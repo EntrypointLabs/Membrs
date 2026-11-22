@@ -1,3 +1,5 @@
+import type { MouseEvent } from 'react';
+import { area, context, itemRef, track } from '../lib/analytics';
 import { promoById, promos } from '../lib/api';
 import { paths } from '../lib/router';
 import { copyText, toast } from '../lib/ui';
@@ -28,16 +30,19 @@ export function PromoScreen({ id }: { id: string }) {
   const more = promos()
     .filter((p) => p.id !== promo.id)
     .slice(0, GRID_COLUMNS);
-  const copyCode = async () => {
+  const item = itemRef.promo(promo);
+  const copyCode = async (e: MouseEvent<HTMLElement>) => {
     if (!promo.code) return;
-    toast(
-      (await copyText(promo.code))
-        ? `Code ${promo.code} copied`
-        : `Code ${promo.code}`,
-    );
+    const button = e.currentTarget;
+    const copied = await copyText(promo.code);
+    if (copied)
+      track('promo_code_copied', { ...item, code: promo.code }, button);
+    toast(copied ? `Code ${promo.code} copied` : `Code ${promo.code}`);
   };
+  const onShare = (e: MouseEvent<HTMLElement>) =>
+    shareAndConfirm(promo.title, item, e.currentTarget);
   return (
-    <div className="page max-md:pt-0 md:pt-10">
+    <div className="page max-md:pt-0 md:pt-10" {...context(item)}>
       <DetailHead
         trail={[
           ['Promos', paths.feed('promos')],
@@ -49,7 +54,8 @@ export function PromoScreen({ id }: { id: string }) {
           <OverlayButton
             icon="share"
             label="Share"
-            onClick={() => shareAndConfirm(promo.title)}
+            action="share"
+            onClick={onShare}
           />
         }
       />
@@ -67,12 +73,17 @@ export function PromoScreen({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={copyCode}
+                {...context({ action: 'copy_code' })}
                 className="border-line-2 flex h-12 w-full items-center justify-between rounded-md border border-dashed px-4 font-mono font-bold"
               >
                 {promo.code} <Icon name="copy" />
               </button>
             )}
-            <PrimaryLink href={`https://${promo.host}`}>
+            <PrimaryLink
+              href={`https://${promo.host}`}
+              item={item}
+              cta="go_to_merchant"
+            >
               {`Go to ${promo.merchant}`}
             </PrimaryLink>
           </>
@@ -82,12 +93,17 @@ export function PromoScreen({ id }: { id: string }) {
             <LinkRow
               icon="spark"
               label="Find similar"
+              action="find_similar"
               href={paths.feed('promos')}
+              onClick={(e) =>
+                track('find_similar_clicked', item, e.currentTarget)
+              }
             />
             <LinkRow
               icon="share"
               label="Share with a friend"
-              onClick={() => shareAndConfirm(promo.title)}
+              action="share"
+              onClick={onShare}
             />
           </>
         }
@@ -101,6 +117,7 @@ export function PromoScreen({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={copyCode}
+                {...context({ action: 'copy_code' })}
                 className="border-line-2 mt-5 flex h-12 w-full items-center justify-between rounded-md border border-dashed px-4 font-mono font-bold"
               >
                 {promo.code} <Icon name="copy" />
@@ -109,19 +126,23 @@ export function PromoScreen({ id }: { id: string }) {
               <p className="text-fg-3 mt-3 text-sm">No code needed.</p>
             )}
             <div className="mt-4">
-              <PrimaryLink href={`https://${promo.host}`}>
+              <PrimaryLink
+                href={`https://${promo.host}`}
+                item={item}
+                cta="go_to_merchant"
+              >
                 {`Go to ${promo.merchant}`}
               </PrimaryLink>
             </div>
             <div className="mt-3">
-              <SmallButton onClick={() => shareAndConfirm(promo.title)}>
+              <SmallButton action="share" onClick={onShare}>
                 Share
               </SmallButton>
             </div>
           </ActionCard>
         }
       >
-        <dl>
+        <dl {...area('facts')}>
           <Fact label="Offer">
             <p className="font-semibold">{promo.offer}</p>
           </Fact>
@@ -153,7 +174,7 @@ export function PromoScreen({ id }: { id: string }) {
           </ul>
         </Block>
       </DetailBody>
-      <section className="mt-[clamp(100px,8vw,160px)]">
+      <section className="mt-[clamp(100px,8vw,160px)]" {...area('more_promos')}>
         <SectionHeader
           title="More promos"
           count={more.length}

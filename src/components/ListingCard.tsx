@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { closesLine, eventDay } from '../lib/dates';
 import { cn } from '../lib/utils';
 import { paths } from '../lib/router';
@@ -63,7 +64,14 @@ export function listingFace(listing: Listing, mixed = false): MediaFace {
 }
 
 export function ListingCard({ listing, mixed = false }: ListingCardProps) {
-  return <MediaCard {...listingFace(listing, mixed)} />;
+  return (
+    <MediaCard
+      {...listingFace(listing, mixed)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.listing(listing), 'card')
+      }
+    />
+  );
 }
 
 export function Meta({

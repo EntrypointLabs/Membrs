@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { area, track } from '../lib/analytics';
 import { useIsPhone } from '../lib/media';
 import { searchHref, useLocation } from '../lib/router';
 import { slugify } from '../lib/text';
@@ -70,6 +71,15 @@ export function FeedPicker({
     setOpen(false);
     setDrill(null);
   };
+  const choose =
+    (next: { view?: string | null; type?: string | null }) => () => {
+      track('picker_option_selected', {
+        section: title,
+        view: next.view ?? null,
+        type: next.type ?? null,
+      });
+      close();
+    };
 
   return (
     <>
@@ -78,67 +88,72 @@ export function FeedPicker({
         current={current ?? placeholder}
         muted={!current && !allLabel}
         category={type ? typeName : undefined}
-        onOpen={() => setOpen(true)}
+        onOpen={() => {
+          track('picker_opened', { section: title });
+          setOpen(true);
+        }}
       />
       <Presence value={open}>
         {() => (
           <Modal title={drill?.label ?? sheetTitle} onClose={close}>
-            {drill ? (
-              <DrillOptions menu={drill} onDone={() => setDrill(null)} />
-            ) : (
-              <>
-                {filters &&
-                  (phone ? (
-                    <SelectDrill.Provider value={setDrill}>
-                      <div className="mb-5">
-                        <Group>{filters}</Group>
-                      </div>
-                    </SelectDrill.Provider>
-                  ) : (
-                    <div className="mb-5 flex flex-wrap gap-2">{filters}</div>
-                  ))}
-                <Group>
-                  <Option
-                    label={allLabel ?? `All ${title.toLowerCase()}`}
-                    count={total}
-                    on={!view && !type}
-                    href={pick({})}
-                    onClick={close}
-                  />
-                </Group>
-                <Heading icon="clock">By date</Heading>
-                <Group>
-                  {views.map((v) => (
+            <div {...area('picker')}>
+              {drill ? (
+                <DrillOptions menu={drill} onDone={() => setDrill(null)} />
+              ) : (
+                <>
+                  {filters &&
+                    (phone ? (
+                      <SelectDrill.Provider value={setDrill}>
+                        <div className="mb-5">
+                          <Group>{filters}</Group>
+                        </div>
+                      </SelectDrill.Provider>
+                    ) : (
+                      <div className="mb-5 flex flex-wrap gap-2">{filters}</div>
+                    ))}
+                  <Group>
                     <Option
-                      key={v.value}
-                      label={v.label}
-                      count={v.count}
-                      on={view === v.value}
-                      href={pick({ view: v.value })}
-                      onClick={close}
+                      label={allLabel ?? `All ${title.toLowerCase()}`}
+                      count={total}
+                      on={!view && !type}
+                      href={pick({})}
+                      onClick={choose({})}
                     />
-                  ))}
-                </Group>
-                {types.length > 0 && (
-                  <>
-                    <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
-                    <Group>
-                      {types.map((t) => (
-                        <Option
-                          key={t.value}
-                          label={t.label}
-                          count={t.count}
-                          dot
-                          on={type === t.value}
-                          href={pick({ type: t.value })}
-                          onClick={close}
-                        />
-                      ))}
-                    </Group>
-                  </>
-                )}
-              </>
-            )}
+                  </Group>
+                  <Heading icon="clock">By date</Heading>
+                  <Group>
+                    {views.map((v) => (
+                      <Option
+                        key={v.value}
+                        label={v.label}
+                        count={v.count}
+                        on={view === v.value}
+                        href={pick({ view: v.value })}
+                        onClick={choose({ view: v.value })}
+                      />
+                    ))}
+                  </Group>
+                  {types.length > 0 && (
+                    <>
+                      <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
+                      <Group>
+                        {types.map((t) => (
+                          <Option
+                            key={t.value}
+                            label={t.label}
+                            count={t.count}
+                            dot
+                            on={type === t.value}
+                            href={pick({ type: t.value })}
+                            onClick={choose({ type: t.value })}
+                          />
+                        ))}
+                      </Group>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
           </Modal>
         )}
       </Presence>

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { track } from '../lib/analytics';
 import { loadAccount, readerCountryStore, taxonomy } from '../lib/api';
 import {
   africanCountry,
@@ -80,6 +81,10 @@ export function PreferenceAccordions({
       mounted = false;
     };
   }, [onCity]);
+  const openSection = (section: Section) => {
+    if (section !== open) track('preferences_section_opened', { section });
+    onOpen(section);
+  };
   const sum = (names: string[]) => {
     const on = names.filter((n) => picked.includes(n));
     return on.length ? on.join(', ') : '';
@@ -87,7 +92,17 @@ export function PreferenceAccordions({
   const chips = (names: string[]) => (
     <div className="flex flex-wrap gap-2">
       {names.map((n) => (
-        <Chip key={n} on={picked.includes(n)} onClick={() => toggleInterest(n)}>
+        <Chip
+          key={n}
+          on={picked.includes(n)}
+          onClick={() => {
+            track('interest_toggled', {
+              interest: n,
+              selected: !picked.includes(n),
+            });
+            toggleInterest(n);
+          }}
+        >
           {n}
         </Chip>
       ))}
@@ -99,12 +114,13 @@ export function PreferenceAccordions({
         title="Location"
         summary={placeLabel(readerPlaceOf(city, readerCountryStore.get()))}
         open={open === 'city'}
-        onToggle={() => onOpen('city')}
+        onToggle={() => openSection('city')}
       >
         <PlacePicker
           key={readerPlaceOf(city, readerCountryStore.get()).country}
           label={city}
           onPick={(label, done) => {
+            track('preferences_city_picked', { city: label });
             onCity(label);
             if (done) onOpen('event');
           }}
@@ -114,7 +130,7 @@ export function PreferenceAccordions({
         title="Events"
         summary={sum(offered.event)}
         open={open === 'event'}
-        onToggle={() => onOpen('event')}
+        onToggle={() => openSection('event')}
       >
         {chips(offered.event)}
       </Accordion>
@@ -122,7 +138,7 @@ export function PreferenceAccordions({
         title="Opportunities"
         summary={sum(offered.opportunity)}
         open={open === 'opportunity'}
-        onToggle={() => onOpen('opportunity')}
+        onToggle={() => openSection('opportunity')}
       >
         {chips(offered.opportunity)}
         {asksField(picked) && <FieldBlock />}
@@ -132,7 +148,7 @@ export function PreferenceAccordions({
           title="Places"
           summary={sum(offered.place)}
           open={open === 'place'}
-          onToggle={() => onOpen('place')}
+          onToggle={() => openSection('place')}
         >
           {chips(offered.place)}
         </Accordion>
@@ -259,11 +275,16 @@ function FieldBlock() {
           <Chip
             key={o}
             on={chosen.includes(o)}
-            onClick={() =>
+            onClick={() => {
+              track('follow_up_answered', {
+                interest: 'field',
+                answer: o,
+                selected: !chosen.includes(o),
+              });
               fieldsStore.set((prev) =>
                 prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o],
-              )
-            }
+              );
+            }}
           >
             {o}
           </Chip>

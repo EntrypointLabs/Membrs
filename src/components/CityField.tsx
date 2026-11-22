@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { context, track } from '../lib/analytics';
 import { suggestCities } from '../lib/api';
 import { newIdempotencyKey } from '../lib/http';
 import { Icon } from './Icon';
@@ -81,14 +82,19 @@ export function CityField({
   const options = offerWorldwide ? [WORLDWIDE_OPTION, ...found] : found;
   const showList = open && options.length > 0;
 
-  function pick(option: Option) {
+  function pick(option: Option, method: 'click' | 'keyboard') {
+    track('city_suggestion_picked', {
+      option: option.key === WORLDWIDE_OPTION.key ? 'worldwide' : 'suggestion',
+      method,
+      position: options.indexOf(option) + 1,
+    });
     onChange(option.value, true);
     setOpen(false);
     session.current = '';
   }
 
   return (
-    <div className="relative">
+    <div className="relative" {...context({ action: 'city_field' })}>
       <Icon
         name="pin"
         className="text-fg-3 pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2"
@@ -125,7 +131,7 @@ export function CityField({
             const chosen = options[active];
             if (chosen) {
               e.preventDefault();
-              pick(chosen);
+              pick(chosen, 'keyboard');
             }
           } else if (e.key === 'Escape') {
             setOpen(false);
@@ -146,7 +152,7 @@ export function CityField({
               aria-selected={i === active}
               onMouseDown={(e) => {
                 e.preventDefault();
-                pick(option);
+                pick(option, 'click');
               }}
               onMouseEnter={() => setActive(i)}
               className={cn(

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { area, context, itemRef, track, type Events } from '../lib/analytics';
 import { listingByKey, similar } from '../lib/api';
 import {
   deadlineCalendarHref,
@@ -47,8 +48,10 @@ export function ListingScreen({ id }: { id: string }) {
   if (!listing) return <NotFoundScreen />;
   const feed = listing.kind === 'event' ? 'events' : 'opportunities';
   const more = similar(listing);
+  const item = itemRef.listing(listing);
+  const cta = listing.kind === 'event' ? 'get_ticket' : 'apply_now';
   return (
-    <div className="page max-md:pt-0 md:pt-10">
+    <div className="page max-md:pt-0 md:pt-10" {...context(item)}>
       <DetailHead
         trail={[
           [
@@ -86,7 +89,7 @@ export function ListingScreen({ id }: { id: string }) {
           )
         }
         primary={
-          <PrimaryLink href={listing.url}>
+          <PrimaryLink href={listing.url} item={item} cta={cta}>
             {listing.kind === 'event' ? 'Get ticket' : 'Apply now'}
           </PrimaryLink>
         }
@@ -119,16 +122,24 @@ export function ListingScreen({ id }: { id: string }) {
             <LinkRow
               icon="spark"
               label="Find similar"
+              action="find_similar"
               href={paths.category(slugify(listing.category))}
+              onClick={(e) =>
+                track('find_similar_clicked', item, e.currentTarget)
+              }
             />
             <LinkRow
               icon="share"
               label="Share with a friend"
-              onClick={() => shareAndConfirm(listing.title)}
+              action="share"
+              onClick={(e) =>
+                shareAndConfirm(listing.title, item, e.currentTarget)
+              }
             />
             <LinkRow
               icon="compose"
               label="Ask AI about this"
+              action="ask_ai"
               wrap={(control) => (
                 <AskAIMenu kind={listing.kind} title={listing.title}>
                   {control}
@@ -138,7 +149,7 @@ export function ListingScreen({ id }: { id: string }) {
           </>
         }
       >
-        <dl>
+        <dl {...area('facts')}>
           {listing.kind === 'event' ? (
             <EventFacts e={listing} />
           ) : (
@@ -148,7 +159,10 @@ export function ListingScreen({ id }: { id: string }) {
       </DetailBody>
 
       {more.length > 0 && (
-        <section className="mt-[clamp(100px,8vw,160px)]">
+        <section
+          className="mt-[clamp(100px,8vw,160px)]"
+          {...area('more_like_this')}
+        >
           <SectionHeader
             title="More like this"
             count={more.length}
@@ -169,6 +183,14 @@ export function ListingScreen({ id }: { id: string }) {
   );
 }
 
+function calendarAdded(
+  listing: Listing,
+  method: Events['calendar_added']['method'],
+  from: Element,
+): void {
+  track('calendar_added', { ...itemRef.listing(listing), method }, from);
+}
+
 function whereLine(e: EventListing): string {
   return distinctParts(e.venue, [e.area, e.city]).join(', ');
 }
@@ -179,7 +201,12 @@ function EventFacts({ e }: { e: EventListing }) {
       <Fact
         label="Date"
         action={
-          <FactAction href={googleCalendarHref(e)} icon="cal">
+          <FactAction
+            href={googleCalendarHref(e)}
+            icon="cal"
+            action="add_to_calendar_google"
+            onClick={(ev) => calendarAdded(e, 'google', ev.currentTarget)}
+          >
             Add to calendar
           </FactAction>
         }
@@ -199,6 +226,7 @@ function EventFacts({ e }: { e: EventListing }) {
               <FactAction
                 icon="pin"
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([e.venue, whereLine(e)].filter(Boolean).join(', '))}`}
+                action="directions"
               >
                 Directions
               </FactAction>
@@ -246,7 +274,11 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
             <FactAction
               href={deadlineCalendarHref(o)}
               icon="clock"
-              onClick={confirmReminder}
+              action="remind_me"
+              onClick={(e) => {
+                calendarAdded(o, 'deadline_reminder', e.currentTarget);
+                confirmReminder();
+              }}
             >
               Remind me
             </FactAction>
@@ -291,11 +323,13 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
 }
 
 function HeadTools({ listing }: { listing: Listing }) {
+  const item = itemRef.listing(listing);
   const shareButton = (
     <OverlayButton
       icon="share"
       label="Share"
-      onClick={() => shareAndConfirm(listing.title)}
+      action="share"
+      onClick={(e) => shareAndConfirm(listing.title, item, e.currentTarget)}
     />
   );
   if (listing.kind === 'event') {
@@ -305,9 +339,22 @@ function HeadTools({ listing }: { listing: Listing }) {
         <OverlayMenu
           icon="cal"
           label="Add to calendar"
+          action="calendar_menu"
           items={[
-            { label: 'Google Calendar', href: googleCalendarHref(listing) },
-            { label: 'Apple or Outlook', onSelect: () => downloadIcs(listing) },
+            {
+              label: 'Google Calendar',
+              action: 'add_to_calendar_google',
+              href: googleCalendarHref(listing),
+              onSelect: (from) => calendarAdded(listing, 'google', from),
+            },
+            {
+              label: 'Apple or Outlook',
+              action: 'add_to_calendar_ics',
+              onSelect: (from) => {
+                calendarAdded(listing, 'ics', from);
+                downloadIcs(listing);
+              },
+            },
           ]}
         />
       </>
@@ -320,8 +367,12 @@ function HeadTools({ listing }: { listing: Listing }) {
         <OverlayButton
           icon="cal"
           label="Remind me before it closes"
+          action="remind_me"
           href={deadlineCalendarHref(listing)}
-          onClick={confirmReminder}
+          onClick={(e) => {
+            calendarAdded(listing, 'deadline_reminder', e.currentTarget);
+            confirmReminder();
+          }}
         />
       )}
     </>
@@ -330,26 +381,48 @@ function HeadTools({ listing }: { listing: Listing }) {
 
 function Sidebar({ listing }: { listing: Listing }) {
   const event = listing.kind === 'event';
+  const item = itemRef.listing(listing);
   return (
     <ActionCard>
-      <PrimaryLink href={listing.url}>
+      <PrimaryLink
+        href={listing.url}
+        item={item}
+        cta={event ? 'get_ticket' : 'apply_now'}
+      >
         {event ? 'Get ticket' : 'Apply now'}
       </PrimaryLink>
       <div className="mt-3 grid grid-cols-2 gap-2 [&>:last-child:nth-child(odd)]:col-span-2">
         {event && (
-          <SmallButton href={googleCalendarHref(listing)}>
+          <SmallButton
+            href={googleCalendarHref(listing)}
+            action="add_to_calendar_google"
+            onClick={(e) => calendarAdded(listing, 'google', e.currentTarget)}
+          >
             Google Calendar
           </SmallButton>
         )}
         {event && (
-          <SmallButton onClick={() => downloadIcs(listing)}>
+          <SmallButton
+            onClick={(e) => {
+              calendarAdded(listing, 'ics', e.currentTarget);
+              downloadIcs(listing);
+            }}
+            action="add_to_calendar_ics"
+          >
             Apple or Outlook
           </SmallButton>
         )}
-        <SmallButton href={paths.category(slugify(listing.category))}>
+        <SmallButton
+          href={paths.category(slugify(listing.category))}
+          action="find_similar"
+          onClick={(e) => track('find_similar_clicked', item, e.currentTarget)}
+        >
           Find similar
         </SmallButton>
-        <SmallButton onClick={() => shareAndConfirm(listing.title)}>
+        <SmallButton
+          action="share"
+          onClick={(e) => shareAndConfirm(listing.title, item, e.currentTarget)}
+        >
           Share
         </SmallButton>
         <AskAIMenu kind={listing.kind} title={listing.title}>

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { area, context, track } from '../lib/analytics';
 import { useIsPhone } from '../lib/media';
 import { DesktopTilesProvider } from '../lib/rowLayout';
 import { useStore } from '../lib/store';
@@ -81,14 +82,14 @@ export function FeedBody<T>({
 
   if (filtered) {
     return (
-      <>
+      <div {...area('results')}>
         <TileGrid>
           {paged.items.map((i) => (
             <div key={keyOf(i)}>{row(i)}</div>
           ))}
         </TileGrid>
         <PagedListPager paged={paged} total={items.length} noun={noun[1]} />
-      </>
+      </div>
     );
   }
 
@@ -123,7 +124,12 @@ export function FeedBody<T>({
         const groupMax = phone ? PHONE_GROUP_MAX : WEB_GROUP_MAX;
         const extra = group.length - groupMax;
         return (
-          <section key={view.id} className="mt-10 md:mt-16">
+          <section
+            key={view.id}
+            className="mt-10 md:mt-16"
+            {...area('time_group')}
+            {...context({ view: view.id })}
+          >
             <GroupHeading
               title={view.label}
               count={group.length}
@@ -137,6 +143,11 @@ export function FeedBody<T>({
                         type: null,
                         page: null,
                       }),
+                      onClick: () =>
+                        track('view_more_clicked', {
+                          view: view.id,
+                          hidden: extra,
+                        }),
                     }
                   : undefined
               }
@@ -158,7 +169,8 @@ interface PagedList<T> {
   pages: number;
   items: T[];
   phone: boolean;
-  more: (() => void) | null;
+  /** Grows the list by a page, from the element that asked for it. */
+  more: ((from: Element) => void) | null;
 }
 
 function LeadRailSection<T>({
@@ -176,7 +188,11 @@ function LeadRailSection<T>({
 }) {
   const [page, setPage] = useState(1);
   return (
-    <section className={className}>
+    <section
+      className={className}
+      {...area('lead_rail')}
+      {...context({ rail: rail.title })}
+    >
       <GroupHeading title={rail.title} count={rail.items.length} />
       <div className="md:hidden">
         <Rail swipe={lead}>{rail.items.map(card)}</Rail>
@@ -211,7 +227,17 @@ export function usePagedList<T>(items: T[], size = PAGE_SIZE): PagedList<T> {
     return { page, pages, items: pageOf(items, page, size), phone, more: null };
   const more =
     count < items.length
-      ? () => setLoaded({ identity, count: count + size })
+      ? (from: Element) => {
+          track(
+            'list_extended',
+            {
+              shown: Math.min(count + size, items.length),
+              total: items.length,
+            },
+            from,
+          );
+          setLoaded({ identity, count: count + size });
+        }
       : null;
   return { page: 1, pages, items: items.slice(0, count), phone, more };
 }
@@ -284,7 +310,7 @@ function GroupHeading({
 }: {
   title: string;
   count?: number;
-  more?: { label: string; aria: string; href: string };
+  more?: { label: string; aria: string; href: string; onClick?: () => void };
 }) {
   return (
     <header className="mb-2 flex items-baseline justify-between gap-4 md:mb-6">
@@ -295,6 +321,7 @@ function GroupHeading({
       {more && (
         <Link
           href={more.href}
+          onClick={more.onClick}
           aria-label={more.aria}
           className="text-fg-3 hover:text-fg flex shrink-0 items-center gap-0.5 text-[15px]"
         >
@@ -336,13 +363,17 @@ export function FilterLine({
     <div
       ref={line}
       className="md:border-line md:h-filters hidden md:flex md:items-center md:justify-between md:gap-6 md:border-b"
+      {...area('filters')}
     >
       <div className="flex items-baseline gap-5">
         {summary}
         {onClear && (
           <button
             type="button"
-            onClick={onClear}
+            onClick={(e) => {
+              track('filters_cleared', {}, e.currentTarget);
+              onClear();
+            }}
             className="text-fg-2 hover:text-fg text-base"
           >
             Clear filters
@@ -441,7 +472,10 @@ export function MoreFilters({
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((o) => !o)}
+        onClick={(e) => {
+          if (!open) track('filters_opened', {}, e.currentTarget);
+          setOpen(!open);
+        }}
         className="bg-btn hover:bg-btn-hover flex h-11 items-center gap-2 rounded-md px-4 text-base font-semibold whitespace-nowrap"
       >
         <Icon name="filter" className="h-4 w-4" />

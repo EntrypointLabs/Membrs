@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { track } from '../lib/analytics';
 import { useDialog } from '../lib/focus';
 import { BACKDROP_MOTION, SHEET_MOTION } from '../lib/motion';
 import { titleCase } from '../lib/text';
@@ -19,7 +20,11 @@ interface ModalProps {
  */
 export function Modal({ title, onClose, children, wide = false }: ModalProps) {
   const panel = useRef<HTMLDivElement>(null);
-  useDialog(panel, onClose);
+  const close = (method: 'escape' | 'backdrop' | 'button') => {
+    track('modal_closed', { modal: title, method });
+    onClose();
+  };
+  useDialog(panel, () => close('escape'));
 
   useEffect(() => {
     const overflow = document.body.style.overflow;
@@ -36,7 +41,7 @@ export function Modal({ title, onClose, children, wide = false }: ModalProps) {
       <button
         type="button"
         aria-label="Close"
-        onClick={onClose}
+        onClick={() => close('backdrop')}
         className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${BACKDROP_MOTION}`}
       />
       <div
@@ -55,7 +60,7 @@ export function Modal({ title, onClose, children, wide = false }: ModalProps) {
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => close('button')}
             aria-label="Close"
             className="bg-btn hover:bg-btn-hover grid h-9 w-9 place-items-center rounded-md"
           >

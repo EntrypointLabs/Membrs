@@ -1,4 +1,5 @@
-import { Component, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { context, reportError } from '../lib/analytics';
 import { NotFoundScreen } from '../screens/NotFoundScreen';
 
 interface ErrorBoundaryProps {
@@ -20,6 +21,13 @@ export class ErrorBoundary extends Component<
     return { failedAt: '' };
   }
 
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    reportError(error, {
+      boundary: 'page',
+      component_stack: info.componentStack ?? null,
+    });
+  }
+
   static getDerivedStateFromProps(
     props: ErrorBoundaryProps,
     state: ErrorBoundaryState,
@@ -37,6 +45,7 @@ export class ErrorBoundary extends Component<
         <button
           type="button"
           onClick={() => this.setState({ failedAt: null })}
+          {...context({ action: 'retry_after_error' })}
           className="bg-btn hover:bg-btn-hover inline-flex h-11 items-center rounded-md px-5 font-bold"
         >
           Try again

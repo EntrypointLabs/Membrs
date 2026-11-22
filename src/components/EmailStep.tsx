@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Input } from '@/components/ui/input';
-import { readerKnown, sessionStore, startReaderSession } from '../lib/auth';
+import { track, type SignInPlacement } from '../lib/analytics';
+import {
+  EmailNotAcceptedError,
+  readerKnown,
+  sessionStore,
+  startReaderSession,
+} from '../lib/auth';
 import { isValidEmail } from '../lib/email';
 import { messageOf } from '../lib/http';
 import { useStore } from '../lib/store';
@@ -12,7 +18,7 @@ import { toast } from '../lib/ui';
  * `ensureKnown` starts one from the typed address before the feature carries
  * on, so the reader is only ever asked once.
  */
-export function useReaderEmail(initial = '') {
+export function useReaderEmail(placement: SignInPlacement, initial = '') {
   const known = readerKnown(useStore(sessionStore));
   const [email, setEmail] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -20,10 +26,17 @@ export function useReaderEmail(initial = '') {
   async function ensureKnown(address = email): Promise<boolean> {
     if (readerKnown(sessionStore.get())) return true;
     setBusy(true);
+    track('sign_in_started', { provider: 'email', placement });
     try {
       await startReaderSession(address);
       return true;
     } catch (error) {
+      track('sign_in_failed', {
+        provider: 'email',
+        reason:
+          error instanceof EmailNotAcceptedError ? 'not_accepted' : 'error',
+        placement,
+      });
       toast(messageOf(error, 'We could not use that email. Please try again.'));
       return false;
     } finally {
@@ -77,13 +90,16 @@ export function ReaderEmailField({
 export function EmailStep({
   actionLabel,
   onContinue,
+  placement,
   inputClassName = '',
 }: {
   actionLabel: string;
   onContinue: () => void;
+  placement: SignInPlacement;
   inputClassName?: string;
 }) {
-  const { email, setEmail, busy, ready, ensureKnown } = useReaderEmail();
+  const { email, setEmail, busy, ready, ensureKnown } =
+    useReaderEmail(placement);
 
   async function submit(event: FormEvent) {
     event.preventDefault();

@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useState } from 'react';
+import { area, context } from '../lib/analytics';
 import { attendable, readerCountryStore } from '../lib/api';
 import { readerPlaceOf } from '../lib/africa';
 import { cityStore } from '../lib/preferences';
@@ -45,6 +46,7 @@ export function LocalShelves({ shelves }: { shelves: HomeShelf[] }) {
             title={shelf.title}
             items={shelf.items}
             aside={shelf.about}
+            areaName="home_shelf"
           />
           <Shelf shelf={shelf} aside className="max-md:hidden" />
         </Fragment>
@@ -108,7 +110,11 @@ function Shelf({
       ? shelf.items
       : shelf.items.filter((l) => l.category === category);
   return (
-    <section className={`mt-12 md:mt-[clamp(140px,11vw,200px)] ${className}`}>
+    <section
+      className={`mt-12 md:mt-[clamp(140px,11vw,200px)] ${className}`}
+      {...area('home_shelf')}
+      {...context({ shelf: shelf.id })}
+    >
       <SectionHeader
         title={shelf.title}
         body={aside ? undefined : shelf.about}

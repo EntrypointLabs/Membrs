@@ -1,3 +1,4 @@
+import { itemRef, trackItemOpened } from '../lib/analytics';
 import { openStateNow } from '../lib/hours';
 import { paths } from '../lib/router';
 import type { Place } from '../lib/types';
@@ -34,5 +35,12 @@ export function PlaceCard({
   place: Place;
   mixed?: boolean;
 }) {
-  return <MediaCard {...placeFace(place, mixed)} />;
+  return (
+    <MediaCard
+      {...placeFace(place, mixed)}
+      onClick={(e) =>
+        trackItemOpened(e.currentTarget, itemRef.place(place), 'card')
+      }
+    />
+  );
 }

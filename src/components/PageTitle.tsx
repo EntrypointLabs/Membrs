@@ -1,3 +1,4 @@
+import { track } from '../lib/analytics';
 import { categoryStyle } from './CategoryLabel';
 import { HeadingCount } from './HeadingCount';
 import { Icon } from './Icon';
@@ -38,7 +39,17 @@ export function PageTitle({
   const body = (
     <>
       {sectionHref ? (
-        <Link href={sectionHref} className="hover:text-accent">
+        <Link
+          href={sectionHref}
+          onClick={() =>
+            track('breadcrumb_clicked', {
+              label: section,
+              href: sectionHref,
+              depth: 1,
+            })
+          }
+          className="hover:text-accent"
+        >
           {section}
         </Link>
       ) : (

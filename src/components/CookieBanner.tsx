@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { area, track } from '../lib/analytics';
 import {
   acceptAll,
   cookieStore,
@@ -38,6 +39,7 @@ export function CookieBanner() {
   return (
     <section
       aria-label="Cookie notice"
+      {...area('cookie_banner')}
       className={`bg-inv text-inv-fg fixed right-3 bottom-[calc(84px+env(safe-area-inset-bottom,0px))] left-3 z-40 rounded-lg p-3 shadow-2xl md:right-auto md:bottom-6 md:left-6 md:w-[420px] md:p-5 ${typing ? 'max-md:hidden' : ''}`}
     >
       <h2 className="mb-1.5 hidden text-[17px] font-bold md:block">
@@ -55,7 +57,15 @@ export function CookieBanner() {
       <div className="mt-2.5 flex gap-2 md:mt-0 md:flex-wrap">
         <button
           type="button"
-          onClick={rejectOptional}
+          onClick={() => {
+            rejectOptional();
+            track('cookie_consent_updated', {
+              analytics: false,
+              marketing: false,
+              method: 'reject_optional',
+              placement: 'banner',
+            });
+          }}
           className={`border-inv-line flex-1 border ${button}`}
         >
           <span className="md:hidden">Reject</span>
@@ -63,7 +73,15 @@ export function CookieBanner() {
         </button>
         <button
           type="button"
-          onClick={acceptAll}
+          onClick={() => {
+            acceptAll();
+            track('cookie_consent_updated', {
+              analytics: true,
+              marketing: true,
+              method: 'accept_all',
+              placement: 'banner',
+            });
+          }}
           className={`bg-inv-fg text-inv flex-1 ${button}`}
         >
           <span className="md:hidden">Accept</span>
@@ -135,19 +153,31 @@ export function CookieSettings() {
         label="Analytics"
         detail="Aggregated stats on which pages and listings are useful. Never used for ads."
         on={analytics}
-        onChange={setAnalytics}
+        onChange={(on) => {
+          track('cookie_toggle_changed', { category: 'analytics', on });
+          setAnalytics(on);
+        }}
       />
       <Switch
         label="Marketing"
         detail="Measure our own campaigns on other sites. Advertisers on MEMBRS never track you."
         on={marketing}
-        onChange={setMarketing}
+        onChange={(on) => {
+          track('cookie_toggle_changed', { category: 'marketing', on });
+          setMarketing(on);
+        }}
       />
       <div className="mt-5 flex gap-2">
         <button
           type="button"
           onClick={() => {
             rejectOptional();
+            track('cookie_consent_updated', {
+              analytics: false,
+              marketing: false,
+              method: 'reject_optional',
+              placement: 'settings',
+            });
             closeOverlay();
           }}
           className="border-line-2 flex-1 rounded-md border py-3 font-bold"
@@ -158,6 +188,12 @@ export function CookieSettings() {
           type="button"
           onClick={() => {
             saveChoice(analytics, marketing);
+            track('cookie_consent_updated', {
+              analytics,
+              marketing,
+              method: 'save_choices',
+              placement: 'settings',
+            });
             closeOverlay();
           }}
           className="bg-fg text-bg flex-1 rounded-md py-3 font-bold"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { area, track } from '../lib/analytics';
 import { useDialog } from '../lib/focus';
 import { chooseCity } from '../lib/location';
 import { sessionStore } from '../lib/auth';
@@ -34,7 +35,7 @@ function useInverseTheme(): 'light' | 'dark' {
 export function PreferencesModal() {
   const inverse = useInverseTheme();
   const account = useStore(sessionStore)?.account;
-  const reader = useReaderEmail();
+  const reader = useReaderEmail('preferences');
   const joined = useStore(subscriptionStore);
   const savedCity = useStore(cityStore);
   const [city, setCity] = useState(savedCity);
@@ -75,6 +76,14 @@ export function PreferencesModal() {
       toast('Enter your email to save your digest.');
       return;
     }
+    const interests = interestsStore.get();
+    track('digest_saved', {
+      city,
+      interests,
+      interests_count: interests.length,
+      first_time: !editing,
+      queued: delivery === 'queued',
+    });
     chooseCity(city);
     subscriptionStore.set({ email, city });
     closeOverlay();
@@ -89,6 +98,7 @@ export function PreferencesModal() {
   }
 
   function skip() {
+    track('digest_skipped', { first_time: !editing });
     closeOverlay();
     if (!editing) toast("You're in. Digest settings are in the footer.");
   }
@@ -108,6 +118,7 @@ export function PreferencesModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="prefs-title"
+        {...area('preferences_modal')}
         className={`bg-panel text-fg relative max-h-[94dvh] w-full overflow-auto rounded-t-lg px-5 pt-8 pb-6 shadow-2xl outline-none md:w-[min(620px,100%)] md:rounded-lg md:px-10 md:pt-9 ${SHEET_MOTION}`}
       >
         <h2

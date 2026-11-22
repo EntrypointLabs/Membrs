@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import photos from '../generated/photos.json';
+import { track } from '../lib/analytics';
 import { tagFill } from '../lib/palette';
 import { Icon } from './Icon';
 
@@ -47,6 +48,16 @@ interface PhotoProps {
   cover?: { title: string; tag: string };
 }
 
+/** Where an organiser's image is hosted, or null when it is served by us. */
+function hostOf(url: string): string | null {
+  try {
+    const { host } = new URL(url, window.location.href);
+    return host && host !== window.location.host ? host : null;
+  } catch {
+    return null;
+  }
+}
+
 function srcSet(id: string, widths: number[], format: 'avif' | 'webp'): string {
   return widths.map((w) => `/images/${id}-${w}.${format} ${w}w`).join(', ');
 }
@@ -79,7 +90,14 @@ export function Photo({
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
+          onError={(e) => {
+            track(
+              'image_failed',
+              { photo: id, src_host: hostOf(src) },
+              e.currentTarget,
+            );
+            setFailed(true);
+          }}
           className="h-full w-full object-cover"
         />
       </div>

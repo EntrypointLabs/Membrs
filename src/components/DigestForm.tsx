@@ -1,3 +1,4 @@
+import { track } from '../lib/analytics';
 import { forgetEmail, sessionStore } from '../lib/auth';
 import { subscriptionStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
@@ -19,7 +20,10 @@ export function DigestForm() {
   const settings = (
     <button
       type="button"
-      onClick={openDigest}
+      onClick={() => {
+        track('digest_opened', { placement: 'footer_edit' });
+        openDigest();
+      }}
       aria-label="Edit your city and interests"
       title="Edit your city and interests"
       className="border-inv-fg-3 hover:border-brand hover:bg-brand grid h-[50px] w-[52px] shrink-0 place-items-center rounded-md border-[1.5px] transition-colors hover:text-white"
@@ -65,7 +69,10 @@ export function DigestForm() {
       <div>
         <button
           type="button"
-          onClick={openDigest}
+          onClick={() => {
+            track('digest_opened', { placement: 'footer_finish' });
+            openDigest();
+          }}
           className="bg-brand hover:bg-brand-hover h-[50px] w-full rounded-md px-5 text-[15px] font-bold text-white"
         >
           Choose your city and interests
@@ -78,7 +85,11 @@ export function DigestForm() {
     <div className="grid w-full gap-3">
       <EmailStep
         actionLabel="Get the weekly email"
-        onContinue={openDigest}
+        onContinue={() => {
+          track('digest_opened', { placement: 'footer_email' });
+          openDigest();
+        }}
+        placement="footer"
         inputClassName="border-inv-fg-3/50 text-inv-fg placeholder:text-inv-fg-3 bg-transparent dark:bg-transparent"
       />
       <p className="text-inv-fg-2 text-sm">Free every week.</p>

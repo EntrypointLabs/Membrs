@@ -1,14 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { Icon } from './Icon';
 
-export function ScrollMore({ more }: { more: (() => void) | null }) {
+/** Calls `more` with its own element, so the caller can tell where it was. */
+export function ScrollMore({
+  more,
+}: {
+  more: ((from: Element) => void) | null;
+}) {
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = end.current;
     if (!node || !more) return;
     const watcher = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) more();
+        if (entries.some((e) => e.isIntersecting)) more(node);
       },
       { rootMargin: '600px 0px' },
     );
