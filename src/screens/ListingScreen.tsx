@@ -12,7 +12,7 @@ import { toast } from '../lib/ui';
 import { rememberViewed } from '../lib/viewed';
 import { daysLeftLine, distinctParts, slugify, sourceName } from '../lib/text';
 import type { EventListing, Listing, OpportunityListing } from '../lib/types';
-import { ListingCard, shownPrice } from '../components/ListingCard';
+import { ListingCard, priceKnown, shownPrice } from '../components/ListingCard';
 import { Icon } from '../components/Icon';
 import { Rail } from '../components/Rail';
 import { SectionHeader } from '../components/SectionHeader';
@@ -103,7 +103,9 @@ export function ListingScreen({ id }: { id: string }) {
                   listing.kind === 'event'
                     ? listing.free
                       ? 'Free'
-                      : shownPrice(listing) && 'Paid'
+                      : priceKnown(listing)
+                        ? 'Paid'
+                        : ''
                     : listing.mode,
                 ].filter(Boolean),
               ),
@@ -248,7 +250,7 @@ function EventFacts({ e }: { e: EventListing }) {
       {shownPrice(e) && (
         <Fact label="Price">
           <p className="font-semibold">{shownPrice(e)}</p>
-          {!e.free && e.source.trim() && (
+          {!e.free && priceKnown(e) && e.source.trim() && (
             <p className="text-fg-3 text-[15px]">
               Sold by {sourceName(e.source)}
             </p>

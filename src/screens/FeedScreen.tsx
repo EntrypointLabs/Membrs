@@ -29,7 +29,7 @@ import { setSearchParams } from '../lib/router';
 import type { Listing } from '../lib/types';
 import { EVENT_VIEWS, OPPORTUNITY_VIEWS, findView } from '../lib/views';
 import { FeedPicker } from '../components/FeedPicker';
-import { ListingCard, shownPrice } from '../components/ListingCard';
+import { ListingCard, priceKnown } from '../components/ListingCard';
 import { ListingRow } from '../components/ListingRow';
 import { Select } from '../components/Select';
 import { TitleBar } from '../components/TitleBar';
@@ -58,7 +58,7 @@ function facetsFor(kind: Listing['kind']): Facet[] {
       cityFacet,
       viewFacet('When', EVENT_VIEWS),
       modeFacet,
-      budgetFacet((l) => l.kind === 'event' && Boolean(shownPrice(l))),
+      budgetFacet((l) => l.kind === 'event' && priceKnown(l)),
       ...where,
     ];
   }

@@ -4,7 +4,7 @@ import listingsFixture from '../fixtures/listings.json';
 import { closesLine } from '../lib/dates';
 import { priceText } from '../lib/text';
 import type { EventListing, Listing, OpportunityListing } from '../lib/types';
-import { ListingCard, shownPrice } from './ListingCard';
+import { ListingCard, priceKnown, shownPrice } from './ListingCard';
 
 describe('ListingCard', () => {
   const samples = listingsFixture as Listing[];
@@ -18,15 +18,21 @@ describe('ListingCard', () => {
     expect(html).toContain(shownPrice(event));
   });
 
-  it('leaves out a price the source never gave', () => {
+  it('says tickets are coming when an event has no price yet', () => {
     const unknown = { ...event, price: 'See site' } as typeof event;
+    const html = renderToStaticMarkup(<ListingCard listing={unknown} />);
+    expect(html).not.toContain('See site');
+    expect(html).toContain('Tickets soon');
+    expect(shownPrice(unknown)).toBe('Tickets soon');
+    expect(priceKnown(unknown)).toBe(false);
+  });
+
+  it('leaves out an award the source never gave', () => {
     const brief = { ...opportunity, award: 'See brief' };
-    expect(
-      renderToStaticMarkup(<ListingCard listing={unknown} />),
-    ).not.toContain('See site');
-    expect(renderToStaticMarkup(<ListingCard listing={brief} />)).not.toContain(
-      'See brief',
-    );
+    const html = renderToStaticMarkup(<ListingCard listing={brief} />);
+    expect(html).not.toContain('See brief');
+    expect(html).not.toContain('Tickets soon');
+    expect(shownPrice(brief)).toBe('');
   });
 
   it('shows the deadline and award for an opportunity', () => {

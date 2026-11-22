@@ -16,9 +16,19 @@ export function priceOf(listing: Listing): string {
 
 const UNKNOWN_PRICES: ReadonlySet<string> = new Set(['See site', 'See brief']);
 
+/** Whether the source gave a real price or award, rather than a pointer to its site. */
+export function priceKnown(listing: Listing): boolean {
+  return !UNKNOWN_PRICES.has(priceOf(listing));
+}
+
+/**
+ * The price shown on a listing. An event whose source has no price yet still
+ * says so, because a blank looks like a missing field; an opportunity without
+ * an award shows nothing.
+ */
 export function shownPrice(listing: Listing): string {
-  const price = priceOf(listing);
-  return UNKNOWN_PRICES.has(price) ? '' : priceText(price);
+  if (priceKnown(listing)) return priceText(priceOf(listing));
+  return listing.kind === 'event' ? 'Tickets soon' : '';
 }
 
 interface ListingCardProps {
