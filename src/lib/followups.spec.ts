@@ -75,3 +75,29 @@ describe('defaults', () => {
     expect(digestFields(defaults, [])).toEqual([]);
   });
 });
+
+describe('interestPicks', () => {
+  it('keeps the first four event and opportunity picks and every place', () => {
+    const picks = interestPicks([
+      'Music',
+      'Nightlife',
+      'Tech',
+      'Comedy',
+      'Festivals',
+      'Grants',
+      'Fellowships',
+      'Scholarships',
+      'Jobs',
+      'Internships',
+      'Beaches',
+      'Parks & gardens',
+      'Museums & galleries',
+      'Libraries',
+    ]);
+    expect(
+      picks.filter((p) => p.kind === 'event').map((p) => p.category),
+    ).toEqual(['Music', 'Nightlife', 'Tech', 'Comedy']);
+    expect(picks.filter((p) => p.kind === 'opportunity')).toHaveLength(4);
+    expect(picks.filter((p) => p.kind === 'place')).toHaveLength(4);
+  });
+});

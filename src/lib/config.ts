@@ -1,3 +1,5 @@
+import type { RemoteInterestPick } from './remote';
+
 /**
  * Base URL for the membrs API. Every listing, place and promo comes from it;
  * with it empty the app shows no listings rather than sample data.
@@ -23,6 +25,12 @@ export const GRID_COLUMNS = 4;
 export const PAGE_SIZE = GRID_COLUMNS * 3;
 
 export const POPULAR_SIZE = PAGE_SIZE * 3;
+
+export const MAX_PICKS_PER_KIND = 4;
+export const CAPPED_KINDS: readonly RemoteInterestPick['kind'][] = [
+  'event',
+  'opportunity',
+];
 
 /** Where a reader is assumed to be until they share a location or pick a city. */
 export const DEFAULT_CITY = 'Lagos';

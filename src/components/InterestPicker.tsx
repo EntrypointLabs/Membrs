@@ -8,6 +8,8 @@ import {
   placeLabel,
   readerPlaceOf,
 } from '../lib/africa';
+import { CAPPED_KINDS, MAX_PICKS_PER_KIND } from '../lib/config';
+import type { RemoteInterestPick } from '../lib/remote';
 import { shown } from '../lib/sections';
 import { asksField, FIELD_QUESTION, FIELDS } from '../lib/followups';
 import {
@@ -31,19 +33,22 @@ export function Chip({
   children,
   invalid = false,
   mark = true,
+  disabled = false,
 }: {
   on: boolean;
   onClick: () => void;
   children: string;
   invalid?: boolean;
   mark?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-pressed={on}
+      disabled={disabled}
       onClick={onClick}
-      className={`flex h-10 items-center gap-2 rounded-sm border px-3.5 text-[15px] font-medium transition-[color,background-color,border-color,scale] duration-150 ease-out active:scale-[0.97] ${
+      className={`flex h-10 items-center gap-2 rounded-sm border px-3.5 text-[15px] font-medium transition-[color,background-color,border-color,scale] duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 ${
         on
           ? 'bg-brand border-brand text-white'
           : `hover:bg-soft text-fg ${invalid ? 'border-urgent/60' : 'border-line-2'}`
@@ -89,25 +94,39 @@ export function PreferenceAccordions({
     const on = names.filter((n) => picked.includes(n));
     return on.length ? on.join(', ') : '';
   };
-  const chips = (names: string[]) => (
-    <div className="flex flex-wrap gap-2">
-      {names.map((n) => (
-        <Chip
-          key={n}
-          on={picked.includes(n)}
-          onClick={() => {
-            track('interest_toggled', {
-              interest: n,
-              selected: !picked.includes(n),
-            });
-            toggleInterest(n);
-          }}
-        >
-          {n}
-        </Chip>
-      ))}
-    </div>
-  );
+  const chips = (names: string[], kind: RemoteInterestPick['kind']) => {
+    const capped = CAPPED_KINDS.includes(kind);
+    const full =
+      capped &&
+      names.filter((n) => picked.includes(n)).length >= MAX_PICKS_PER_KIND;
+    return (
+      <>
+        {capped && (
+          <p className="text-fg-3 mb-3 text-sm">
+            Pick up to {MAX_PICKS_PER_KIND}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {names.map((n) => (
+            <Chip
+              key={n}
+              on={picked.includes(n)}
+              disabled={full && !picked.includes(n)}
+              onClick={() => {
+                track('interest_toggled', {
+                  interest: n,
+                  selected: !picked.includes(n),
+                });
+                toggleInterest(n);
+              }}
+            >
+              {n}
+            </Chip>
+          ))}
+        </div>
+      </>
+    );
+  };
   return (
     <div className="flex flex-col gap-4">
       <Accordion
@@ -132,7 +151,7 @@ export function PreferenceAccordions({
         open={open === 'event'}
         onToggle={() => openSection('event')}
       >
-        {chips(offered.event)}
+        {chips(offered.event, 'event')}
       </Accordion>
       <Accordion
         title="Opportunities"
@@ -140,7 +159,7 @@ export function PreferenceAccordions({
         open={open === 'opportunity'}
         onToggle={() => openSection('opportunity')}
       >
-        {chips(offered.opportunity)}
+        {chips(offered.opportunity, 'opportunity')}
         {asksField(picked) && <FieldBlock />}
       </Accordion>
       {shown('places') && (
@@ -150,7 +169,7 @@ export function PreferenceAccordions({
           open={open === 'place'}
           onToggle={() => openSection('place')}
         >
-          {chips(offered.place)}
+          {chips(offered.place, 'place')}
         </Accordion>
       )}
     </div>

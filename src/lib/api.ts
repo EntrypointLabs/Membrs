@@ -1,4 +1,10 @@
-import { API_BASE, DEFAULT_COUNTRY, GRID_COLUMNS } from './config';
+import {
+  API_BASE,
+  CAPPED_KINDS,
+  DEFAULT_COUNTRY,
+  GRID_COLUMNS,
+  MAX_PICKS_PER_KIND,
+} from './config';
 import { authorizedFetch, sessionStore } from './auth';
 import { shown } from './sections';
 import {
@@ -400,13 +406,24 @@ export interface DigestSignup {
   fields?: string[];
 }
 
+/**
+ * The server refuses more than MAX_PICKS_PER_KIND event or opportunity
+ * interests, so picks saved on this device before the cap existed are trimmed
+ * to the first ones rather than failing the whole save.
+ */
 export function interestPicks(labels: string[]): RemoteInterestPick[] {
   const groups = fixtures.taxonomy.onboardingInterests;
   const kinds = Object.keys(groups) as RemoteInterestPick['kind'][];
-  return labels.flatMap((category) => {
+  const picks = labels.flatMap((category) => {
     const kind = kinds.find((k) => groups[k].includes(category));
     return kind ? [{ kind, category }] : [];
   });
+  return picks.filter(
+    (pick, i) =>
+      !CAPPED_KINDS.includes(pick.kind) ||
+      picks.slice(0, i).filter((p) => p.kind === pick.kind).length <
+        MAX_PICKS_PER_KIND,
+  );
 }
 
 const DIGEST_FREQUENCY = 'weekly';
