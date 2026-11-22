@@ -63,9 +63,11 @@ export function CategoryTiles({
             <span className="block text-xl font-semibold md:text-2xl">
               {c.name}
             </span>
-            <span className="text-sm text-white/80">
-              {plural(c.count, kind === 'event' ? 'event' : 'opening')}
-            </span>
+            {c.count > 0 && (
+              <span className="text-sm text-white/80">
+                {plural(c.count, kind === 'event' ? 'event' : 'opening')}
+              </span>
+            )}
           </span>
         </Link>
       ))}

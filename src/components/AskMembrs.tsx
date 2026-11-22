@@ -664,6 +664,7 @@ function Composer({
   error,
 }: ComposerProps) {
   const [text, setText] = useState('');
+  const [unsent, setUnsent] = useState('');
   const field = useRef<HTMLTextAreaElement>(null);
   const left = MAX_MESSAGE_LENGTH - text.length;
   const phone = useIsPhone();
@@ -675,7 +676,10 @@ function Composer({
   async function send(value = text) {
     if (!value.trim() || busy || !allowed) return;
     setText('');
-    if (!(await onSend(value))) setText((current) => current || value);
+    setUnsent('');
+    if (await onSend(value)) return;
+    setText((current) => current || value);
+    setUnsent(value);
   }
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -695,12 +699,25 @@ function Composer({
       className={`shrink-0 px-3 pt-1 pb-3 max-md:p-0 ${PHONE_PILL_PLACE}`}
     >
       {error && (
-        <p
+        <div
           role="alert"
-          className="text-urgent mb-2 px-1 text-[13px] font-medium max-md:px-4"
+          className="mb-2 flex items-center justify-between gap-3 px-1 max-md:px-4"
         >
-          {error}
-        </p>
+          <p className="text-urgent text-[13px] font-medium">{error}</p>
+          {unsent && allowed && !busy && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                track('assistant_retry_clicked', {});
+                void send(unsent);
+              }}
+            >
+              Retry
+            </Button>
+          )}
+        </div>
       )}
       <motion.div
         layoutId={phone ? PHONE_PILL : undefined}

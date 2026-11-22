@@ -9,6 +9,7 @@ import {
   forYouStore,
   heroPicks,
   launchCities,
+  listings,
   attendable,
   mostPopular,
   places,
@@ -57,6 +58,8 @@ import { Select } from '../components/Select';
 import { Tabs } from '../components/Tabs';
 import { TitleBar } from '../components/TitleBar';
 import { CategoryTiles } from './CategoriesScreen';
+import { Empty } from './FeedLayout';
+import { cn } from '../lib/utils';
 import { PAGE_SIZE, POPULAR_SIZE } from '../lib/config';
 
 type Range = 'week' | 'month';
@@ -77,14 +80,20 @@ export function HomeScreen() {
   useLocationOnVisit();
   const phone = useIsPhone();
   const filters = useHomeFilters();
+  const listed = listings().length > 0;
 
   return (
     <div className="page">
       <h1 className="sr-only">MEMBRS</h1>
       <MobileTop city={city} />
       <div className="hidden md:block md:h-10" />
-      {filters.line}
-      {filters.results ? (
+      {listed && filters.line}
+      {!listed ? (
+        <>
+          <Empty />
+          <CategoriesSection />
+        </>
+      ) : filters.results ? (
         <>
           {filters.results}
           <CategoriesSection />
@@ -127,12 +136,23 @@ function WebSections() {
   const week = page.take(within(range === 'week' ? 7 : 30, weekKind));
   return (
     <>
-      <section className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:gap-12">
-        <div className="lg:top-bar self-start lg:sticky">
-          <HeroCarousel picks={picks} />
-        </div>
-        <MostPopular items={panel} />
-      </section>
+      {(picks.length > 0 || panel.length > 0) && (
+        <section
+          className={cn(
+            'mt-12 grid gap-8 xl:gap-12',
+            picks.length > 0 &&
+              panel.length > 0 &&
+              'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]',
+          )}
+        >
+          {picks.length > 0 && (
+            <div className="lg:top-bar self-start lg:sticky">
+              <HeroCarousel picks={picks} />
+            </div>
+          )}
+          <MostPopular items={panel} />
+        </section>
+      )}
       <PopularSection
         items={popular}
         kind={popularKind}

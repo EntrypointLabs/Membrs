@@ -93,12 +93,59 @@ describe('loadCatalogue', () => {
     mockFetch(() => {
       throw new TypeError('Failed to fetch');
     });
-    await api.loadCatalogue();
+    await api.loadCatalogue(new Date(), []);
     expect(api.catalogueStore.get().status).toBe('failed');
     mockFetch(() => json([upcoming({ ...listingsFixture[0]!, id: 'again' })]));
-    await api.loadCatalogue();
+    await api.loadCatalogue(new Date(), []);
     expect(api.catalogueStore.get().status).toBe('ready');
     expect(api.listings().map((l) => l.id)).toEqual(['again']);
+  });
+
+  it('retries a down API with backoff and stays loading meanwhile', async () => {
+    const { api } = await live();
+    let calls = 0;
+    const listing = upcoming({ ...listingsFixture[0]!, id: 'late' });
+    mockFetch(() => (++calls < 3 ? json({}, 503) : json([listing])));
+    const seen: string[] = [];
+    api.catalogueStore.subscribe(() =>
+      seen.push(api.catalogueStore.get().status),
+    );
+    await api.loadCatalogue(new Date(), [1, 1, 1]);
+    expect(calls).toBe(3);
+    expect(seen).toEqual(['loading', 'ready']);
+    expect(api.listings().map((l) => l.id)).toEqual(['late']);
+  });
+
+  it('settles on failed once every retry has failed', async () => {
+    const { api } = await live();
+    const fetch = mockFetch(() => json({}, 500));
+    await api.loadCatalogue(new Date(), [1, 1]);
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(api.catalogueStore.get().status).toBe('failed');
+    expect(api.listings()).toHaveLength(0);
+  });
+
+  it('does not retry an answer a retry cannot change', async () => {
+    const { api } = await live();
+    const fetch = mockFetch(() => json({}, 404));
+    await api.loadCatalogue(new Date(), [1, 1]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(api.catalogueStore.get().status).toBe('failed');
+  });
+
+  it('joins a load already running instead of starting another', async () => {
+    const { api } = await live();
+    const fetch = mockFetch(() => json([]));
+    await Promise.all([api.loadCatalogue(), api.loadCatalogue()]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('is ready but empty when the API lists nothing', async () => {
+    const { api } = await live();
+    mockFetch(() => json([]));
+    await api.loadCatalogue();
+    expect(api.catalogueStore.get().status).toBe('ready');
+    expect(api.listings()).toHaveLength(0);
   });
 
   it('swaps in live listings, places and promos when shown', async () => {
@@ -165,7 +212,7 @@ describe('loadCatalogue', () => {
     mockFetch(() => {
       throw new TypeError('Failed to fetch');
     });
-    await api.loadCatalogue();
+    await api.loadCatalogue(new Date(), []);
     expect(api.listings()).toHaveLength(0);
     expect(api.places()).toHaveLength(0);
     expect(api.promos()).toHaveLength(0);
@@ -194,7 +241,7 @@ describe('loadCatalogue', () => {
         });
       return json({ data: { deals: [], total: 0, limit: 100, offset: 0 } });
     });
-    await api.loadCatalogue();
+    await api.loadCatalogue(new Date(), []);
     expect(api.listings()).toHaveLength(0);
     expect(api.places()).toHaveLength(0);
     expect(api.promos()).toHaveLength(0);

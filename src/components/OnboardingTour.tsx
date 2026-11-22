@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { track } from '../lib/analytics';
-import { refreshForReader } from '../lib/api';
+import { catalogueStore, listings, refreshForReader } from '../lib/api';
 import { useDialog } from '../lib/focus';
 import { locationChoiceStore, shareLocation } from '../lib/location';
 import { useIsPhone } from '../lib/media';
@@ -105,7 +105,10 @@ export function OnboardingTour() {
   useStore(tourSeenStore);
   useStore(sessionStore);
   const overlay = useStore(overlayStore);
-  if (!tourDue(overlay)) return null;
+  const { status } = useStore(catalogueStore);
+  // The tour points at shelves, so it waits for a catalogue that has some.
+  if (status !== 'ready' || !listings().length || !tourDue(overlay))
+    return null;
   return <Tour />;
 }
 

@@ -11,7 +11,14 @@ import {
 import { collapsedRuns } from './runs';
 import { distinctFamilies } from './families';
 import { createStore } from './store';
-import { apiFetch, dataOf, getData, getJson, newIdempotencyKey } from './http';
+import {
+  apiFetch,
+  dataOf,
+  getData,
+  getJson,
+  MembrsApiError,
+  newIdempotencyKey,
+} from './http';
 import { outboxStore, writeAsReader, type Delivery } from './outbox';
 import { search, type SearchHit } from './search';
 import {
@@ -588,14 +595,69 @@ async function loadVenues(now: Date): Promise<void> {
   settle(catalogueStore.get().status);
 }
 
-export async function loadCatalogue(now = new Date()): Promise<void> {
-  if (!API_BASE) return;
+/**
+ * How long to wait before each automatic retry of a failed catalogue load.
+ * A brief outage or a cold backend usually clears within these few seconds,
+ * so the reader sees the failure state only when the API stays down.
+ */
+export const CATALOGUE_RETRY_DELAYS_MS: readonly number[] = [1000, 3000, 9000];
+
+// A 4xx answer will not change on a retry, so only network errors, timeouts,
+// 5xx and rate limits are tried again.
+function worthRetrying(error: unknown): boolean {
+  return !(
+    error instanceof MembrsApiError &&
+    error.status < 500 &&
+    error.status !== 429
+  );
+}
+
+const wait = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+async function fetchCatalogue(
+  retryDelays: readonly number[],
+): Promise<Listing[]> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const listed = await fetchListings();
+      if (!Array.isArray(listed))
+        throw new TypeError('Listings were not a list');
+      return listed;
+    } catch (error) {
+      const delay = retryDelays[attempt];
+      if (delay === undefined || !worthRetrying(error)) throw error;
+      await wait(delay);
+    }
+  }
+}
+
+let loading: Promise<void> | null = null;
+
+/**
+ * Loads the catalogue, retrying with backoff before it settles on failed.
+ * A call while a load is already running joins it, so a Retry press during
+ * the boot load does not start a second one.
+ */
+export function loadCatalogue(
+  now = new Date(),
+  retryDelays: readonly number[] = CATALOGUE_RETRY_DELAYS_MS,
+): Promise<void> {
+  if (!API_BASE) return Promise.resolve();
+  loading ??= loadOnce(now, retryDelays).finally(() => {
+    loading = null;
+  });
+  return loading;
+}
+
+async function loadOnce(
+  now: Date,
+  retryDelays: readonly number[],
+): Promise<void> {
   settle('loading');
   if (shown('places') || shown('promos')) void loadVenues(now);
   let status: CatalogueStatus = 'ready';
   try {
-    const listed = await fetchListings();
-    if (!Array.isArray(listed)) throw new TypeError('Listings were not a list');
+    const listed = await fetchCatalogue(retryDelays);
     everyNight = stillOpen(listed.map(withSourcePhoto), now);
     catalogue = collapsedRuns(everyNight);
   } catch {

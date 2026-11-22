@@ -414,6 +414,7 @@ export function Tally({
   noun: [string, string];
   href?: string;
 }) {
+  if (!count) return null;
   const body = (
     <>
       <b className="text-5xl leading-none font-bold tracking-tight tabular-nums">

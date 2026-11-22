@@ -5,11 +5,17 @@ import { App } from './App';
 import { initAnalytics } from './lib/analytics';
 import { loadAccount, loadCatalogue } from './lib/api';
 import { flushOutbox } from './lib/outbox';
+import { keepServedListing } from './lib/served';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
 }
+
+keepServedListing(
+  rootElement,
+  window.location.pathname + window.location.search,
+);
 
 // The first pageview waits for the catalogue, so it can name the item a
 // detail page shows.

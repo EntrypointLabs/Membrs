@@ -11,12 +11,15 @@ import { cardTags, listingTags } from './Tags';
 /**
  * The vertical title straddles the card's right edge, half on the blue and
  * half outside it, so the rows only make room for the half that is inside.
+ * The card is never shorter than the title, so a short list cannot leave the
+ * title hanging below it.
  */
 export function MostPopular({ items }: { items: Listing[] }) {
+  if (!items.length) return null;
   return (
     <aside
       aria-labelledby="most-popular"
-      className="relative self-start"
+      className="relative flex flex-col self-start md:min-h-[calc(clamp(64px,5.2vw,92px)*6.2+32px)]"
       {...area('most_popular')}
     >
       <div className="pointer-events-none absolute top-4 right-[calc(clamp(64px,5.2vw,92px)*-0.41)] bottom-4 hidden md:block">
@@ -29,7 +32,7 @@ export function MostPopular({ items }: { items: Listing[] }) {
       </div>
       <RankedList
         items={items}
-        className="md:pr-[calc(clamp(64px,5.2vw,92px)*0.41+32px)]"
+        className="flex-1 content-start md:pr-[calc(clamp(64px,5.2vw,92px)*0.41+32px)]"
       />
     </aside>
   );

@@ -102,7 +102,7 @@ export function App() {
             {route.page === 'legal' || route.page === 'contribute' ? (
               <Screen route={route} />
             ) : (
-              <CatalogueGate>
+              <CatalogueGate route={route}>
                 <Screen route={route} />
               </CatalogueGate>
             )}
