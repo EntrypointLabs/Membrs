@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { navSection, parseRoute, paths } from './router';
+import { navSection, parseRoute, paths, searchHref } from './router';
 
 describe('parseRoute', () => {
   it.each([
@@ -23,6 +23,22 @@ describe('parseRoute', () => {
     expect(parseRoute('/contribute?kind=nope')).toEqual({
       page: 'contribute',
       kind: 'event',
+    });
+  });
+
+  it('reads the token from an unsubscribe link', () => {
+    expect(parseRoute(paths.unsubscribe('a b'))).toEqual({
+      page: 'unsubscribe',
+      token: 'a b',
+      notYou: false,
+    });
+  });
+
+  it('reads a not-you link as the opt-out for the whole address', () => {
+    expect(parseRoute(paths.notYou('t'))).toEqual({
+      page: 'unsubscribe',
+      token: 't',
+      notYou: true,
     });
   });
 
@@ -53,5 +69,21 @@ describe('navSection', () => {
     expect(navSection(parseRoute('/events/categories'))).toBe('events');
     expect(navSection(parseRoute('/opportunities'))).toBe('opportunities');
     expect(navSection(parseRoute('/privacy'))).toBeNull();
+  });
+});
+
+describe('searchHref', () => {
+  it('sets, replaces and clears query parameters on the given path', () => {
+    expect(
+      searchHref('/events?type=music&page=3', {
+        view: 'tonight',
+        type: null,
+        page: null,
+      }),
+    ).toBe('/events?view=tonight');
+  });
+
+  it('drops the query string when nothing is left', () => {
+    expect(searchHref('/events?view=tonight', { view: 'all' })).toBe('/events');
   });
 });

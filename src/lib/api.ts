@@ -1,9 +1,17 @@
-import { API_BASE } from './config';
+import { API_BASE, DEFAULT_COUNTRY, GRID_COLUMNS } from './config';
 import { authorizedFetch, sessionStore } from './auth';
 import { shown } from './sections';
-import { bySoonest, soonness, stillOpen } from './dates';
+import {
+  byPopularity,
+  bySoonest,
+  isComingSoon,
+  soonness,
+  stillOpen,
+} from './dates';
+import { collapsedRuns } from './runs';
+import { distinctFamilies } from './families';
 import { createStore } from './store';
-import { dataOf, getData, getJson, newIdempotencyKey } from './http';
+import { apiFetch, dataOf, getData, getJson, newIdempotencyKey } from './http';
 import { outboxStore, writeAsReader, type Delivery } from './outbox';
 import { search, type SearchHit } from './search';
 import {
@@ -35,6 +43,7 @@ import type {
   Promo,
   Taxonomy,
 } from './types';
+import { placeLabel, readerPlaceOf } from './africa';
 import categoriesFixture from '../fixtures/categories.json';
 import formsFixture from '../fixtures/contribute-forms.json';
 import taxonomyFixture from '../fixtures/taxonomy.json';
@@ -65,6 +74,7 @@ const fixtures = {
 export { MembrsApiError } from './http';
 
 let catalogue: Listing[] = [];
+let everyNight: Listing[] = [];
 let placeList: Place[] = [];
 let promoList: Promo[] = [];
 let categoryList: Category[] = recount(fixtures.categories, [], []);
@@ -134,8 +144,11 @@ export function searchSuggestions(): string[] {
 
 /* Lookups. */
 
-export function listingById(id: string): Listing | undefined {
-  return catalogue.find((l) => l.id === id);
+export function listingByKey(key: string): Listing | undefined {
+  return (
+    everyNight.find((l) => l.id === key) ??
+    everyNight.find((l) => l.slug === key)
+  );
 }
 
 export function placeById(id: string): Place | undefined {
@@ -156,7 +169,40 @@ export function categoryBySlug(slug: string): Category | undefined {
 export function feed(kind: Listing['kind'] | 'all' = 'all'): Listing[] {
   return catalogue
     .filter((l) => kind === 'all' || l.kind === kind)
-    .sort((a, b) => a.listedRank - b.listedRank || bySoonest(a, b));
+    .sort(byPopularity);
+}
+
+export const readerCountryStore = createStore<string>(
+  'membrs.readerCountry',
+  DEFAULT_COUNTRY,
+);
+
+/**
+ * Saves a place label such as "Lagos, Nigeria" as the reader's state and
+ * country. Answers false when the label names no African country, so the
+ * caller can fall back to what the catalogue says about that city.
+ */
+export function chooseReaderPlace(label: string): boolean {
+  const place = readerPlaceOf(label, readerCountryStore.get());
+  if (!place.country) return false;
+  cityStore.set(place.state || placeLabel(place));
+  readerCountryStore.set(place.country);
+  return true;
+}
+
+export function canAttend(listing: Listing): boolean {
+  const country = readerCountryStore.get();
+  return (
+    country === '' ||
+    listing.kind !== 'event' ||
+    listing.mode === 'Remote' ||
+    listing.country === '' ||
+    listing.country === country
+  );
+}
+
+export function attendable(): Listing[] {
+  return catalogue.filter(canAttend);
 }
 
 export function within(
@@ -166,10 +212,10 @@ export function within(
   if (kind === 'all') {
     return alternated(within(days, 'event'), within(days, 'opportunity'));
   }
-  return catalogue
+  return attendable()
     .filter((l) => l.kind === kind)
     .filter((l) => (l.kind === 'event' ? l.inDays : l.daysLeft) <= days)
-    .sort(bySoonest);
+    .sort(byPopularity);
 }
 
 export function alternated<T>(first: T[], second: T[]): T[] {
@@ -181,46 +227,52 @@ export function alternated<T>(first: T[], second: T[]): T[] {
   return mixed;
 }
 
-/** Open opportunities closing within `days`, nearest deadline first. */
 export function closingSoon(): Listing[] {
   return catalogue
     .filter((l) => l.kind === 'opportunity' && l.closingSoon)
-    .sort(bySoonest);
+    .sort(byPopularity);
 }
 
-/** Trending listings, used for the home page's Most Popular panel. */
 export function mostPopular(
   limit: number,
   skip: ReadonlySet<string> = new Set(),
+  kind: Listing['kind'] | 'all' = 'all',
 ): Listing[] {
-  const open = catalogue.filter((l) => !skip.has(l.id));
-  const trending = open.filter((l) => l.trending).sort(bySoonest);
-  const rest = open.filter((l) => !l.trending).sort(bySoonest);
-  return [...trending, ...rest].slice(0, limit);
+  if (kind === 'all') {
+    return alternated(
+      mostPopular(limit, skip, 'event'),
+      mostPopular(limit, skip, 'opportunity'),
+    ).slice(0, limit);
+  }
+  return distinctFamilies(
+    feed(kind).filter(
+      (l) => !skip.has(l.id) && isComingSoon(l) && canAttend(l),
+    ),
+    [],
+    limit,
+  );
 }
 
 const HERO_HORIZON_DAYS = 60;
 const FAR_OFF_DAYS = 365;
 
-export function heroPicks(limit = 3, pool: Listing[] = catalogue): Listing[] {
+export function heroPicks(
+  limit = 3,
+  pool: Listing[] = attendable(),
+): Listing[] {
   const events = pool.filter((l) => l.kind === 'event');
   const near = events
     .filter((l) => soonness(l) <= HERO_HORIZON_DAYS)
-    .sort(
-      (a, b) =>
-        Number(b.trending) - Number(a.trending) ||
-        bySoonest(a, b) ||
-        a.listedRank - b.listedRank,
-    );
+    .sort(byPopularity);
   const later = events
     .filter((l) => soonness(l) > HERO_HORIZON_DAYS)
-    .sort(bySoonest);
-  return [...near, ...later].slice(0, limit);
+    .sort(byPopularity);
+  return distinctFamilies([...near, ...later], [], limit);
 }
 
 export function similar(
   listing: Listing,
-  limit = 3,
+  limit = GRID_COLUMNS,
   pool: Listing[] = catalogue,
 ): Listing[] {
   const tier = (l: Listing) =>
@@ -232,12 +284,14 @@ export function similar(
     .slice(0, limit);
 }
 
+export const forYouStore = createStore<string[]>(null, []);
+
 export function forYou(
-  interests: readonly string[],
+  ids: readonly string[] = forYouStore.get(),
   pool: Listing[] = catalogue,
 ): Listing[] {
-  const picked = new Set(interests);
-  const matching = pool.filter((l) => picked.has(l.category)).sort(bySoonest);
+  const picked = new Set(ids);
+  const matching = pool.filter((l) => picked.has(l.id)).sort(byPopularity);
   return alternated<Listing>(
     matching.filter((l) => l.kind === 'event'),
     matching.filter((l) => l.kind === 'opportunity'),
@@ -250,11 +304,11 @@ export function inCity(
 ): Listing[] {
   return catalogue
     .filter((l) => (kind === 'all' || l.kind === kind) && l.city === city)
-    .sort(bySoonest);
+    .sort(byPopularity);
 }
 
 export function listingsInCategory(name: string): Listing[] {
-  return catalogue.filter((l) => l.category === name).sort(bySoonest);
+  return catalogue.filter((l) => l.category === name).sort(byPopularity);
 }
 
 /* Remote variants, for when VITE_API_BASE points at a backend. */
@@ -275,7 +329,7 @@ const SEARCHABLE = (
 ).filter(([path]) => shown(path));
 
 function listingHit(id: string): Omit<SearchHit, 'score'> | undefined {
-  const item = listingById(id);
+  const item = listingByKey(id);
   return item && { kind: 'listing', item };
 }
 
@@ -401,6 +455,25 @@ interface MediaUpload {
   headers: Record<string, string>;
 }
 
+export type UnsubscribeScope = 'email' | 'weekly' | 'account';
+
+/**
+ * Turns off what a link covers and says what that was: the one email it came
+ * from, every weekly email, or all email to the address. Replaying a used link
+ * is harmless.
+ */
+export async function unsubscribe(token: string): Promise<UnsubscribeScope> {
+  const { scope } = await dataOf<{ scope: UnsubscribeScope }>(
+    await apiFetch('/v1/newsletter/unsubscribe', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token }),
+    }),
+    'Could not unsubscribe. Open the link from the email again.',
+  );
+  return scope;
+}
+
 export async function uploadPhoto(objectUrl: string): Promise<string> {
   if (!API_BASE) return '';
   const file = await (await fetch(objectUrl)).blob();
@@ -466,13 +539,18 @@ function recount(
   live: Listing[],
   livePlaces: Place[],
 ): Category[] {
-  return list.map((c) => ({
-    ...c,
-    count:
-      c.kind === 'place'
-        ? livePlaces.filter((p) => p.type === c.name).length
-        : live.filter((l) => l.kind === c.kind && l.category === c.name).length,
-  }));
+  return list.map((c) => {
+    if (c.kind === 'place')
+      return {
+        ...c,
+        count: livePlaces.filter((p) => p.type === c.name).length,
+      };
+    const inCategory = live.filter(
+      (l) => l.kind === c.kind && l.category === c.name,
+    );
+    const lead = inCategory.filter((l) => l.photoUrl).sort(byPopularity)[0];
+    return { ...c, count: inCategory.length, coverUrl: lead?.photoUrl };
+  });
 }
 
 export type CatalogueStatus = 'loading' | 'ready' | 'failed';
@@ -518,8 +596,10 @@ export async function loadCatalogue(now = new Date()): Promise<void> {
   try {
     const listed = await fetchListings();
     if (!Array.isArray(listed)) throw new TypeError('Listings were not a list');
-    catalogue = stillOpen(listed.map(withSourcePhoto), now);
+    everyNight = stillOpen(listed.map(withSourcePhoto), now);
+    catalogue = collapsedRuns(everyNight);
   } catch {
+    everyNight = [];
     catalogue = [];
     status = 'failed';
   }
@@ -527,14 +607,31 @@ export async function loadCatalogue(now = new Date()): Promise<void> {
   settle(status);
 }
 
+/**
+ * Once the reader has told us about themselves, through their location or
+ * their interests, reload their picks and take them back to the top, where
+ * the shelves built from those picks now lead.
+ */
+export async function refreshForReader(): Promise<void> {
+  await loadAccount();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 export async function loadAccount(): Promise<void> {
   const session = sessionStore.get();
+  if (!session?.accessToken) forYouStore.set([]);
   if (!API_BASE || !session?.accessToken || outboxStore.get().length) return;
   try {
-    const [interests, digest] = await Promise.all([
+    const [interests, digest, matches] = await Promise.all([
       authorizedFetch('/v1/me/interests'),
       authorizedFetch('/v1/me/newsletter'),
+      authorizedFetch('/v1/me/for-you'),
     ]);
+    if (matches.ok) {
+      const listed: unknown = await matches.json();
+      if (Array.isArray(listed))
+        forYouStore.set(listed.map((l: { id: string }) => l.id));
+    }
     if (interests.ok) {
       const body = (await interests.json()) as {
         data: { interests: RemoteInterestPick[] };
@@ -545,12 +642,12 @@ export async function loadAccount(): Promise<void> {
     if (digest.ok) {
       const pref = ((await digest.json()) as { data: RemoteNewsletter }).data;
       const city = pref.city ?? cityStore.get();
-      if (pref.city) cityStore.set(pref.city);
+      if (pref.city && !chooseReaderPlace(pref.city)) cityStore.set(pref.city);
       fieldsStore.set(fieldsFromDigest(pref.interests ?? []));
       subscriptionStore.set(
         pref.subscribed
           ? {
-              email: session.account?.email ?? `${session.provider} account`,
+              email: session.account?.email ?? '',
               city,
             }
           : null,

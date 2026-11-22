@@ -1,0 +1,12 @@
+.git
+.github
+.husky
+node_modules
+dist
+public/images
+tsconfig.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store

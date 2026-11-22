@@ -1,19 +1,25 @@
-import { listingById, similar } from '../lib/api';
+import { useEffect } from 'react';
+import { listingByKey, similar } from '../lib/api';
 import {
   deadlineCalendarHref,
   downloadIcs,
   googleCalendarHref,
 } from '../lib/calendar';
 import { eventDay, hasDeadline } from '../lib/dates';
-import { paths } from '../lib/router';
+import { navigate, paths } from '../lib/router';
+import { toast } from '../lib/ui';
+import { rememberViewed } from '../lib/viewed';
 import { daysLeftLine, distinctParts, slugify, sourceName } from '../lib/text';
 import type { EventListing, Listing, OpportunityListing } from '../lib/types';
 import { ListingCard, shownPrice } from '../components/ListingCard';
+import { Icon } from '../components/Icon';
 import { Rail } from '../components/Rail';
 import { SectionHeader } from '../components/SectionHeader';
 import {
   AboutBlock,
   ActionCard,
+  AskAIMenu,
+  AssistantLogos,
   DetailBody,
   DetailHead,
   Fact,
@@ -24,13 +30,20 @@ import {
   OverlayMenu,
   PrimaryLink,
   shareAndConfirm,
+  SMALL_BUTTON,
   SmallButton,
 } from './DetailParts';
-import { SeeAll } from './HomeScreen';
+import { SeeAll } from '../components/PhoneList';
 import { NotFoundScreen } from './NotFoundScreen';
 
 export function ListingScreen({ id }: { id: string }) {
-  const listing = listingById(id);
+  const listing = listingByKey(id);
+  useEffect(() => {
+    if (!listing) return;
+    rememberViewed(listing.id);
+    if (listing.slug && id !== listing.slug)
+      navigate(paths.listing(listing.slug), { replace: true });
+  }, [listing, id]);
   if (!listing) return <NotFoundScreen />;
   const feed = listing.kind === 'event' ? 'events' : 'opportunities';
   const more = similar(listing);
@@ -66,10 +79,40 @@ export function ListingScreen({ id }: { id: string }) {
           />
         }
         action={<Sidebar listing={listing} />}
+        map={
+          listing.kind === 'event' &&
+          listing.venue !== 'Venue TBA' && (
+            <MapCard name={listing.venue} area={whereLine(listing)} />
+          )
+        }
         primary={
           <PrimaryLink href={listing.url}>
             {listing.kind === 'event' ? 'Get ticket' : 'Apply now'}
           </PrimaryLink>
+        }
+        tail={
+          <div className="mt-8 flex flex-wrap gap-2 md:mt-10">
+            {[
+              ...new Set(
+                [
+                  listing.category,
+                  listing.city,
+                  listing.kind === 'event'
+                    ? listing.free
+                      ? 'Free'
+                      : shownPrice(listing) && 'Paid'
+                    : listing.mode,
+                ].filter(Boolean),
+              ),
+            ].map((t) => (
+              <span
+                key={t}
+                className="bg-btn rounded-sm px-3 py-1.5 text-sm font-medium"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
         }
         links={
           <>
@@ -83,6 +126,15 @@ export function ListingScreen({ id }: { id: string }) {
               label="Share with a friend"
               onClick={() => shareAndConfirm(listing.title)}
             />
+            <LinkRow
+              icon="compose"
+              label="Ask AI about this"
+              wrap={(control) => (
+                <AskAIMenu kind={listing.kind} title={listing.title}>
+                  {control}
+                </AskAIMenu>
+              )}
+            />
           </>
         }
       >
@@ -93,31 +145,6 @@ export function ListingScreen({ id }: { id: string }) {
             <OpportunityFacts o={listing} />
           )}
         </dl>
-        <div className="mt-10 flex flex-wrap gap-2">
-          {[
-            ...new Set(
-              [
-                listing.category,
-                listing.city,
-                listing.kind === 'event'
-                  ? listing.free
-                    ? 'Free'
-                    : shownPrice(listing) && 'Paid'
-                  : listing.mode,
-              ].filter(Boolean),
-            ),
-          ].map((t) => (
-            <span
-              key={t}
-              className="bg-btn rounded-sm px-3 py-1.5 text-sm font-medium"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-        {listing.kind === 'event' && listing.venue !== 'Venue TBA' && (
-          <MapCard name={listing.venue} area={whereLine(listing)} />
-        )}
       </DetailBody>
 
       {more.length > 0 && (
@@ -152,7 +179,9 @@ function EventFacts({ e }: { e: EventListing }) {
       <Fact
         label="Date"
         action={
-          <FactAction href={googleCalendarHref(e)}>Add to calendar</FactAction>
+          <FactAction href={googleCalendarHref(e)} icon="cal">
+            Add to calendar
+          </FactAction>
         }
       >
         <p className="font-semibold">{eventDay(e, true)}</p>
@@ -168,6 +197,7 @@ function EventFacts({ e }: { e: EventListing }) {
           action={
             e.venue !== 'Venue TBA' && (
               <FactAction
+                icon="pin"
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([e.venue, whereLine(e)].filter(Boolean).join(', '))}`}
               >
                 Directions
@@ -201,6 +231,10 @@ function EventFacts({ e }: { e: EventListing }) {
   );
 }
 
+function confirmReminder() {
+  toast('Opened Google Calendar in a new tab. Save the reminder there.');
+}
+
 function OpportunityFacts({ o }: { o: OpportunityListing }) {
   return (
     <>
@@ -209,7 +243,13 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
         action={
           hasDeadline(o) &&
           o.daysLeft >= 0 && (
-            <FactAction href={deadlineCalendarHref(o)}>Remind me</FactAction>
+            <FactAction
+              href={deadlineCalendarHref(o)}
+              icon="clock"
+              onClick={confirmReminder}
+            >
+              Remind me
+            </FactAction>
           )
         }
       >
@@ -281,6 +321,7 @@ function HeadTools({ listing }: { listing: Listing }) {
           icon="cal"
           label="Remind me before it closes"
           href={deadlineCalendarHref(listing)}
+          onClick={confirmReminder}
         />
       )}
     </>
@@ -311,6 +352,13 @@ function Sidebar({ listing }: { listing: Listing }) {
         <SmallButton onClick={() => shareAndConfirm(listing.title)}>
           Share
         </SmallButton>
+        <AskAIMenu kind={listing.kind} title={listing.title}>
+          <button type="button" className={`${SMALL_BUTTON} gap-2`}>
+            <AssistantLogos />
+            Ask AI
+            <Icon name="chevronDown" className="h-3.5 w-3.5" />
+          </button>
+        </AskAIMenu>
       </div>
     </ActionCard>
   );

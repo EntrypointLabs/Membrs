@@ -12,6 +12,7 @@ export interface DayLabel {
 
 interface ListingBase {
   id: string;
+  slug: string;
   title: string;
   category: string;
   city: string;
@@ -23,18 +24,41 @@ interface ListingBase {
   blurb: string;
   /** Lower ranks were listed first. Ties break on what happens soonest. */
   listedRank: number;
+  popularity: number;
   /** A stock photo id from assets/photos, always present. */
   photo: string;
   /** The organiser's own cover image. Shown first; the stock photo stands in if it fails. */
   photoUrl?: string;
   /** The longer description, one string per paragraph. Falls back to the blurb. */
   about?: string[];
+  /** ISO 3166 alpha-2, empty when the source named no country. */
+  country?: string;
+  /** The world region of that country, a RegionSlug or empty. */
+  region?: string;
+  /** The first-level region of that country, such as "Lagos" or "Oyo", empty when unknown. */
+  state?: string;
+  /** Every field it belongs to, as catalogue labels. */
+  topics?: string[];
+  /** When it was first published, RFC 3339. */
+  listedAt?: string | null;
+}
+
+/** An award as the source stated it, plus a rough US dollar value to compare by. */
+export interface Reward {
+  minimum: string | null;
+  maximum: string | null;
+  currency: string;
+  period: 'unspecified' | 'oneOff' | 'monthly' | 'annual';
+  /** Approximate, from reference rates. Null when the currency has no rate. */
+  usdValue: string | null;
 }
 
 export interface EventListing extends ListingBase {
   kind: 'event';
   area: string;
   venue: string;
+  /** Where the venue is on the map, when the source gave an address we could place. */
+  venueAt?: { lat: number; lng: number };
   date: DayLabel;
   time: string;
   price: string;
@@ -45,6 +69,8 @@ export interface EventListing extends ListingBase {
   host: string;
   startsAt: string | null;
   endsAt: string | null;
+  runLength?: number;
+  runUntil?: DayLabel;
 }
 
 export interface OpportunityListing extends ListingBase {
@@ -60,6 +86,13 @@ export interface OpportunityListing extends ListingBase {
   eligibility: string[];
   /** The field it belongs to (Technology, Climate…), shown as a second tag. */
   sector?: string;
+  /** The deadline as RFC 3339, null when there is none. */
+  closesAt?: string | null;
+  /** Applications are taken on a rolling basis rather than by a deadline. */
+  rolling?: boolean;
+  /** "Fully funded", "Stipend"…, null when the source did not say. */
+  funding?: string | null;
+  reward?: Reward | null;
 }
 
 export type Listing = EventListing | OpportunityListing;
@@ -109,6 +142,8 @@ export interface Category {
   slug: string;
   count: number;
   photo: string;
+  /** The cover of the category's most popular listing that has one. */
+  coverUrl?: string;
 }
 
 export interface LegalSection {

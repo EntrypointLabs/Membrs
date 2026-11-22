@@ -28,8 +28,8 @@ import {
   submitContribution,
   uploadPhoto,
 } from '../lib/api';
-import { SignedOutError, sessionStore } from '../lib/auth';
-import { API_BASE, CONTACT } from '../lib/config';
+import { SignedOutError } from '../lib/auth';
+import { CONTACT } from '../lib/config';
 import {
   LINK_HINT,
   isWebLink,
@@ -63,7 +63,7 @@ import { useStore } from '../lib/store';
 import { plural, titleCase } from '../lib/text';
 import type { ContributeKind, FormField } from '../lib/types';
 import { toast } from '../lib/ui';
-import { openSignIn } from '../components/AuthModal';
+import { ReaderEmailField, useReaderEmail } from '../components/EmailStep';
 import { BachsDemo } from '../components/BachsDemo';
 import { CityField, WORLDWIDE } from '../components/CityField';
 import { Icon } from '../components/Icon';
@@ -141,7 +141,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     saved ? saved.days : DEFAULT_DAYS,
   );
   const [agreed, setAgreed] = useState(saved?.agreed ?? false);
-  const [resume, setResume] = useState(Boolean(saved?.resume));
   const [busy, setBusy] = useState<Busy>(null);
   const busyRef = useRef(false);
   const [generation, setGeneration] = useState(0);
@@ -152,8 +151,9 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     quote: AdQuote;
     reference: string;
   } | null>(null);
-  const session = useStore(sessionStore);
-  const canSend = !API_BASE || Boolean(session?.accessToken);
+  const reader = useReaderEmail();
+  const asksForEmail =
+    !reader.known && !form.fields.some((f) => f.type === 'email');
   const deliveredElsewhere = useStore(sentSlotsStore).includes(slot);
 
   useEffect(() => {
@@ -176,7 +176,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       else {
         setPhotoId(undefined);
         setHosted(undefined);
-        setResume(false);
         setErrors((prev) => ({
           ...prev,
           photo: 'Add the photo again.',
@@ -198,7 +197,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       agreed,
       ...(photoId ? { photoId } : {}),
       ...(hosted ? { hosted } : {}),
-      ...(resume ? { resume } : {}),
     });
   }, [
     kind,
@@ -208,7 +206,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     agreed,
     photoId,
     hosted,
-    resume,
     sent,
     paid,
     restoring,
@@ -225,7 +222,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
 
   const finish = useCallback(() => {
     clearDraft(kind);
-    setResume(false);
     setSent(true);
   }, [kind]);
 
@@ -238,7 +234,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
   const set = (name: string, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
-    setResume(false);
   };
 
   const setCity = (name: string, value: string, wasPicked: boolean) => {
@@ -266,6 +261,10 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     );
     if (filled.email?.trim() && !isValidEmail(filled.email))
       missing.email = 'That email does not look right.';
+    if (asksForEmail && !reader.ready)
+      missing.readerEmail = reader.email.trim()
+        ? 'That email does not look right.'
+        : 'Add your email so we know who sent this.';
     const startFrom = earliestStart(new Date());
     for (const f of form.fields) {
       const value = filled[f.name]?.trim();
@@ -295,14 +294,12 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     return next;
   }
 
-  function needSignIn() {
-    if (!isAd) setResume(true);
+  function needEmail() {
     toast(
       isAd
-        ? 'Sign in to pay. Your details are saved.'
-        : 'Sign in to send this. Your details are saved.',
+        ? 'Your details are saved. Press Pay again to continue.'
+        : 'Enter your email to send this. Your details are saved.',
     );
-    openSignIn('in');
   }
 
   async function hostedPhoto(): Promise<string> {
@@ -325,11 +322,11 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       if (delivery === 'sent') return finish();
       if (delivery === 'signedOut') {
         discardSlot(slot);
-        return needSignIn();
+        return needEmail();
       }
       toast('Saved. We will send it when we can.');
     } catch (error) {
-      if (error instanceof SignedOutError) return needSignIn();
+      if (error instanceof SignedOutError) return needEmail();
       toast(messageOf(error, 'Could not send this. Try again in a moment.'));
     }
   }
@@ -339,7 +336,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     try {
       uploaded = await hostedPhoto();
     } catch (error) {
-      if (error instanceof SignedOutError) return needSignIn();
+      if (error instanceof SignedOutError) return needEmail();
       toast(messageOf(error, 'Could not upload the photo. Try again.'));
       return;
     }
@@ -364,7 +361,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
         toast('Payment cancelled. Nothing was charged.');
       else toast('That payment did not go through. Try again.');
     } catch (error) {
-      if (error instanceof SignedOutError) return needSignIn();
+      if (error instanceof SignedOutError) return needEmail();
       toast(
         messageOf(
           error,
@@ -382,7 +379,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     const missing = problems();
     setErrors(missing);
     if (Object.keys(missing).length) {
-      setResume(false);
       setScrollRequest((n) => n + 1);
       return;
     }
@@ -390,10 +386,11 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       toast(PAYMENTS_UNAVAILABLE_MESSAGE);
       return;
     }
-    if (!canSend) return needSignIn();
     busyRef.current = true;
     setBusy('sending');
     try {
+      const address = asksForEmail ? reader.email : (payload.email ?? '');
+      if (!(await reader.ensureKnown(address))) return;
       if (isAd && adQuote) await sendAd(payload, adQuote);
       else if (!isAd) await sendContribution(payload);
     } finally {
@@ -401,17 +398,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       setBusy(null);
     }
   }
-
-  const sendRef = useRef(send);
-  useEffect(() => {
-    sendRef.current = send;
-  });
-
-  useEffect(() => {
-    if (!resume || restoring || !canSend || !API_BASE) return;
-    setResume(false);
-    void sendRef.current();
-  }, [resume, restoring, canSend]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -460,7 +446,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     setPhotoId(newIdempotencyKey());
     setHosted(undefined);
     setRestoring(false);
-    setResume(false);
     setErrors((prev) => ({ ...prev, photo: '' }));
     void saveDraftPhoto(kind, file);
   }
@@ -480,7 +465,6 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
     removePhoto();
     setAgreed(false);
     setDays(DEFAULT_DAYS);
-    setResume(false);
     setGeneration((n) => n + 1);
     clearDraft(kind);
   }
@@ -535,9 +519,7 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
       ? adQuote
         ? `Pay ${naira(adQuote.total)}`
         : 'Pay'
-      : canSend
-        ? 'Submit for review'
-        : 'Sign in to submit';
+      : 'Submit for review';
 
   return (
     <div className="page pt-6 pb-32 md:pt-14 md:pb-20">
@@ -626,6 +608,24 @@ export function ContributeScreen({ kind }: { kind: ContributeKind }) {
               />
               <Bill quote={adQuote} />
             </>
+          )}
+
+          {asksForEmail && (
+            <Field data-invalid={Boolean(errors.readerEmail)} className="gap-2">
+              <FieldName htmlFor="f-reader-email">Your email</FieldName>
+              <ReaderEmailField
+                id="f-reader-email"
+                value={reader.email}
+                onChange={(value) => {
+                  reader.setEmail(value);
+                  setErrors((prev) => ({ ...prev, readerEmail: '' }));
+                }}
+                className={CONTROL}
+              />
+              {errors.readerEmail && (
+                <FieldError>{errors.readerEmail}</FieldError>
+              )}
+            </Field>
           )}
 
           <footer className="border-line-2 flex flex-col-reverse gap-3 border-t pt-6 md:flex-row md:items-center">
@@ -966,7 +966,7 @@ function PhotoField({
         accept="image/jpeg,image/png,image/webp"
         aria-label={label}
         aria-invalid={invalid}
-        className="sr-only"
+        className="sr-only size-px!"
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = '';

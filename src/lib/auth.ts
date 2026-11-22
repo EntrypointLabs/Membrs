@@ -1,12 +1,10 @@
-import { API_BASE, API_TIMEOUT_MS } from './config';
+import { API_BASE } from './config';
 import { clearAllDrafts } from './drafts';
-import { apiFetch } from './http';
-import { paths } from './router';
+import { isValidEmail } from './email';
+import { apiFetch, dataOf } from './http';
 import { fieldsStore, interestsStore, subscriptionStore } from './preferences';
-import { readStored, removeStored, writeStored } from './storage';
+import { readStored } from './storage';
 import { createStore } from './store';
-
-export type Provider = 'google' | 'apple';
 
 export interface Account {
   id: string;
@@ -15,7 +13,6 @@ export interface Account {
 }
 
 export interface Session {
-  provider: Provider;
   at: number;
   accessToken?: string;
   accessTokenExpiresAt?: string;
@@ -32,98 +29,69 @@ interface IssuedSession {
   account: Account;
 }
 
-export type SignInOutcome =
-  { status: 'signedIn'; provider: Provider } | { status: 'failed' };
-
 const SESSION_KEY = 'membrs.user';
-const PENDING_PROVIDER_KEY = 'membrs.pendingProvider';
-const RETURN_TO_KEY = 'membrs.returnTo';
-export const CALLBACK_PATH = '/auth/callback';
 
 export const sessionStore = createStore<Session | null>(SESSION_KEY, null);
 
-export function oauthStartUrl(provider: Provider): string {
-  return `${API_BASE}/v1/auth/oauth/${provider}/start`;
+// A session saved without its account predates email-only sessions and cannot
+// be refreshed into one, so the reader counts as unknown.
+if (sessionStore.get() && !sessionStore.get()?.account) sessionStore.set(null);
+
+/**
+ * Whether a feature that needs to know the reader can go ahead without asking
+ * for their email. Without an API there is nothing to send, so it never asks.
+ */
+export function readerKnown(session: Session | null): boolean {
+  return !API_BASE || Boolean(session?.accessToken);
 }
 
-async function providerAvailable(provider: Provider): Promise<boolean> {
-  try {
-    const res = await fetch(oauthStartUrl(provider), {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(API_TIMEOUT_MS),
-    });
-    return (
-      res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400)
-    );
-  } catch {
-    return false;
+export function normaliseEmail(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export class EmailNotAcceptedError extends Error {
+  constructor(message = 'We could not use that email. Please try again.') {
+    super(message);
+    this.name = 'EmailNotAcceptedError';
   }
 }
 
-async function demoSignIn(provider: Provider): Promise<Session> {
-  await new Promise((resolve) => setTimeout(resolve, 900));
-  const session = { provider, at: Date.now() };
+/**
+ * Starts the reader's session from the email a feature asked for. The API
+ * signs an existing address back into its account and creates one for a new
+ * address; there is nothing to verify.
+ */
+export async function startReaderSession(value: string): Promise<Session> {
+  const email = normaliseEmail(value);
+  if (!isValidEmail(email))
+    throw new EmailNotAcceptedError('Enter a valid email address.');
+  if (!API_BASE) {
+    const session = {
+      at: Date.now(),
+      account: { id: email, email, displayName: email.split('@')[0]! },
+    };
+    sessionStore.set(session);
+    return session;
+  }
+  const res = await apiFetch('/v1/auth/email', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }).catch(() => {
+    throw new EmailNotAcceptedError();
+  });
+  const issued = await dataOf<IssuedSession>(
+    res,
+    new EmailNotAcceptedError().message,
+  );
+  const session = { at: Date.now(), ...issued };
   sessionStore.set(session);
   return session;
 }
 
-export class SignInUnavailableError extends Error {
-  constructor(provider: Provider) {
-    super(`${PROVIDER_NAME[provider]} sign-in is not available right now.`);
-    this.name = 'SignInUnavailableError';
-  }
-}
-
-function currentPath(): string {
-  return window.location.pathname + window.location.search;
-}
-
-export function safeReturnPath(value: unknown): string {
-  if (typeof value !== 'string') return paths.home();
-  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\'))
-    return paths.home();
-  if (value.split('?')[0] === CALLBACK_PATH) return paths.home();
-  return value;
-}
-
-export async function signIn(provider: Provider): Promise<Session> {
-  if (!API_BASE) return demoSignIn(provider);
-  if (!(await providerAvailable(provider)))
-    throw new SignInUnavailableError(provider);
-  writeStored(PENDING_PROVIDER_KEY, provider);
-  writeStored(RETURN_TO_KEY, currentPath());
-  window.location.assign(oauthStartUrl(provider));
-  return new Promise<Session>(() => {});
-}
-
-export async function completeSignIn(): Promise<SignInOutcome | null> {
-  if (window.location.pathname !== CALLBACK_PATH) return null;
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const provider = readStored<Provider>(PENDING_PROVIDER_KEY, 'google');
-  const returnTo = safeReturnPath(readStored<unknown>(RETURN_TO_KEY, null));
-  removeStored(PENDING_PROVIDER_KEY);
-  removeStored(RETURN_TO_KEY);
-  window.history.replaceState(null, '', returnTo);
-  if (!API_BASE || !code) return { status: 'failed' };
-  try {
-    const res = await apiFetch('/v1/auth/oauth/exchange', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-    if (!res.ok) return { status: 'failed' };
-    const issued = ((await res.json()) as { data: IssuedSession }).data;
-    sessionStore.set({ provider, at: Date.now(), ...issued });
-    return { status: 'signedIn', provider };
-  } catch {
-    return { status: 'failed' };
-  }
-}
-
 export class SignedOutError extends Error {
   constructor() {
-    super('Sign in to continue.');
+    super('Enter your email to continue.');
     this.name = 'SignedOutError';
   }
 }
@@ -201,7 +169,7 @@ function forgetReader(): void {
   signOutHooks.forEach((hook) => hook());
 }
 
-export function signOut(): void {
+export function forgetEmail(): void {
   const refreshToken = sessionStore.get()?.refreshToken;
   sessionStore.set(null);
   forgetReader();
@@ -213,8 +181,3 @@ export function signOut(): void {
     keepalive: true,
   }).catch(() => undefined);
 }
-
-export const PROVIDER_NAME: Record<Provider, string> = {
-  google: 'Google',
-  apple: 'Apple',
-};

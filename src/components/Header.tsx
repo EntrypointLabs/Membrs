@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { sessionStore, signOut } from '../lib/auth';
+import { useEffect, useState, type MouseEvent } from 'react';
+import { DropdownMenu } from 'radix-ui';
+import { forgetEmail, sessionStore } from '../lib/auth';
 import { themeStore, type Theme } from '../lib/preferences';
-import { toast } from '../lib/ui';
-import { AppleMark, openSignIn } from './AuthModal';
+import { openOverlay, toast } from '../lib/ui';
 import { navSection, paths, useRoute } from '../lib/router';
-import { useStore } from '../lib/store';
+import { createStore, useStore } from '../lib/store';
 import { Icon } from './Icon';
 import { Link } from './Link';
 import { ContributeMenu } from './ContributeMenu';
@@ -16,6 +16,12 @@ import { NAV, type NavItem } from './nav';
  * each screen's own title take over.
  */
 const TOP_ROW = 112;
+
+export const headerSlotStore = createStore<HTMLElement | null>(null, null);
+
+function placeHeaderSlot(slot: HTMLDivElement | null) {
+  headerSlotStore.set(slot);
+}
 
 function useScrolledPast(offset: number) {
   const [past, setPast] = useState(false);
@@ -46,14 +52,13 @@ export function Header() {
           style={{ height: TOP_ROW }}
         >
           <Link
-            href="/"
+            href={paths.home()}
             aria-label="MEMBRS home"
             className="text-[64px] leading-none font-black tracking-[-0.05em]"
           >
             MEMBRS
           </Link>
           <div className="absolute right-0 flex items-center gap-2">
-            <AccountButton />
             <ThemeSwitch />
           </div>
         </div>
@@ -64,13 +69,17 @@ export function Header() {
           }`}
         >
           <div
-            className={`page border-line relative flex items-center justify-center ${docked ? '' : 'border-y'}`}
+            className={`page border-line relative ${
+              docked
+                ? 'grid grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-6'
+                : 'flex items-center justify-center border-y'
+            }`}
           >
             {docked && (
               <Link
-                href="/"
+                href={paths.home()}
                 aria-label="MEMBRS home"
-                className="absolute left-0 text-[22px] leading-none font-black tracking-[-0.05em]"
+                className="justify-self-start text-[22px] leading-none font-black tracking-[-0.05em]"
               >
                 MEMBRS
               </Link>
@@ -81,13 +90,17 @@ export function Header() {
                   {item.key === 'contribute' ? (
                     <ContributeMenu
                       trigger={
-                        <button
-                          type="button"
+                        <Link
+                          href={item.href}
+                          onClick={keepMenuClick}
+                          aria-current={
+                            active === item.key ? 'page' : undefined
+                          }
                           className={sectionClass(active === item.key)}
                         >
                           <SectionLabel item={item} on={active === item.key} />
                           <Icon name="chevronDown" className="h-3.5 w-3.5" />
-                        </button>
+                        </Link>
                       }
                     />
                   ) : (
@@ -105,7 +118,15 @@ export function Header() {
                 </li>
               ))}
             </ul>
-            <div className="absolute right-0 flex items-center gap-2">
+            <div
+              className={`flex items-center gap-2 ${docked ? 'justify-self-end' : 'absolute right-0'}`}
+            >
+              {docked && (
+                <div
+                  ref={placeHeaderSlot}
+                  className="flex items-center gap-2"
+                />
+              )}
               <Link
                 href={paths.search()}
                 aria-label="Search"
@@ -114,13 +135,16 @@ export function Header() {
               >
                 <Icon name="search" />
               </Link>
-              {docked && <ThemeSwitch />}
             </div>
           </div>
         </nav>
       </header>
     </>
   );
+}
+
+function keepMenuClick(e: MouseEvent<HTMLAnchorElement>) {
+  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) e.preventDefault();
 }
 
 function sectionClass(on: boolean): string {
@@ -176,31 +200,60 @@ export function ThemeSwitch({ className = '' }: { className?: string }) {
   );
 }
 
-/** "Sign in" when signed out; the provider mark and "Sign out" when signed in. */
-export function AccountButton() {
+const SETTINGS_ITEM =
+  'data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-[15px] font-medium outline-none';
+
+export function PhoneSettings() {
   const session = useStore(sessionStore);
+  const theme = useStore(themeStore);
+  const next: Theme = theme === 'dark' ? 'light' : 'dark';
   return (
-    <button
-      type="button"
-      onClick={() => {
-        if (!session) return openSignIn();
-        signOut();
-        toast('Signed out.');
-      }}
-      className="bg-btn hover:bg-btn-hover flex h-[38px] items-center gap-2 rounded-md px-3.5 text-sm font-bold"
-    >
-      {session && (
-        <i
-          className={`grid h-[22px] w-[22px] place-items-center rounded-full text-xs font-extrabold text-white not-italic ${session.provider === 'apple' ? 'bg-black' : 'bg-brand'}`}
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger
+        aria-label="Settings"
+        className="bg-btn grid h-11 w-11 place-items-center rounded-md"
+      >
+        <Icon name="settings" className="h-5 w-5" />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={8}
+          className="bg-panel border-line-2 text-fg z-[70] min-w-52 rounded-md border p-1 shadow-[0_16px_48px_rgb(0_0_0/0.35)]"
         >
-          {session.provider === 'apple' ? (
-            <AppleMark className="h-[13px] w-[13px]" />
-          ) : (
-            'G'
+          <DropdownMenu.Item
+            className={SETTINGS_ITEM}
+            onSelect={() => themeStore.set(next)}
+          >
+            <Icon name={next === 'dark' ? 'moon' : 'sun'} className="h-4 w-4" />
+            {next === 'dark' ? 'Dark mode' : 'Light mode'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={SETTINGS_ITEM}
+            onSelect={() => openOverlay('prefs')}
+          >
+            <Icon name="tag" className="h-4 w-4" />
+            Edit interests
+          </DropdownMenu.Item>
+          {session?.account && (
+            <>
+              <DropdownMenu.Separator className="bg-line-2 my-1 h-px" />
+              <DropdownMenu.Item
+                className={`${SETTINGS_ITEM} text-destructive`}
+                onSelect={() => {
+                  forgetEmail();
+                  toast('This browser no longer knows your email.');
+                }}
+              >
+                <Icon name="arrowUpRight" className="h-4 w-4" />
+                <span className="min-w-0 truncate">
+                  Forget {session.account.email}
+                </span>
+              </DropdownMenu.Item>
+            </>
           )}
-        </i>
-      )}
-      {session ? 'Sign out' : 'Sign in'}
-    </button>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }

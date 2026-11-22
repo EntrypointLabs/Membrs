@@ -5,11 +5,10 @@ import { createStore } from './store';
 
 /**
  * Which overlay is open. One at a time, so opening the digest from the footer
- * closes cookie settings and the other way round. 'auth' is the sign-up and
- * sign-in card; 'prefs' is its second step, city and interests.
+ * closes cookie settings and the other way round. 'prefs' is the weekly
+ * email's city and interests.
  */
-export type Overlay =
-  'auth' | 'prefs' | 'cookies' | 'plans' | 'assistant' | null;
+export type Overlay = 'prefs' | 'cookies' | 'plans' | 'assistant' | null;
 
 export const overlayStore = createStore<Overlay>(null, null);
 
@@ -18,47 +17,26 @@ export function openOverlay(overlay: Exclude<Overlay, null>): void {
 }
 
 /**
- * The single way into the Sunday Digest. There is no email form: the digest
- * belongs to an account, so readers who are signed out sign up first and
- * readers who are signed in go straight to their city and interests.
+ * The single way into the weekly email: the city and interests card, which
+ * asks for the reader's email there if the browser does not know it yet.
  */
 export function openDigest(): void {
-  overlayStore.set(sessionStore.get() ? 'prefs' : 'auth');
+  overlayStore.set('prefs');
 }
 
-export const signUpPromptedStore = createStore<boolean>(
-  'membrs.signup-prompted',
-  false,
-);
-
 function rememberReader(): void {
-  if (!sessionStore.get()) return;
-  if (!signUpPromptedStore.get()) signUpPromptedStore.set(true);
-  if (!tourSeenStore.get()) tourSeenStore.set(true);
+  if (sessionStore.get() && !tourSeenStore.get()) tourSeenStore.set(true);
 }
 
 rememberReader();
 sessionStore.subscribe(rememberReader);
 
 export function closeOverlay(): void {
-  if (overlayStore.get() === 'auth' && !signUpPromptedStore.get())
-    signUpPromptedStore.set(true);
   overlayStore.set(null);
 }
 
-export function autoPromptSignUp(): void {
-  if (sessionStore.get() || signUpPromptedStore.get() || overlayStore.get())
-    return;
-  openOverlay('auth');
-}
-
 export function tourDue(overlay: Overlay = overlayStore.get()): boolean {
-  return (
-    overlay === null &&
-    !sessionStore.get() &&
-    !tourSeenStore.get() &&
-    signUpPromptedStore.get()
-  );
+  return overlay === null && !sessionStore.get() && !tourSeenStore.get();
 }
 
 export interface ToastItem {

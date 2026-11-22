@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useDialog } from '../lib/focus';
 import { BACKDROP_MOTION, SHEET_MOTION } from '../lib/motion';
 import { titleCase } from '../lib/text';
@@ -28,7 +29,9 @@ export function Modal({ title, onClose, children, wide = false }: ModalProps) {
     };
   }, []);
 
-  return (
+  // Rendered into the body so a sheet opened from a sticky title bar is not
+  // trapped in that bar's stacking context, under the phone tab bar.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
       <button
         type="button"
@@ -61,6 +64,7 @@ export function Modal({ title, onClose, children, wide = false }: ModalProps) {
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

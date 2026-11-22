@@ -26,7 +26,8 @@
     "inDays": 0,
     "host": "Lagos Fringe",
     "startsAt": "2026-11-08T19:00:00Z",
-    "endsAt": "2026-11-08T22:00:00Z"
+    "endsAt": "2026-11-08T22:00:00Z",
+    "slug": "the-blacc-canvas-fringe-closing-night-e7"
   },
   {
     "id": "e8",
@@ -55,7 +56,8 @@
     "inDays": 0,
     "host": "Lagos Fringe",
     "startsAt": "2026-11-08T18:00:00Z",
-    "endsAt": "2026-11-08T21:00:00Z"
+    "endsAt": "2026-11-08T21:00:00Z",
+    "slug": "rite-of-passage-e8"
   },
   {
     "id": "e10",
@@ -88,7 +90,8 @@
     "inDays": 4,
     "host": "Nigerian Entertainment Conference",
     "startsAt": "2026-11-12T07:00:00Z",
-    "endsAt": "2026-11-12T10:00:00Z"
+    "endsAt": "2026-11-12T10:00:00Z",
+    "slug": "neclive-2026-home-advantage-e10"
   },
   {
     "id": "e11",
@@ -121,7 +124,8 @@
     "inDays": 5,
     "host": "GDG Lagos",
     "startsAt": "2026-11-13T09:00:00Z",
-    "endsAt": "2026-11-13T12:00:00Z"
+    "endsAt": "2026-11-13T12:00:00Z",
+    "slug": "devfest-lagos-2026-e11"
   },
   {
     "id": "e12",
@@ -150,7 +154,8 @@
     "inDays": 6,
     "host": "LITF",
     "startsAt": "2026-11-14T09:00:00Z",
-    "endsAt": "2026-11-14T12:00:00Z"
+    "endsAt": "2026-11-14T12:00:00Z",
+    "slug": "lagos-international-theatre-festival-e12"
   },
   {
     "id": "e13",
@@ -183,7 +188,8 @@
     "inDays": 11,
     "host": "Lagos State Government",
     "startsAt": "2026-11-19T09:00:00Z",
-    "endsAt": "2026-11-19T12:00:00Z"
+    "endsAt": "2026-11-19T12:00:00Z",
+    "slug": "lagos-state-employment-summit-2026-e13"
   },
   {
     "id": "e15",
@@ -215,7 +221,8 @@
     "inDays": 9,
     "host": "Livespot360",
     "startsAt": "2026-11-17T09:00:00Z",
-    "endsAt": "2026-11-17T12:00:00Z"
+    "endsAt": "2026-11-17T12:00:00Z",
+    "slug": "ewa-2026-opening-night-e15"
   },
   {
     "id": "e16",
@@ -244,7 +251,8 @@
     "inDays": 10,
     "host": "Livespot360",
     "startsAt": "2026-11-18T09:00:00Z",
-    "endsAt": "2026-11-18T12:00:00Z"
+    "endsAt": "2026-11-18T12:00:00Z",
+    "slug": "jokes-n-jollof-e16"
   },
   {
     "id": "e17",
@@ -273,7 +281,8 @@
     "inDays": 11,
     "host": "Livespot360",
     "startsAt": "2026-11-19T09:00:00Z",
-    "endsAt": "2026-11-19T12:00:00Z"
+    "endsAt": "2026-11-19T12:00:00Z",
+    "slug": "the-runway-coterie-e17"
   },
   {
     "id": "e18",
@@ -305,7 +314,8 @@
     "inDays": 14,
     "host": "Livespot360",
     "startsAt": "2026-11-22T09:00:00Z",
-    "endsAt": "2026-11-22T12:00:00Z"
+    "endsAt": "2026-11-22T12:00:00Z",
+    "slug": "livespot-x-festival-2026-e18"
   },
   {
     "id": "e19",
@@ -338,7 +348,8 @@
     "inDays": 40,
     "host": "Detty December Fest",
     "startsAt": "2026-12-18T09:00:00Z",
-    "endsAt": "2026-12-18T12:00:00Z"
+    "endsAt": "2026-12-18T12:00:00Z",
+    "slug": "detty-december-fest-wizkid-opening-night-e19"
   },
   {
     "id": "e20",
@@ -367,7 +378,8 @@
     "inDays": 13,
     "host": "Afrojazz Festival Nigeria",
     "startsAt": "2026-11-21T09:00:00Z",
-    "endsAt": "2026-11-21T12:00:00Z"
+    "endsAt": "2026-11-21T12:00:00Z",
+    "slug": "abuja-international-afrojazz-festival-e20"
   },
   {
     "id": "e21",
@@ -396,7 +408,8 @@
     "inDays": 13,
     "host": "Tripoint Academy",
     "startsAt": "2026-11-21T09:00:00Z",
-    "endsAt": "2026-11-21T12:00:00Z"
+    "endsAt": "2026-11-21T12:00:00Z",
+    "slug": "arewa-festival-2026-e21"
   },
   {
     "id": "e22",
@@ -425,7 +438,8 @@
     "inDays": 35,
     "host": "Wizkid",
     "startsAt": "2026-12-13T09:00:00Z",
-    "endsAt": "2026-12-13T12:00:00Z"
+    "endsAt": "2026-12-13T12:00:00Z",
+    "slug": "wizkid-live-in-abuja-e22"
   },
   {
     "id": "e23",
@@ -454,7 +468,8 @@
     "inDays": 6,
     "host": "First National Bank Ghana",
     "startsAt": "2026-11-14T06:00:00Z",
-    "endsAt": "2026-11-14T09:00:00Z"
+    "endsAt": "2026-11-14T09:00:00Z",
+    "slug": "fnb-accra-marathon-e23"
   },
   {
     "id": "e24",
@@ -483,7 +498,8 @@
     "inDays": 16,
     "host": "Tech in Ghana",
     "startsAt": "2026-11-24T10:00:00Z",
-    "endsAt": "2026-11-24T13:00:00Z"
+    "endsAt": "2026-11-24T13:00:00Z",
+    "slug": "tech-in-ghana-2026-e24"
   },
   {
     "id": "e25",
@@ -512,7 +528,8 @@
     "inDays": 3,
     "host": "Nubuke Foundation",
     "startsAt": "2026-11-11T10:00:00Z",
-    "endsAt": "2026-11-11T13:00:00Z"
+    "endsAt": "2026-11-11T13:00:00Z",
+    "slug": "osoro-ne-asaase-frederick-okai-e25"
   },
   {
     "id": "e26",
@@ -541,7 +558,8 @@
     "inDays": 20,
     "host": "Asia-Ghana Trade and Investment",
     "startsAt": "2026-11-28T09:00:00Z",
-    "endsAt": "2026-11-28T12:00:00Z"
+    "endsAt": "2026-11-28T12:00:00Z",
+    "slug": "gjti-expo-2026-e26"
   },
   {
     "id": "e28",
@@ -570,7 +588,8 @@
     "inDays": 49,
     "host": "Mr Eazi",
     "startsAt": "2026-12-27T10:00:00Z",
-    "endsAt": "2026-12-27T13:00:00Z"
+    "endsAt": "2026-12-27T13:00:00Z",
+    "slug": "detty-rave-2026-e28"
   },
   {
     "id": "e29",
@@ -599,7 +618,8 @@
     "inDays": 50,
     "host": "AfroFuture",
     "startsAt": "2026-12-28T10:00:00Z",
-    "endsAt": "2026-12-28T13:00:00Z"
+    "endsAt": "2026-12-28T13:00:00Z",
+    "slug": "afrofuture-2026-e29"
   },
   {
     "id": "n2",
@@ -633,7 +653,8 @@
     "inDays": 5,
     "host": "Freeverse Studios",
     "startsAt": "2026-11-13T18:00:00Z",
-    "endsAt": "2026-11-13T21:00:00Z"
+    "endsAt": "2026-11-13T21:00:00Z",
+    "slug": "overnight-movie-experience-n2"
   },
   {
     "id": "n3",
@@ -667,7 +688,8 @@
     "inDays": 6,
     "host": "TEMP House",
     "startsAt": "2026-11-14T09:00:00Z",
-    "endsAt": "2026-11-14T12:00:00Z"
+    "endsAt": "2026-11-14T12:00:00Z",
+    "slug": "temp-house-experience-6-0-n3"
   },
   {
     "id": "n4",
@@ -701,7 +723,8 @@
     "inDays": 6,
     "host": "Frequency Arena",
     "startsAt": "2026-11-14T08:00:00Z",
-    "endsAt": "2026-11-14T11:00:00Z"
+    "endsAt": "2026-11-14T11:00:00Z",
+    "slug": "frequency-arena-n4"
   },
   {
     "id": "n5",
@@ -735,7 +758,8 @@
     "inDays": 10,
     "host": "Qore",
     "startsAt": "2026-11-18T08:30:00Z",
-    "endsAt": "2026-11-18T11:30:00Z"
+    "endsAt": "2026-11-18T11:30:00Z",
+    "slug": "nexus-by-qore-2026-n5"
   },
   {
     "id": "n6",
@@ -769,7 +793,8 @@
     "inDays": 13,
     "host": "VerveLife",
     "startsAt": "2026-11-21T06:00:00Z",
-    "endsAt": "2026-11-21T09:00:00Z"
+    "endsAt": "2026-11-21T09:00:00Z",
+    "slug": "the-fitness-party-of-the-year-n6"
   },
   {
     "id": "n7",
@@ -803,7 +828,8 @@
     "inDays": 19,
     "host": "Geo-Innovation Summit",
     "startsAt": "2026-11-27T08:00:00Z",
-    "endsAt": "2026-11-27T11:00:00Z"
+    "endsAt": "2026-11-27T11:00:00Z",
+    "slug": "geo-innovation-summit-2026-n7"
   },
   {
     "id": "n8",
@@ -837,7 +863,8 @@
     "inDays": 20,
     "host": "Zidepeople",
     "startsAt": "2026-11-28T09:00:00Z",
-    "endsAt": "2026-11-28T12:00:00Z"
+    "endsAt": "2026-11-28T12:00:00Z",
+    "slug": "connexa-2026-the-opportunity-playground-n8"
   },
   {
     "id": "n9",
@@ -871,7 +898,8 @@
     "inDays": 20,
     "host": "Techfeast",
     "startsAt": "2026-11-28T09:00:00Z",
-    "endsAt": "2026-11-28T12:00:00Z"
+    "endsAt": "2026-11-28T12:00:00Z",
+    "slug": "techfeast-2026-n9"
   },
   {
     "id": "n10",
@@ -905,7 +933,8 @@
     "inDays": 21,
     "host": "House of Rest International",
     "startsAt": "2026-11-29T19:30:00Z",
-    "endsAt": "2026-11-29T22:30:00Z"
+    "endsAt": "2026-11-29T22:30:00Z",
+    "slug": "bae-boo-owambe-edition-n10"
   },
   {
     "id": "n11",
@@ -939,7 +968,8 @@
     "inDays": 28,
     "host": "Beat 'n' Feet",
     "startsAt": "2026-12-06T14:00:00Z",
-    "endsAt": "2026-12-06T17:00:00Z"
+    "endsAt": "2026-12-06T17:00:00Z",
+    "slug": "vibration-beat-n-feet-dance-concert-2026-n11"
   },
   {
     "id": "n12",
@@ -973,7 +1003,8 @@
     "inDays": 34,
     "host": "Lagos City Chorale",
     "startsAt": "2026-12-12T16:00:00Z",
-    "endsAt": "2026-12-12T19:00:00Z"
+    "endsAt": "2026-12-12T19:00:00Z",
+    "slug": "gloria-celebrating-the-king-n12"
   },
   {
     "id": "n13",
@@ -1007,7 +1038,8 @@
     "inDays": 34,
     "host": "Mamafela of Lagos",
     "startsAt": "2026-12-12T15:00:00Z",
-    "endsAt": "2026-12-12T18:00:00Z"
+    "endsAt": "2026-12-12T18:00:00Z",
+    "slug": "mamafela-festival-2026-n13"
   },
   {
     "id": "n14",
@@ -1041,7 +1073,8 @@
     "inDays": 42,
     "host": "CIIFA",
     "startsAt": "2026-12-20T16:00:00Z",
-    "endsAt": "2026-12-20T19:00:00Z"
+    "endsAt": "2026-12-20T19:00:00Z",
+    "slug": "kwagh-hir-n14"
   },
   {
     "id": "n15",
@@ -1075,7 +1108,8 @@
     "inDays": 50,
     "host": "Detty Experience",
     "startsAt": "2026-12-28T13:00:00Z",
-    "endsAt": "2026-12-28T16:00:00Z"
+    "endsAt": "2026-12-28T16:00:00Z",
+    "slug": "drunch-in-the-city-lagos-edition-n15"
   },
   {
     "id": "n16",
@@ -1109,7 +1143,8 @@
     "inDays": 52,
     "host": "Detty Experience",
     "startsAt": "2026-12-30T08:00:00Z",
-    "endsAt": "2026-12-30T11:00:00Z"
+    "endsAt": "2026-12-30T11:00:00Z",
+    "slug": "padels-pilates-softlife-wellness-morning-n16"
   },
   {
     "id": "n17",
@@ -1143,7 +1178,8 @@
     "inDays": 53,
     "host": "The Liberty Church",
     "startsAt": "2026-12-31T19:00:00Z",
-    "endsAt": "2026-12-31T22:00:00Z"
+    "endsAt": "2026-12-31T22:00:00Z",
+    "slug": "crossover-into-2027-n17"
   },
   {
     "id": "n18",
@@ -1176,7 +1212,8 @@
     "inDays": 44,
     "host": "Flytime Promotions",
     "startsAt": "2026-12-22T09:00:00Z",
-    "endsAt": "2026-12-22T12:00:00Z"
+    "endsAt": "2026-12-22T12:00:00Z",
+    "slug": "flytime-fest-2026-n18"
   },
   {
     "id": "n19",
@@ -1209,7 +1246,8 @@
     "inDays": 43,
     "host": "The Elite Collective",
     "startsAt": "2026-12-21T15:00:00Z",
-    "endsAt": "2026-12-21T18:00:00Z"
+    "endsAt": "2026-12-21T18:00:00Z",
+    "slug": "elite-fest-2026-n19"
   },
   {
     "id": "n20",
@@ -1242,7 +1280,8 @@
     "inDays": 45,
     "host": "AfroJazz Fest",
     "startsAt": "2026-12-23T09:00:00Z",
-    "endsAt": "2026-12-23T12:00:00Z"
+    "endsAt": "2026-12-23T12:00:00Z",
+    "slug": "afrojazz-fest-to-the-roots-n20"
   },
   {
     "id": "o1",
@@ -1272,7 +1311,8 @@
       "Filmmakers with a planet health story",
       "Developed with BAFTA Albert and SXSW London"
     ],
-    "sector": "Health"
+    "sector": "Health",
+    "slug": "planet-health-film-fund-2027-o1"
   },
   {
     "id": "o2",
@@ -1302,7 +1342,8 @@
       "Education and AI leaders",
       "Leadership development cohort"
     ],
-    "sector": "Education"
+    "sector": "Education",
+    "slug": "edsafe-ai-fellowship-2027-o2"
   },
   {
     "id": "o3",
@@ -1332,7 +1373,8 @@
       "Young Nigerian innovators",
       "Working solution or prototype"
     ],
-    "sector": "Entrepreneurship"
+    "sector": "Entrepreneurship",
+    "slug": "undp-africa-young-innovates-2026-2027-o3"
   },
   {
     "id": "o4",
@@ -1359,7 +1401,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Initiatives addressing indifference", "Open globally"],
-    "sector": "Governance"
+    "sector": "Governance",
+    "slug": "erase-indifference-challenge-2026-o4"
   },
   {
     "id": "o5",
@@ -1389,7 +1432,8 @@
       "Ocean and blue economy projects",
       "Commonwealth countries"
     ],
-    "sector": "Climate"
+    "sector": "Climate",
+    "slug": "commonwealth-blue-charter-incubator-round-ii-o5"
   },
   {
     "id": "o6",
@@ -1419,7 +1463,8 @@
       "Young green entrepreneurs",
       "Land restoration and sustainability ventures"
     ],
-    "sector": "Climate"
+    "sector": "Climate",
+    "slug": "youth-ecopreneurs-programme-yeco-2026-2027-o6"
   },
   {
     "id": "o7",
@@ -1446,7 +1491,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Community youth leaders", "Working on a local issue"],
-    "sector": "Governance"
+    "sector": "Governance",
+    "slug": "irex-community-solutions-program-2027-o7"
   },
   {
     "id": "o8",
@@ -1476,7 +1522,8 @@
       "African journalists and media professionals",
       "Five-week online lab"
     ],
-    "sector": "Technology"
+    "sector": "Technology",
+    "slug": "journalismai-strategy-lab-2026-o8"
   },
   {
     "id": "o9",
@@ -1503,7 +1550,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Six online courses", "Africa focused"],
-    "sector": "Technology"
+    "sector": "Technology",
+    "slug": "cmu-ai-certificate-for-africa-o9"
   },
   {
     "id": "o10",
@@ -1533,7 +1581,8 @@
       "Students and recent graduates",
       "Interest in West Africa and the Sahel"
     ],
-    "sector": "Research"
+    "sector": "Research",
+    "slug": "crisis-group-west-africa-and-sahel-internship-2027-o10"
   },
   {
     "id": "o11",
@@ -1560,7 +1609,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["African-owned growth-stage agribusinesses"],
-    "sector": "Agriculture"
+    "sector": "Agriculture",
+    "slug": "home-grown-solutions-agribusiness-accelerator-2027-o11"
   },
   {
     "id": "o12",
@@ -1587,7 +1637,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Young energy professionals"],
-    "sector": "Climate"
+    "sector": "Climate",
+    "slug": "eep-africa-rising-energy-leader-2026-o12"
   },
   {
     "id": "o13",
@@ -1614,7 +1665,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Emerging young leaders in food systems"],
-    "sector": "Agriculture"
+    "sector": "Agriculture",
+    "slug": "world-food-forum-youth-policy-board-2027-2028-o13"
   },
   {
     "id": "o14",
@@ -1641,7 +1693,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["BSc and MSc students in computer science"],
-    "sector": "Research"
+    "sector": "Research",
+    "slug": "cispa-summer-research-internship-2027-o14"
   },
   {
     "id": "o15",
@@ -1668,7 +1721,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["African start-ups in livestock"],
-    "sector": "Agriculture"
+    "sector": "Agriculture",
+    "slug": "sais-livestock-investment-readiness-programme-o15"
   },
   {
     "id": "o16",
@@ -1695,7 +1749,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Researchers from the Global South"],
-    "sector": "Research"
+    "sector": "Research",
+    "slug": "ictp-ccg-academic-writing-residency-o16"
   },
   {
     "id": "o17",
@@ -1722,7 +1777,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Economists, one position"],
-    "sector": "Finance"
+    "sector": "Finance",
+    "slug": "policy-integrity-economic-fellowship-2027-o17"
   },
   {
     "id": "o18",
@@ -1749,7 +1805,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["EdTech ventures in Uganda"],
-    "sector": "Education"
+    "sector": "Education",
+    "slug": "mastercard-foundation-edtech-fellowship-uganda-o18"
   },
   {
     "id": "o19",
@@ -1776,7 +1833,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["African journalists"],
-    "sector": "Finance"
+    "sector": "Finance",
+    "slug": "pan-african-re-insurance-journalism-awards-2027-o19"
   },
   {
     "id": "o20",
@@ -1803,7 +1861,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Doctoral students"],
-    "sector": "Research"
+    "sector": "Research",
+    "slug": "iiasa-young-scientists-summer-program-2027-o20"
   },
   {
     "id": "o21",
@@ -1830,7 +1889,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Early-stage start-ups worldwide"],
-    "sector": "Technology"
+    "sector": "Technology",
+    "slug": "wef-technology-pioneers-2027-o21"
   },
   {
     "id": "o22",
@@ -1857,7 +1917,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Real estate and urban development"],
-    "sector": "Design"
+    "sector": "Design",
+    "slug": "harvard-pollman-fellowship-2027-o22"
   },
   {
     "id": "o23",
@@ -1884,7 +1945,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Master's applicants from partner countries"],
-    "sector": "Education"
+    "sector": "Education",
+    "slug": "vlir-uos-master-scholarships-2027-2028-o23"
   },
   {
     "id": "o24",
@@ -1911,7 +1973,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Young climate leaders"],
-    "sector": "Climate"
+    "sector": "Climate",
+    "slug": "ceps-heinrich-b-ll-climate-leadership-2027-o24"
   },
   {
     "id": "o25",
@@ -1938,7 +2001,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["African universities and research centres"],
-    "sector": "Education"
+    "sector": "Education",
+    "slug": "afdb-hei-innovation-programme-phase-ii-o25"
   },
   {
     "id": "o26",
@@ -1965,7 +2029,8 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Young social entrepreneurs"],
-    "sector": "Entrepreneurship"
+    "sector": "Entrepreneurship",
+    "slug": "changemakers-for-youth-programme-2027-o26"
   },
   {
     "id": "o27",
@@ -1992,6 +2057,7 @@
     "remote": true,
     "mode": "Remote",
     "eligibility": ["Researchers in social, economic and policy fields"],
-    "sector": "Research"
+    "sector": "Research",
+    "slug": "call-for-papers-ai-for-social-and-policy-research-2027-o27"
   }
 ]

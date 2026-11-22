@@ -1,5 +1,12 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
+import { ToolLogo } from '../components/ToolLogo';
 import { DropdownMenu } from 'radix-ui';
+import {
+  listingQuestion,
+  openOutside,
+  OUTSIDE_TOOLS,
+  takesPromptInLink,
+} from '../lib/askTools';
 import { navigate } from '../lib/router';
 import { titleCase } from '../lib/text';
 import { cameFromApp, copyText, toast } from '../lib/ui';
@@ -59,6 +66,7 @@ export function OverlayButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={onClick}
       aria-label={label}
       className={OVERLAY_BUTTON}
     >
@@ -205,7 +213,7 @@ export function Fact({
       >
         <Icon name={FACT_ICONS[label] ?? 'tag'} className="h-5 w-5" />
       </span>
-      <div className="border-line flex min-w-0 flex-1 items-center gap-4 border-b py-4 group-last:border-b-0">
+      <div className="border-line @container flex min-w-0 flex-1 items-center gap-4 border-b py-4 group-last:border-b-0">
         <dt className="sr-only">{label}</dt>
         <dd className="min-w-0 flex-1 [&>p:first-child]:text-[17px]">
           {children}
@@ -218,9 +226,13 @@ export function Fact({
 
 export function FactAction({
   href,
+  icon,
+  onClick,
   children,
 }: {
   href: string;
+  icon: IconName;
+  onClick?: () => void;
   children: string;
 }) {
   return (
@@ -228,9 +240,13 @@ export function FactAction({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="bg-btn hover:bg-btn-hover flex h-10 shrink-0 items-center rounded-md px-4 text-[15px] font-semibold whitespace-nowrap transition-colors"
+      onClick={onClick}
+      aria-label={children}
+      title={children}
+      className="bg-btn hover:bg-btn-hover flex h-10 shrink-0 items-center justify-center rounded-md px-4 text-[15px] font-semibold whitespace-nowrap transition-colors @max-[19rem]:w-10 @max-[19rem]:px-0"
     >
-      {children}
+      <span className="@max-[19rem]:hidden">{children}</span>
+      <Icon name={icon} className="hidden h-5 w-5 @max-[19rem]:block" />
     </a>
   );
 }
@@ -285,12 +301,16 @@ export function DetailBody({
   action,
   primary,
   links,
+  tail,
+  map,
   children,
 }: {
   about: ReactNode;
   action: ReactNode;
   primary: ReactNode;
   links: ReactNode;
+  tail?: ReactNode;
+  map?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -300,9 +320,12 @@ export function DetailBody({
         <div className="hidden h-full md:block">{action}</div>
         <div className="flex flex-col gap-3 md:hidden">{primary}</div>
       </div>
-      <div className="min-w-0">
+      <div className="flex min-w-0 flex-col">
         {children}
+        {/* On phones the map closes the page, after the links and tags; on wider screens it stays under the facts. */}
+        {map && <div className="order-last md:order-none">{map}</div>}
         <ul className="mt-6 md:hidden">{links}</ul>
+        {tail}
       </div>
     </div>
   );
@@ -332,11 +355,13 @@ export function LinkRow({
   label,
   href,
   onClick,
+  wrap,
 }: {
   icon: IconName;
   label: string;
   href?: string;
   onClick?: () => void;
+  wrap?: (control: ReactElement) => ReactNode;
 }) {
   const body = (
     <>
@@ -360,9 +385,11 @@ export function LinkRow({
           {body}
         </Link>
       ) : (
-        <button type="button" onClick={onClick} className={cls}>
-          {body}
-        </button>
+        (wrap ?? ((control: ReactElement) => control))(
+          <button type="button" onClick={onClick} className={cls}>
+            {body}
+          </button>,
+        )
       )}
     </li>
   );
@@ -383,6 +410,58 @@ export function ActionCard({ children }: { children: ReactNode }) {
   );
 }
 
+export const SMALL_BUTTON =
+  'bg-btn hover:bg-btn-hover flex h-10 items-center justify-center rounded-md px-3 text-sm font-bold';
+
+export function AssistantLogos() {
+  return (
+    <span aria-hidden="true" className="flex gap-1">
+      {OUTSIDE_TOOLS.map((tool) => (
+        <ToolLogo key={tool.id} src={tool.logo} />
+      ))}
+    </span>
+  );
+}
+
+export function AskAIMenu({
+  kind,
+  title,
+  children,
+}: {
+  kind: 'event' | 'opportunity';
+  title: string;
+  children: ReactElement;
+}) {
+  const ask = (tool: (typeof OUTSIDE_TOOLS)[number]) => {
+    openOutside(tool.id, listingQuestion(kind, title));
+    if (!takesPromptInLink(tool.id))
+      toast(`Question copied. Paste it into ${tool.name}.`);
+  };
+  return (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger asChild>{children}</DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={8}
+          className="bg-panel border-line-2 text-fg z-[70] min-w-52 rounded-md border p-1 shadow-[0_16px_48px_rgb(0_0_0/0.35)]"
+        >
+          {OUTSIDE_TOOLS.map((tool) => (
+            <DropdownMenu.Item
+              key={tool.id}
+              onSelect={() => ask(tool)}
+              className="data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-[15px] font-medium outline-none"
+            >
+              <ToolLogo src={tool.logo} size="large" />
+              {tool.name}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
 export function SmallButton({
   onClick,
   href,
@@ -392,8 +471,7 @@ export function SmallButton({
   href?: string;
   children: string;
 }) {
-  const cls =
-    'bg-btn hover:bg-btn-hover flex h-10 items-center justify-center rounded-md px-3 text-sm font-bold';
+  const cls = SMALL_BUTTON;
   if (href?.startsWith('/')) {
     return (
       <Link href={href} className={cls}>
@@ -433,8 +511,14 @@ export async function share(
 ): Promise<'shared' | 'copied' | 'failed'> {
   const url = window.location.href;
   if (navigator.share) {
-    await navigator.share({ title, url }).catch(() => undefined);
-    return 'shared';
+    try {
+      await navigator.share({ title, url });
+      return 'shared';
+    } catch (error) {
+      // Closing the sheet is a choice, not a failure; anything else (a blocked or unsupported share) still leaves the reader with the link.
+      if (error instanceof DOMException && error.name === 'AbortError')
+        return 'shared';
+    }
   }
   return (await copyText(url)) ? 'copied' : 'failed';
 }

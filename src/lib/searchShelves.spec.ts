@@ -4,6 +4,19 @@ import { recentSearches, rememberSearch, searchShelves } from './searchShelves';
 describe('recent searches', () => {
   beforeEach(() => recentSearches.set([]));
 
+  it('never keeps a query carrying markup', () => {
+    rememberSearch('<img src=x onerror="window.__xss=1">');
+    expect(recentSearches.get()).toEqual([]);
+  });
+
+  it('leaves out a markup query already stored', () => {
+    const shelves = searchShelves(['<b>x</b>', 'lagos']);
+    const recent = shelves.find((s) =>
+      s.tiles.some((t) => t.key.startsWith('recent:')),
+    );
+    expect(recent?.tiles.map((t) => t.key)).toEqual(['recent:lagos']);
+  });
+
   it('keeps the newest first and folds repeats regardless of case', () => {
     rememberSearch('Lagos');
     rememberSearch('tech');

@@ -11,7 +11,7 @@ import { PlaceRow } from '../components/PlaceRow';
 import { Select } from '../components/Select';
 import { PlaceCard } from '../components/PlaceCard';
 import { TitleBar } from '../components/TitleBar';
-import { FeedBody, FilterLine, MoreFilters } from './FeedLayout';
+import { FeedBody, FilterLine, MoreFilters, Tally } from './FeedLayout';
 
 type Entry = 'any' | 'free';
 
@@ -66,8 +66,7 @@ export function PlacesScreen() {
         />
       </TitleBar>
       <FilterLine
-        count={items.length}
-        noun={['place', 'places']}
+        summary={<Tally count={items.length} noun={['place', 'places']} />}
         onClear={
           filtered
             ? () => {
@@ -124,7 +123,7 @@ export function PlacesScreen() {
         noun={['place', 'places']}
         keyOf={(p) => p.id}
         row={(p) => <PlaceRow place={p} />}
-        rail={{ title: 'Trending Places', items: items.slice(0, 8) }}
+        rails={[{ title: 'Trending Places', items: items.slice(0, 8) }]}
         card={(p) => <PlaceCard key={p.id} place={p} />}
       />
     </div>

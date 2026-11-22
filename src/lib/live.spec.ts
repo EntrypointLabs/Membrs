@@ -149,7 +149,7 @@ describe('loadCatalogue', () => {
       expect.anything(),
     );
     expect(api.listings().map((l) => l.id)).toEqual(['live-1']);
-    expect(api.listingById('live-1')).toBeDefined();
+    expect(api.listingByKey('live-1')).toBeDefined();
     await vi.waitFor(() => expect(api.places()).toHaveLength(1));
     expect(api.places().map((p) => p.type)).toEqual(['Parks & gardens']);
     expect(api.promos()[0]).toMatchObject({
@@ -204,7 +204,7 @@ describe('loadCatalogue', () => {
 describe('writes', () => {
   it('posts a contribution with an Idempotency-Key and reuses it on retry', async () => {
     const { api, auth, outbox } = await live();
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     const keys: string[] = [];
     let attempts = 0;
     mockFetch((url, init) => {
@@ -241,7 +241,7 @@ describe('writes', () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(outbox.outboxStore.get()).toHaveLength(1);
     const key = outbox.outboxStore.get()[0]!.key;
-    auth.sessionStore.set({ provider: 'apple', at: 0, accessToken: 't2' });
+    auth.sessionStore.set({ at: 0, accessToken: 't2' });
     await outbox.flushOutbox();
     expect(
       new Headers(fetch.mock.calls[0]![1]!.headers).get('Idempotency-Key'),
@@ -251,7 +251,7 @@ describe('writes', () => {
 
   it('drops and reports a write the API rejects', async () => {
     const { api, auth, outbox } = await live();
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     mockFetch(() =>
       json(
         { error: { code: 'badRequest', message: 'link must be a web link' } },
@@ -271,7 +271,6 @@ describe('writes', () => {
   it('refreshes an expired token and replays with the same key', async () => {
     const { api, auth } = await live();
     auth.sessionStore.set({
-      provider: 'google',
       at: 0,
       accessToken: 'old',
       refreshToken: 'r1',
@@ -300,7 +299,6 @@ describe('writes', () => {
         : json({ data: {} }, 202);
     });
     const stored = {
-      provider: 'google',
       at: 0,
       accessToken: 'old',
       refreshToken: 'r1',
@@ -324,7 +322,7 @@ describe('writes', () => {
 
   it('subscribes by saving interests then the digest preference', async () => {
     const { api, auth } = await live();
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     const sent: { method?: string; url: string; body: unknown }[] = [];
     mockFetch((url, init) => {
       if (!init.method)
@@ -377,25 +375,29 @@ describe('writes', () => {
     const { api, auth } = await live();
     const prefs = await import('./preferences');
     auth.sessionStore.set({
-      provider: 'google',
       at: 0,
       accessToken: 't1',
       account: { id: 'u', email: 'reader@example.com', displayName: 'R' },
     });
     mockFetch((url) =>
-      url.endsWith('/v1/me/interests')
-        ? json({ data: { interests: [{ kind: 'event', category: 'Comedy' }] } })
-        : json({
-            data: {
-              subscribed: true,
-              frequency: 'weekly',
-              city: 'Abuja',
-              interests: [],
-            },
-          }),
+      url.endsWith('/v1/me/for-you')
+        ? json([{ id: 'comedy-night' }])
+        : url.endsWith('/v1/me/interests')
+          ? json({
+              data: { interests: [{ kind: 'event', category: 'Comedy' }] },
+            })
+          : json({
+              data: {
+                subscribed: true,
+                frequency: 'weekly',
+                city: 'Abuja',
+                interests: [],
+              },
+            }),
     );
     await api.loadAccount();
     expect(prefs.interestsStore.get()).toEqual(['Comedy']);
+    expect(api.forYouStore.get()).toEqual(['comedy-night']);
     expect(prefs.cityStore.get()).toBe('Abuja');
     expect(prefs.subscriptionStore.get()).toEqual({
       email: 'reader@example.com',
@@ -404,23 +406,18 @@ describe('writes', () => {
   });
 });
 
-describe('signIn', () => {
-  it('reports the provider as unavailable instead of faking a session', async () => {
+describe('readerKnown', () => {
+  it('needs an access token before a feature can skip asking for the email', async () => {
     const { auth } = await live();
-    mockFetch(() => json({ error: { code: 'notFound' } }, 404));
-    await expect(auth.signIn('google')).rejects.toBeInstanceOf(
-      auth.SignInUnavailableError,
-    );
-    expect(auth.sessionStore.get()).toBeNull();
+    expect(auth.readerKnown(null)).toBe(false);
+    expect(auth.readerKnown({ at: 1 })).toBe(false);
+    expect(auth.readerKnown({ at: 1, accessToken: 'a' })).toBe(true);
   });
+});
 
-  it('exchanges the callback code for a session', async () => {
+describe('startReaderSession', () => {
+  it('posts the normalised email and stores the session', async () => {
     const { auth } = await live();
-    const replaceState = vi.fn();
-    vi.stubGlobal('window', {
-      location: { pathname: '/auth/callback', search: '?code=abc' },
-      history: { replaceState },
-    });
     const fetch = mockFetch(() =>
       json({
         data: {
@@ -428,17 +425,41 @@ describe('signIn', () => {
           accessTokenExpiresAt: '',
           refreshToken: 'r',
           refreshTokenExpiresAt: '',
-          account: { id: 'u', email: 'a@b.c', displayName: 'A' },
+          account: { id: 'u', email: 'ada@example.com', displayName: 'ada' },
         },
       }),
     );
-    expect(await auth.completeSignIn()).toEqual({
-      status: 'signedIn',
-      provider: 'google',
+    await auth.startReaderSession('  Ada@Example.com ');
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(url).toBe(`${BASE}/v1/auth/email`);
+    expect(JSON.parse(String(init?.body))).toEqual({
+      email: 'ada@example.com',
     });
-    expect(fetch.mock.calls[0]![0]).toBe(`${BASE}/v1/auth/oauth/exchange`);
     expect(auth.sessionStore.get()?.accessToken).toBe('a');
-    expect(replaceState).toHaveBeenCalledWith(null, '', '/');
+  });
+
+  it('refuses an address that cannot be an email without calling the API', async () => {
+    const { auth } = await live();
+    const fetch = mockFetch(() => json({}));
+    await expect(auth.startReaderSession('ada@example')).rejects.toBeInstanceOf(
+      auth.EmailNotAcceptedError,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+    expect(auth.sessionStore.get()).toBeNull();
+  });
+
+  it('shows the server reason and stays signed out when the API refuses', async () => {
+    const { auth } = await live();
+    mockFetch(() =>
+      json(
+        { error: { code: 'tooManyRequests', message: 'Slow down a little.' } },
+        429,
+      ),
+    );
+    await expect(auth.startReaderSession('ada@example.com')).rejects.toThrow(
+      'Slow down a little.',
+    );
+    expect(auth.sessionStore.get()).toBeNull();
   });
 });
 
@@ -495,7 +516,7 @@ describe('ad requests', () => {
 
   it('uploads the photo, completes it and files the ad with payment details', async () => {
     const { api, auth } = await live();
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     const keys: string[] = [];
     const fetch = mockFetch((url, init) => {
       if (url === 'blob:local/photo') return photo();
@@ -555,7 +576,7 @@ describe('ad requests', () => {
 
   it('refuses photo types the API will not store', async () => {
     const { api, auth } = await live();
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     mockFetch(
       () => new Response('gif', { headers: { 'content-type': 'image/gif' } }),
     );
@@ -590,7 +611,7 @@ describe('ad checkout', () => {
   it('starts checkout with the session token and reuses its key on retry', async () => {
     const { auth } = await live();
     const payments = await import('./payments');
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     const keys: string[] = [];
     mockFetch((url, init) => {
       expect(url).toBe(`${BASE}/v1/ads/checkout`);
@@ -623,7 +644,7 @@ describe('ad checkout', () => {
   it('surfaces the server message when payments are unavailable', async () => {
     const { auth } = await live();
     const payments = await import('./payments');
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     mockFetch(() =>
       json(
         {
@@ -644,7 +665,7 @@ describe('ad checkout', () => {
   it('reads an order status for its owner', async () => {
     const { auth } = await live();
     const payments = await import('./payments');
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     mockFetch((url) => {
       expect(url).toBe(`${BASE}/v1/me/ads/orders/AD-7K2Q9X`);
       return json({ data: { reference: 'AD-7K2Q9X', status: 'paid' } });

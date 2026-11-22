@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import listingsFixture from '../fixtures/listings.json';
 import { closesLine } from '../lib/dates';
+import { priceText } from '../lib/text';
 import type { EventListing, Listing, OpportunityListing } from '../lib/types';
 import { ListingCard, shownPrice } from './ListingCard';
 
@@ -12,7 +13,7 @@ describe('ListingCard', () => {
 
   it('links to the listing and shows its price', () => {
     const html = renderToStaticMarkup(<ListingCard listing={event} />);
-    expect(html).toContain(`href="/listing/${event.id}"`);
+    expect(html).toContain(`href="/listing/${event.slug}"`);
     expect(html).toContain(event.title);
     expect(html).toContain(shownPrice(event));
   });
@@ -31,7 +32,7 @@ describe('ListingCard', () => {
   it('shows the deadline and award for an opportunity', () => {
     const html = renderToStaticMarkup(<ListingCard listing={opportunity} />);
     expect(html).toContain(closesLine(opportunity));
-    expect(html).toContain(opportunity.award);
+    expect(html).toContain(priceText(opportunity.award));
   });
 
   it('never carries an Ad badge', () => {

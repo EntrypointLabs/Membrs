@@ -3,12 +3,7 @@ import { paths } from '../lib/router';
 import type { OpportunityListing } from '../lib/types';
 import { Kicker } from './Kicker';
 import { Link } from './Link';
-
-const URGENCY_COLOR = {
-  now: 'text-urgent',
-  soon: 'text-warning',
-  later: 'text-accent',
-} as const;
+import { URGENCY_COLOR } from './UrgencyLabel';
 
 /**
  * A Closing Soon row. The countdown leads in its urgency colour with no box
@@ -17,7 +12,7 @@ const URGENCY_COLOR = {
 export function DeadlineRow({ listing }: { listing: OpportunityListing }) {
   return (
     <Link
-      href={paths.listing(listing.id)}
+      href={paths.listing(listing.slug)}
       className="group border-line grid grid-cols-[56px_1fr] items-center gap-4 border-b py-5 md:grid-cols-[96px_1fr_auto] md:gap-5 md:py-7"
     >
       <span

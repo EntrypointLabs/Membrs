@@ -1,5 +1,5 @@
 import { naira } from './ads';
-import { WEEKDAYS } from './dates';
+import { DAY_MS, WEEKDAYS } from './dates';
 import photos from '../generated/photos.json';
 import type { Listing, OpeningHours, Place, Promo } from './types';
 
@@ -156,8 +156,6 @@ export function offerOf(deal: RemoteDeal): string {
   if (kind === 'happyHour') return 'Happy hour';
   return deal.title;
 }
-
-const DAY_MS = 86_400_000;
 
 export function daysUntil(iso: string, now: Date): number {
   const start = (d: Date) =>

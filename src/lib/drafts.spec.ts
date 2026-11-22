@@ -26,7 +26,6 @@ const draft: ContributeDraft = {
   agreed: true,
   photoId: 'p1',
   hosted: { source: 'p1', url: 'https://cdn.test/p1.jpg' },
-  resume: true,
 };
 
 let storage: ReturnType<typeof memoryStorage>;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { closesLine, eventDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import type { Listing } from '../lib/types';
@@ -7,6 +7,24 @@ import { Kicker } from './Kicker';
 import { Link } from './Link';
 import { Meta } from './ListingCard';
 import { Photo } from './Photo';
+
+const SLIDE_MS = 6000;
+const LONGEST_PHOTO_WAIT_MS = 1500;
+const photoLoads = new Map<string, Promise<void>>();
+
+function photoReady(url: string): Promise<void> {
+  const known = photoLoads.get(url);
+  if (known) return known;
+  const loaded = new Promise<void>((done) => {
+    const img = new Image();
+    img.onload = img.onerror = () => done();
+    img.referrerPolicy = 'no-referrer';
+    img.src = url;
+    setTimeout(done, LONGEST_PHOTO_WAIT_MS);
+  });
+  photoLoads.set(url, loaded);
+  return loaded;
+}
 
 /**
  * The home page's lead story: a few picks that rotate every six seconds.
@@ -17,11 +35,24 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
   const [held, setHeld] = useState(false);
   const [stopped, setStopped] = useState(false);
   const paused = held || stopped;
+  const urls = picks.map((p) => p.photoUrl ?? '').join(' ');
+  useEffect(() => {
+    for (const url of urls.split(' ').filter(Boolean)) void photoReady(url);
+  }, [urls]);
+  const show = useCallback(
+    (next: number) => {
+      const url = picks[next]?.photoUrl;
+      void (url ? photoReady(url) : Promise.resolve()).then(() =>
+        setIndex(next),
+      );
+    },
+    [picks],
+  );
   useEffect(() => {
     if (picks.length < 2 || paused) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % picks.length), 6000);
-    return () => clearInterval(id);
-  }, [picks.length, paused]);
+    const id = setTimeout(() => show((index + 1) % picks.length), SLIDE_MS);
+    return () => clearTimeout(id);
+  }, [index, picks.length, paused, show]);
   const pick = picks[index];
   if (!pick) return null;
   return (
@@ -33,9 +64,10 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
         if (!e.currentTarget.contains(e.relatedTarget)) setHeld(false);
       }}
     >
-      <Link href={paths.listing(pick.id)} className="group block">
+      <Link href={paths.listing(pick.slug)} className="group block">
         <div className="relative">
           <Photo
+            key={pick.id}
             size="hero"
             id={pick.photo}
             src={pick.photoUrl}
@@ -50,8 +82,8 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
         </h2>
       </Link>
       <div className="mt-3 flex items-end justify-between gap-6">
-        <div>
-          <p className="text-fg-2 max-w-xl">{pick.blurb}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-fg-2 line-clamp-3">{pick.blurb}</p>
           <p className="text-fg-3 mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
             {pick.kind === 'event' ? (
               <>
@@ -87,7 +119,7 @@ export function HeroCarousel({ picks }: { picks: Listing[] }) {
                 role="tab"
                 aria-selected={i === index}
                 aria-label={p.title}
-                onClick={() => setIndex(i)}
+                onClick={() => show(i)}
                 className={`ease-out-strong h-1.5 rounded-full transition-[width,background-color] duration-200 ${i === index ? 'bg-fg w-6' : 'bg-fg-4 w-1.5'}`}
               />
             ))}

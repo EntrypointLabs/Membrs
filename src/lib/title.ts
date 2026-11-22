@@ -1,15 +1,14 @@
 import {
   categoryBySlug,
   contributeForm,
-  listingById,
+  listingByKey,
   placeById,
   promoById,
 } from './api';
 import type { FeedKind, Route } from './router';
 import { titleCase } from './text';
 import type { LegalSlug } from './types';
-
-const SITE_NAME = 'MEMBRS';
+import { SITE_NAME } from './head';
 
 export const LEGAL_TITLES: Record<LegalSlug, string> = {
   terms: 'Terms of Service',
@@ -37,7 +36,7 @@ function pageName(route: Route): string | undefined {
     case 'category':
       return categoryBySlug(route.slug)?.name ?? 'Category';
     case 'listing':
-      return listingById(route.id)?.title ?? 'Listing';
+      return listingByKey(route.id)?.title ?? 'Listing';
     case 'place':
       return placeById(route.id)?.name ?? 'Place';
     case 'promo':
@@ -48,6 +47,8 @@ function pageName(route: Route): string | undefined {
       return route.query.trim() ? `Search: ${route.query.trim()}` : 'Search';
     case 'legal':
       return LEGAL_TITLES[route.doc];
+    case 'unsubscribe':
+      return route.notYou ? 'Not You?' : 'Unsubscribe';
     case 'not-found':
       return 'Page Not Found';
   }

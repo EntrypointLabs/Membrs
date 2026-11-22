@@ -62,7 +62,7 @@ describe('one queued submission per form', () => {
     const fetch = vi.fn(() => Promise.resolve(json({ data: {} }, 202)));
     vi.stubGlobal('fetch', fetch);
     await api.submitContribution('event', { name: 'Gig' });
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     await outbox.flushOutbox();
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(outbox.sentSlotsStore.get()).toEqual([
@@ -84,7 +84,7 @@ describe('a write that keeps failing', () => {
   it('backs off, then drops it and tells the reader', async () => {
     vi.useFakeTimers();
     const { api, auth, outbox, ui } = await live();
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     const fetch = vi.fn((url: string) =>
       Promise.resolve(
         url.endsWith('/v1/me/contributions')
@@ -108,7 +108,7 @@ describe('a write that keeps failing', () => {
   it('does not hold back the writes queued behind it', async () => {
     vi.useFakeTimers();
     const { auth, outbox } = await live();
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     const sent: string[] = [];
     vi.stubGlobal(
       'fetch',
@@ -148,7 +148,7 @@ describe('signing out', () => {
     });
     const { api, auth, outbox, preferences } = await live();
     const drafts = await import('./drafts');
-    auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 't1' });
+    auth.sessionStore.set({ at: 0, accessToken: 't1' });
     vi.stubGlobal(
       'fetch',
       vi.fn(() => Promise.resolve(json({}, 503))),
@@ -163,7 +163,7 @@ describe('signing out', () => {
       days: 7,
       agreed: false,
     });
-    auth.signOut();
+    auth.forgetEmail();
     expect(auth.sessionStore.get()).toBeNull();
     expect(outbox.outboxStore.get()).toEqual([]);
     expect(preferences.subscriptionStore.get()).toBeNull();

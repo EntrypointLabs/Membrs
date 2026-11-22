@@ -1,9 +1,10 @@
 import type { ReactElement } from 'react';
 import { DropdownMenu } from 'radix-ui';
 import { CONTRIBUTE_KINDS } from '../lib/contribute';
-import { navigate, paths } from '../lib/router';
+import { paths } from '../lib/router';
 import type { ContributeKind } from '../lib/types';
 import { Icon, type IconName } from './Icon';
+import { Link } from './Link';
 import { navItem } from './nav';
 
 const SECTION_OF_KIND = {
@@ -40,14 +41,16 @@ export function ContributeMenu({
             return (
               <DropdownMenu.Item
                 key={k.value}
-                onSelect={() => navigate(paths.contribute(k.value))}
+                asChild
                 className="data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center gap-3 rounded-md px-3.5 text-[15px] font-semibold outline-none"
               >
-                <Icon
-                  name={look.icon}
-                  className={`h-[18px] w-[18px] ${look.color}`}
-                />
-                {k.label}
+                <Link href={paths.contribute(k.value)}>
+                  <Icon
+                    name={look.icon}
+                    className={`h-[18px] w-[18px] ${look.color}`}
+                  />
+                  {k.label}
+                </Link>
               </DropdownMenu.Item>
             );
           })}

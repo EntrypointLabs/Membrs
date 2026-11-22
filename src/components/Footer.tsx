@@ -16,7 +16,9 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
     title: 'Explore',
     links: [
       ['Events', paths.feed('events')],
+      ['Event categories', paths.categories('events')],
       ['Opportunities', paths.feed('opportunities')],
+      ['Opportunity types', paths.categories('opportunities')],
       ...(shown('places')
         ? [['Places', paths.feed('places')] as [string, string]]
         : []),
@@ -53,11 +55,11 @@ export function Footer() {
   return (
     <footer className="page mt-[clamp(120px,9vw,180px)] max-md:hidden">
       <div className="bg-inv text-inv-fg rounded-t-lg px-[clamp(32px,4.5vw,88px)] pt-[clamp(64px,5.5vw,104px)] pb-10 shadow-[0_-24px_60px_rgb(0_0_0/0.18)]">
-        {/* Same four columns as the links below, so the sign-up sits exactly in the Contact column. */}
+        {/* Same four columns as the links below, so the weekly email block sits exactly in the Contact column. */}
         <div className="grid items-center gap-10 md:grid-cols-2 lg:grid-cols-4">
           <h2 className="text-[clamp(26px,2.3vw,38px)] leading-tight font-medium tracking-tight lg:col-span-3">
             {/* One headline, broken before "in" so it reads as two lines. */}
-            {titleCase(`Get the best of ${city} in your inbox every Sunday.`)
+            {titleCase(`Get the best of ${city} in your inbox every week.`)
               .split(' in ')
               .map((part, i) => (
                 <span key={part} className="block">
@@ -71,13 +73,34 @@ export function Footer() {
         <div className="mt-[clamp(56px,5vw,88px)] mb-[clamp(40px,3.5vw,56px)] flex flex-wrap items-end justify-between gap-5">
           <div className="flex flex-col gap-2.5">
             <Link
-              href="/"
+              href={paths.home()}
               className="text-[clamp(34px,2.6vw,44px)] leading-none font-black tracking-[-0.05em]"
             >
               MEMBRS
             </Link>
             <p className="text-inv-fg-2 text-[15px]">
               © 2026 MEMBRS. All rights reserved.
+            </p>
+            <p className="text-inv-fg-3 text-[13px]">
+              Place names from{' '}
+              <a
+                href="https://www.geonames.org/"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-inv-fg underline underline-offset-2"
+              >
+                GeoNames
+              </a>
+              , licensed under{' '}
+              <a
+                href="https://creativecommons.org/licenses/by/4.0/"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-inv-fg underline underline-offset-2"
+              >
+                CC BY 4.0
+              </a>
+              .
             </p>
           </div>
         </div>

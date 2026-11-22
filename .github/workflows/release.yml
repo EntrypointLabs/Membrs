@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+        env:
+          HUSKY: '0'
+      - run: npm run lint
+      - run: npm run check-types
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_API_BASE: /api
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - name: Release this commit with the backend
+        env:
+          GH_TOKEN: ${{ secrets.BACKEND_DISPATCH_TOKEN }}
+          FRONTEND_SHA: ${{ github.sha }}
+        run: |
+          gh workflow run deploy-production.yml \
+            --repo EntrypointLabs/membrs-backend \
+            --ref main \
+            -f frontend_sha="$FRONTEND_SHA"

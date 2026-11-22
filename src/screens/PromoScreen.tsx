@@ -18,15 +18,16 @@ import {
   shareAndConfirm,
   SmallButton,
 } from './DetailParts';
-import { SeeAll } from './HomeScreen';
+import { SeeAll } from '../components/PhoneList';
 import { NotFoundScreen } from './NotFoundScreen';
+import { GRID_COLUMNS } from '../lib/config';
 
 export function PromoScreen({ id }: { id: string }) {
   const promo = promoById(id);
   if (!promo) return <NotFoundScreen />;
   const more = promos()
     .filter((p) => p.id !== promo.id)
-    .slice(0, 3);
+    .slice(0, GRID_COLUMNS);
   const copyCode = async () => {
     if (!promo.code) return;
     toast(

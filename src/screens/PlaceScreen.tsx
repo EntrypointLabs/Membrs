@@ -21,8 +21,9 @@ import {
   shareAndConfirm,
   SmallButton,
 } from './DetailParts';
-import { SeeAll } from './HomeScreen';
+import { SeeAll } from '../components/PhoneList';
 import { NotFoundScreen } from './NotFoundScreen';
+import { GRID_COLUMNS } from '../lib/config';
 
 export function PlaceScreen({ id }: { id: string }) {
   const place = placeById(id);
@@ -35,7 +36,7 @@ export function PlaceScreen({ id }: { id: string }) {
       (p) =>
         p.id !== place.id && (p.type === place.type || p.city === place.city),
     )
-    .slice(0, 3);
+    .slice(0, GRID_COLUMNS);
   return (
     <div className="page max-md:pt-0 md:pt-10">
       <DetailHead
@@ -103,7 +104,11 @@ export function PlaceScreen({ id }: { id: string }) {
           </Fact>
           <Fact
             label="Where"
-            action={<FactAction href={maps}>Directions</FactAction>}
+            action={
+              <FactAction href={maps} icon="pin">
+                Directions
+              </FactAction>
+            }
           >
             <p className="font-semibold">{place.area}</p>
             <p className="text-fg-3 text-[15px]">{place.city}</p>

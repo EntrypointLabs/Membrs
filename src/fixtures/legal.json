@@ -7,7 +7,7 @@
       {
         "heading": "Information we collect",
         "paragraphs": [
-          "<b>Your Google or Apple account.</b> To subscribe to the digest or send us a listing, you sign in with Google or Apple. They share your name and email address with us. We never see your password.",
+          "<b>Your email address.</b> When you subscribe to the digest, ask membrs a question or send us a listing, you give us your email address there. That address is all we receive. There is no password.",
           "<b>Email, city and interests</b> when you subscribe to the Sunday digest, together with your consent to receive it and our promotional emails. Telling us about your field of work is optional.",
           "<b>What you send us.</b> Events, opportunities and ads you submit, including any photo and the contact details you put in the form.",
           "<b>Ad payments.</b> Ads are paid for through our payment provider, Bachs. We receive the amount, the status and the payment reference. We never see your card or bank details.",
@@ -30,7 +30,7 @@
       {
         "heading": "Sharing and disclosure",
         "paragraphs": [
-          "<b>Service providers</b> that help us run membrs, under contracts that limit what they can do with your data: Google and Apple for sign-in, Google for the spreadsheets we keep subscriber and submission records in, Bachs for ad payments, Anthropic for answering questions sent to Ask membrs, and our email delivery and hosting providers.",
+          "<b>Service providers</b> that help us run membrs, under contracts that limit what they can do with your data: Google for the spreadsheets we keep subscriber and submission records in, Bachs for ad payments, Anthropic for answering questions sent to Ask membrs, and our email delivery and hosting providers.",
           "<b>Organisers do not get your details from us.</b> When you get a ticket or apply, you leave membrs for the organiser's own page, and their privacy policy applies there.",
           "<b>Legal reasons</b>, if we are required to by law or to protect people from harm."
         ]
@@ -94,7 +94,7 @@
       {
         "heading": "Children's privacy",
         "paragraphs": [
-          "membrs is not intended for anyone under 16, and we do not knowingly collect information from them. If you believe a child has signed up, contact us and we will delete it."
+          "membrs is not intended for anyone under 16, and we do not knowingly collect information from them. If you believe a child has given us their email, contact us and we will delete it."
         ]
       },
       {
@@ -141,8 +141,8 @@
       {
         "heading": "Your account",
         "paragraphs": [
-          "You sign in with Google or Apple to subscribe to the digest or send us a listing. Keep that account secure. You are responsible for what is submitted from it.",
-          "You can sign out at any time, and ask us to delete your account from <a href=\"mailto:privacy@membrs.app\">privacy@membrs.app</a>."
+          "You give us your email address to subscribe to the digest, ask membrs a question or send us a listing. Use an address that is yours. You are responsible for what is submitted from a browser that holds it. If someone else uses your address, the link in our welcome email stops all membrs email to it.",
+          "You can make this browser forget your email at any time, and ask us to delete your account from <a href=\"mailto:privacy@membrs.app\">privacy@membrs.app</a>."
         ]
       },
       {
@@ -242,11 +242,11 @@
         "paragraphs": [
           "<b>membrs.theme</b> remembers dark or light mode. Kept until you clear it.",
           "<b>membrs.cookies</b> remembers your cookie choice. Kept for 12 months.",
-          "<b>membrs.user and membrs.refresh</b> keep you signed in. Removed when you sign out.",
+          "<b>membrs.user and membrs.refresh</b> remember the email you gave us, so we do not ask again. Removed when you tell this browser to forget it.",
           "<b>membrs.city and recent searches</b> remember your city and searches on your own device only. They are never sent to us.",
           "<b>membrs.interests, membrs.fields and membrs.joined</b> remember the digest picks you chose, so the digest card opens with them.",
           "<b>membrs.outbox and form drafts</b> hold a listing you are writing or sending, including its photo, until it is sent or you clear the form.",
-          "<b>membrs.tour and membrs.signup-prompted</b> remember that you have seen the tour and the sign-up prompt.",
+          "<b>membrs.tour</b> remembers that you have seen the tour.",
           "<b>Security and load balancing</b> cookies set by our hosting provider to keep the site fast and protected. Session only."
         ]
       },

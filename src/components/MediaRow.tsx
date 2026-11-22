@@ -19,8 +19,8 @@ export function MediaRow({
     <Link
       href={href}
       className={cn(
-        'group border-line flex items-start gap-4 border-b py-5 md:items-stretch md:gap-6 md:py-8',
-        tile && 'md:h-full md:flex-col md:gap-0 md:border-b-0 md:py-0',
+        "group after:bg-line relative flex items-start gap-4 py-5 after:absolute after:right-0 after:bottom-0 after:left-[calc(clamp(88px,30vw,128px)+1rem)] after:h-px after:content-[''] md:items-stretch md:gap-6 md:py-8 md:after:left-[calc(clamp(220px,22vw,320px)+1.5rem)]",
+        tile && 'md:h-full md:flex-col md:gap-0 md:py-0 md:after:hidden',
       )}
     >
       <Photo
@@ -30,13 +30,13 @@ export function MediaRow({
         cover={{ title, tag }}
         alt={title}
         className={cn(
-          'rounded-photo aspect-square w-32 shrink-0 self-start md:aspect-[3/2] md:w-[clamp(220px,22vw,320px)]',
+          'rounded-photo aspect-square w-[clamp(88px,30vw,128px)] shrink-0 self-start md:aspect-[3/2] md:w-[clamp(220px,22vw,320px)]',
           tile && 'md:aspect-[4/3] md:w-full md:self-stretch',
         )}
       />
       <div
         className={cn(
-          'flex h-32 max-w-2xl min-w-0 flex-1 flex-col overflow-hidden md:h-auto md:overflow-visible md:py-2',
+          'flex min-h-[clamp(88px,30vw,128px)] max-w-2xl min-w-0 flex-1 flex-col md:min-h-0 md:py-2',
           tile && 'md:max-w-none md:pt-5 md:pb-0',
         )}
       >

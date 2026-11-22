@@ -23,6 +23,10 @@ export const ForYouScreen = lazyScreen(
   () => import('./ForYouScreen'),
   'ForYouScreen',
 );
+export const UnsubscribeScreen = lazyScreen(
+  () => import('./UnsubscribeScreen'),
+  'UnsubscribeScreen',
+);
 export const FeedScreen = lazyScreen(
   () => import('./FeedScreen'),
   'FeedScreen',

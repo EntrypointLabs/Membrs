@@ -1,24 +1,20 @@
-import { sessionStore, type Provider } from '../lib/auth';
+import { forgetEmail, sessionStore } from '../lib/auth';
 import { subscriptionStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
-import { openDigest, openOverlay } from '../lib/ui';
-import { ProviderButton, useProviderSignIn } from './AuthModal';
+import { openDigest, toast } from '../lib/ui';
+import { EmailStep } from './EmailStep';
 import { Icon } from './Icon';
 
 /**
- * The footer's digest block. It mirrors the sign-up card instead of asking
- * for an email, because the digest belongs to an account: signed out, it is
- * the Google and Apple buttons; signed in without a digest, one button to
- * pick a city and interests; subscribed, a status line with Edit.
+ * The footer's digest block. A reader the browser does not know gives their
+ * email here and goes straight on to their city and interests; a known reader
+ * without a digest gets one button for that; a subscribed reader sees a
+ * status line with Edit. Whenever the browser knows the email, it says which
+ * one and offers to forget it, which is how a reader changes it.
  */
 export function DigestForm() {
   const session = useStore(sessionStore);
   const joined = useStore(subscriptionStore);
-  const { busy, start } = useProviderSignIn();
-
-  async function go(provider: Provider) {
-    if (await start(provider)) openOverlay('prefs');
-  }
 
   const settings = (
     <button
@@ -32,16 +28,35 @@ export function DigestForm() {
     </button>
   );
 
-  if (joined)
+  const knownAs = session?.account && (
+    <p className="text-inv-fg-2 mt-3 text-sm">
+      Using <b className="text-inv-fg">{session.account.email}</b>.{' '}
+      <button
+        type="button"
+        onClick={() => {
+          forgetEmail();
+          toast('This browser no longer knows your email.');
+        }}
+        className="text-inv-fg font-semibold underline underline-offset-2"
+      >
+        Forget it
+      </button>
+    </p>
+  );
+
+  if (session && joined)
     return (
-      <div className="flex items-center gap-4">
-        <p className="text-inv-fg flex flex-1 items-center gap-2.5 text-[17px]">
-          <Icon name="check" className="text-open h-5 w-5 shrink-0" />
-          <span>
-            You get the Sunday Digest for <b>{joined.city}</b>.
-          </span>
-        </p>
-        {settings}
+      <div>
+        <div className="flex items-center gap-4">
+          <p className="text-inv-fg flex flex-1 items-center gap-2.5 text-[17px]">
+            <Icon name="check" className="text-open h-5 w-5 shrink-0" />
+            <span>
+              You get the weekly email for <b>{joined.city}</b>.
+            </span>
+          </p>
+          {settings}
+        </div>
+        {knownAs}
       </div>
     );
 
@@ -55,30 +70,18 @@ export function DigestForm() {
         >
           Choose your city and interests
         </button>
-        <p className="text-inv-fg-2 mt-3 text-sm">
-          One step left. It takes ten seconds.
-        </p>
+        {knownAs}
       </div>
     );
 
-  // The block fills the Contact column it sits in, edge to edge.
   return (
     <div className="grid w-full gap-3">
-      <div className="grid gap-2.5">
-        <ProviderButton
-          provider="google"
-          busy={busy}
-          onClick={() => go('google')}
-        />
-        <ProviderButton
-          provider="apple"
-          busy={busy}
-          onClick={() => go('apple')}
-        />
-      </div>
-      <p className="text-inv-fg-2 text-sm">
-        Free every Sunday. No password, no spam.
-      </p>
+      <EmailStep
+        actionLabel="Get the weekly email"
+        onContinue={openDigest}
+        inputClassName="border-inv-fg-3/50 text-inv-fg placeholder:text-inv-fg-3 bg-transparent dark:bg-transparent"
+      />
+      <p className="text-inv-fg-2 text-sm">Free every week.</p>
     </div>
   );
 }

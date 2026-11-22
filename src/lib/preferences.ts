@@ -1,3 +1,4 @@
+import { DEFAULT_CITY } from './config';
 import { createStore } from './store';
 
 /**
@@ -11,7 +12,7 @@ export type Theme = 'dark' | 'light';
 export const themeStore = createStore<Theme>('membrs.theme', 'dark');
 
 /** The city every feed is filtered to. Lagos until the reader picks. */
-export const cityStore = createStore<string>('membrs.city', 'Lagos');
+export const cityStore = createStore<string>('membrs.city', DEFAULT_CITY);
 
 export interface Subscription {
   email: string;

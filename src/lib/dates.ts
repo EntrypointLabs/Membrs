@@ -21,7 +21,7 @@ const MONTHS = [
   'Nov',
   'Dec',
 ];
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 
 export const CATALOGUE_ZONE = 'Africa/Lagos';
 export const DEFAULT_EVENT_MS = 2 * 3_600_000;
@@ -161,17 +161,22 @@ export function weekendDays(today = calendarToday()): [number, number] {
 export function eventTag(event: EventListing): string {
   if (event.inDays === 0) return 'Tonight';
   if (event.inDays === 1) return 'Tomorrow';
-  const [saturday, sunday] = weekendDays();
-  if (event.inDays >= saturday && event.inDays <= sunday) return 'This weekend';
-  return '';
+  return isThisWeekend(event) ? 'This Weekend' : '';
 }
 
 export function eventDay(event: EventListing, year = false): string {
+  if (event.runUntil) return runDays(event.date, event.runUntil);
   const starts = event.startsAt ? new Date(event.startsAt) : null;
   const differs = starts && starts.getFullYear() !== new Date().getFullYear();
   return starts && (year || differs)
     ? `${shortDay(event.date)} ${starts.getFullYear()}`
     : shortDay(event.date);
+}
+
+function runDays(first: DayLabel, last: DayLabel): string {
+  return first.month === last.month
+    ? `${first.weekday} ${first.day} to ${last.weekday} ${last.day} ${last.month}`
+    : `${shortDay(first)} to ${shortDay(last)}`;
 }
 
 /** "Sat 7 Nov" */
@@ -208,6 +213,15 @@ export function bySoonest(a: Listing, b: Listing): number {
   return (aDay === bDay ? 0 : aDay - bDay) || aTime - bTime;
 }
 
+const NEUTRAL_POPULARITY = 50;
+
+export function byPopularity(a: Listing, b: Listing): number {
+  return (
+    (b.popularity ?? NEUTRAL_POPULARITY) -
+      (a.popularity ?? NEUTRAL_POPULARITY) || bySoonest(a, b)
+  );
+}
+
 export function hasDeadline(opportunity: OpportunityListing): boolean {
   return opportunity.deadline.day > 0;
 }
@@ -223,4 +237,62 @@ export function whenLine(listing: Listing): string {
   return listing.kind === 'event'
     ? `${eventDay(listing)}, ${listing.time}`
     : closesLine(listing);
+}
+
+const COMING_SOON_DAYS = 30;
+
+export function isComingSoon(listing: Listing): boolean {
+  if (listing.kind === 'event')
+    return listing.inDays >= 0 && listing.inDays <= COMING_SOON_DAYS;
+  return hasDeadline(listing) && listing.daysLeft >= 0;
+}
+
+export function isThisWeekend(event: EventListing): boolean {
+  const [saturday, sunday] = weekendDays();
+  return event.inDays >= saturday && event.inDays <= sunday;
+}
+
+export interface UrgencyLabel {
+  text: string;
+  urgency: Urgency;
+}
+
+const CLOSING_LABEL_DAYS = 7;
+
+function eventUrgencyLabel(event: EventListing): UrgencyLabel | null {
+  const text = eventTag(event);
+  if (!text) return null;
+  return { text, urgency: event.inDays === 0 ? 'now' : 'soon' };
+}
+
+function closingUrgencyLabel(
+  opportunity: OpportunityListing,
+): UrgencyLabel | null {
+  const left = opportunity.daysLeft;
+  if (!hasDeadline(opportunity) || left < 0 || left > CLOSING_LABEL_DAYS)
+    return null;
+  const text =
+    left === 0
+      ? 'Closes Today'
+      : `Closes in ${left} ${left === 1 ? 'Day' : 'Days'}`;
+  return { text, urgency: deadlineUrgency(left) };
+}
+
+export function isNewToday(listing: Listing, now = Date.now()): boolean {
+  const listed = Date.parse(listing.listedAt ?? '');
+  return Number.isFinite(listed) && now - listed >= 0 && now - listed < DAY_MS;
+}
+
+export function urgencyLabel(
+  listing: Listing,
+  now = Date.now(),
+): UrgencyLabel | null {
+  const timed =
+    listing.kind === 'event'
+      ? eventUrgencyLabel(listing)
+      : closingUrgencyLabel(listing);
+  if (timed) return timed;
+  return isNewToday(listing, now)
+    ? { text: 'New Today', urgency: 'later' }
+    : null;
 }

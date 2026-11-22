@@ -17,7 +17,7 @@ export function Kicker({
   className?: string;
 }) {
   return (
-    <p className={`flex ${className}`}>
+    <p className={`flex max-w-full min-w-0 ${className}`}>
       <Tags
         section={mixed ? listing.kind : undefined}
         names={listingTags(listing)}

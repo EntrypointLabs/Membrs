@@ -1,11 +1,12 @@
 import { Suspense, useEffect } from 'react';
+import { catalogueStore } from './lib/api';
 import { themeStore } from './lib/preferences';
 import { useRoute, type Route } from './lib/router';
 import { useStore } from './lib/store';
-import { documentTitle } from './lib/title';
-import { autoPromptSignUp, overlayStore } from './lib/ui';
+import { applyPageMeta, pageMeta } from './lib/seo';
+import { overlayStore } from './lib/ui';
 import { AskLauncher, AssistantPanel } from './components/AskMembrs';
-import { AuthModal, PreferencesModal } from './components/AuthModal';
+import { PreferencesModal } from './components/PreferencesModal';
 import { CatalogueGate } from './components/CatalogueGate';
 import { CookieBanner, CookieSettings } from './components/CookieBanner';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -31,6 +32,7 @@ import {
   PromosScreen,
   SearchScreen,
   ForYouScreen,
+  UnsubscribeScreen,
 } from './screens/lazy';
 
 function Screen({ route }: { route: Route }) {
@@ -62,6 +64,8 @@ function Screen({ route }: { route: Route }) {
       return <ForYouScreen />;
     case 'legal':
       return <LegalScreen doc={route.doc} />;
+    case 'unsubscribe':
+      return <UnsubscribeScreen token={route.token} notYou={route.notYou} />;
     case 'not-found':
       return <NotFoundScreen />;
   }
@@ -71,6 +75,7 @@ export function App() {
   const route = useRoute();
   const theme = useStore(themeStore);
   const overlay = useStore(overlayStore);
+  useStore(catalogueStore);
 
   // The theme lives on <html>, so the tokens in index.css switch with it.
   useEffect(() => {
@@ -81,11 +86,7 @@ export function App() {
   }, [theme]);
 
   useEffect(() => {
-    if (route.page === 'home') autoPromptSignUp();
-  }, [route.page]);
-
-  useEffect(() => {
-    document.title = documentTitle(route);
+    applyPageMeta(pageMeta(route));
   });
 
   return (
@@ -118,7 +119,6 @@ export function App() {
           ({
             cookies: <CookieSettings />,
             plans: <PlansModal />,
-            auth: <AuthModal />,
             prefs: <PreferencesModal />,
             assistant: <AssistantPanel />,
           })[shown]

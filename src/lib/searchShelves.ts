@@ -36,9 +36,18 @@ export const recentSearches = createStore<string[]>(
   [],
 );
 
+/**
+ * A query is worth offering again only if a reader could have meant it: no
+ * markup, which is what a probe or a paste of HTML looks like.
+ */
+function isReaderQuery(query: string): boolean {
+  return query.trim() !== '' && !/[<>]/.test(query);
+}
+
+/** Remember a search that found something, so a shortcut always leads somewhere. */
 export function rememberSearch(query: string): void {
   const q = query.trim();
-  if (!q) return;
+  if (!isReaderQuery(q)) return;
   recentSearches.set((prev) =>
     [q, ...prev.filter((p) => p.toLowerCase() !== q.toLowerCase())].slice(
       0,
@@ -130,7 +139,7 @@ function popularShelf(): SearchShelf {
       key: `listing:${l.id}`,
       label: l.title,
       detail: l.category,
-      href: paths.listing(l.id),
+      href: paths.listing(l.slug),
       photo: l.photo,
       photoUrl: l.photoUrl,
       tag: l.category,
@@ -171,7 +180,7 @@ function promoShelf(): SearchShelf | null {
 function recentShelf(recent: string[]): SearchShelf {
   return {
     title: 'Recent searches',
-    tiles: recent.map((q) => {
+    tiles: recent.filter(isReaderQuery).map((q) => {
       const top = searchLocally(q).find((h) => h.kind === 'listing');
       const cover = top?.kind === 'listing' ? top.item : undefined;
       return {

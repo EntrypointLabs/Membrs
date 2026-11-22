@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -7,7 +8,8 @@ import {
   type ReactNode,
 } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { listingById, taxonomy } from '../lib/api';
+import { DropdownMenu } from 'radix-ui';
+import { categories, listingByKey } from '../lib/api';
 import {
   ASSISTANT_UNAVAILABLE,
   ask,
@@ -20,25 +22,43 @@ import {
   newChat,
   stepTitle,
   stop,
-  suggestions,
   type AssistantMessage,
   type AssistantStep,
   type Draft,
 } from '../lib/assistant';
+import { ToolLogo } from './ToolLogo';
 import { sessionStore } from '../lib/auth';
 import { API_BASE } from '../lib/config';
 import { useDialog } from '../lib/focus';
 import { blocks, type Inline } from '../lib/markdown';
-import { isPhone } from '../lib/media';
-import { BACKDROP_MOTION, SHEET_MOTION } from '../lib/motion';
-import { cityStore, interestsStore } from '../lib/preferences';
-import { paths } from '../lib/router';
-import { useStore } from '../lib/store';
+import { isPhone, useIsPhone } from '../lib/media';
+import {
+  PHONE_PILL,
+  PHONE_PILL_PLACE,
+  PHONE_SHEET,
+  PILL_SPRING,
+  SHEET_MOTION,
+} from '../lib/motion';
+import {
+  ASK_TOOLS,
+  askWithStore,
+  MEMBRS_LOGO,
+  openOutside,
+  type OutsideTool,
+  pickTool,
+  type QuickContext,
+  quickQuestions,
+  switchToOutside,
+  takesPromptInLink,
+} from '../lib/askTools';
+import { cityStore } from '../lib/preferences';
+import { paths, useRoute } from '../lib/router';
+import { createStore, useStore } from '../lib/store';
 import { plural, titleCase } from '../lib/text';
 import type { Listing } from '../lib/types';
 import { closeOverlay, openOverlay, overlayStore } from '../lib/ui';
 import { cn } from '../lib/utils';
-import { openSignIn } from './AuthModal';
+import { EmailStep } from './EmailStep';
 import { Icon } from './Icon';
 import { Link } from './Link';
 import { listingFace } from './ListingCard';
@@ -46,13 +66,6 @@ import { MediaCard } from './MediaCard';
 import { GLASS } from './MobileTabBar';
 import { Bubble, BubbleContent } from './ui/bubble';
 import { Button } from './ui/button';
-import {
-  Empty,
-  EmptyContent,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from './ui/empty';
 import {
   InputGroup,
   InputGroupAddon,
@@ -87,23 +100,56 @@ import {
 const TITLE = 'Ask membrs';
 const NEAR_LIMIT = 200;
 
+const launcherHiddenStore = createStore<boolean>(null, false);
+
+const MAC = /Mac|iPhone|iPad/.test(navigator.platform);
+
+function useAskShortcut() {
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== '/' || !(MAC ? e.metaKey : e.ctrlKey)) return;
+      e.preventDefault();
+      openOverlay('assistant');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+}
+
+/**
+ * The web launcher: a small bar in the corner with the membrs logo, the name
+ * and the shortcut. Closing it hides the bar until the next visit; the
+ * shortcut keeps working either way.
+ */
 export function AskLauncher() {
   const overlay = useStore(overlayStore);
-  if (overlay === 'assistant') return null;
+  const hidden = useStore(launcherHiddenStore);
+  useAskShortcut();
+  if (overlay === 'assistant' || hidden) return null;
   return (
-    <button
-      type="button"
-      aria-label={TITLE}
-      aria-haspopup="dialog"
-      onClick={() => openOverlay('assistant')}
-      className={cn(
-        GLASS,
-        'text-accent fixed right-3 bottom-[calc(80px+env(safe-area-inset-bottom,0px))] z-40 hidden h-14 w-14 place-items-center rounded-full transition-[translate,scale] duration-150 ease-out active:scale-95 md:grid',
-        'md:bg-brand md:hover:bg-brand-hover md:right-6 md:bottom-[calc(24px+env(safe-area-inset-bottom,0px))] md:border-0 md:text-white md:shadow-[0_12px_32px_rgb(0_0_0/0.35)] md:backdrop-blur-none md:hover:-translate-y-0.5',
-      )}
-    >
-      <Icon name="spark" className="h-6 w-6" />
-    </button>
+    <div className="bg-panel border-line-2 fixed right-6 bottom-[calc(24px+env(safe-area-inset-bottom,0px))] z-40 hidden items-center gap-1 rounded-md border p-1.5 shadow-[0_12px_32px_rgb(0_0_0/0.35)] md:flex">
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-keyshortcuts={MAC ? 'Meta+/' : 'Control+/'}
+        onClick={() => openOverlay('assistant')}
+        className="hover:bg-soft-hover flex items-center gap-3 rounded-sm py-1 pr-2 pl-1 text-[15px] font-semibold transition-colors"
+      >
+        <ToolLogo src={MEMBRS_LOGO} size="large" />
+        Ask membrs AI
+        <kbd className="bg-soft text-fg-3 rounded-sm px-1.5 py-0.5 font-sans text-[13px] font-medium">
+          {MAC ? '⌘ /' : 'Ctrl /'}
+        </kbd>
+      </button>
+      <button
+        type="button"
+        aria-label="Hide Ask membrs"
+        onClick={() => launcherHiddenStore.set(true)}
+        className="text-fg-3 hover:bg-soft-hover hover:text-fg grid size-8 place-items-center rounded-sm transition-colors"
+      >
+        <Icon name="x" className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 
@@ -188,7 +234,7 @@ function Typing() {
 
 function ListingCards({ ids }: { ids: string[] }) {
   const found = ids
-    .map((id) => listingById(id))
+    .map((id) => listingByKey(id))
     .filter((l): l is Listing => Boolean(l));
   if (!found.length) return null;
   return (
@@ -253,7 +299,7 @@ function StepIcon({ step }: { step: AssistantStep }) {
 }
 
 function OpenedName({ step }: { step: AssistantStep }) {
-  const listing = step.listingId ? listingById(step.listingId) : undefined;
+  const listing = step.listingId ? listingByKey(step.listingId) : undefined;
   const name = step.title ?? listing?.title;
   if (!name) return null;
   return (
@@ -261,7 +307,7 @@ function OpenedName({ step }: { step: AssistantStep }) {
       {' '}
       {listing ? (
         <Link
-          href={paths.listing(listing.id)}
+          href={paths.listing(listing.slug)}
           onClick={closeOnPhone}
           className="text-fg-2 font-medium hover:underline"
         >
@@ -375,56 +421,120 @@ function Spinner() {
   );
 }
 
-function EmptyState({
-  disabled,
+function useQuickContext(): QuickContext {
+  const route = useRoute();
+  if (route.page === 'listing') {
+    const listing = listingByKey(route.id);
+    if (listing) return { on: listing.kind, title: listing.title };
+  }
+  if (route.page === 'category') {
+    const category = categories().find((c) => c.slug === route.slug);
+    if (category)
+      return { on: 'category', name: category.name, kind: category.kind };
+  }
+  if (route.page === 'feed' || route.page === 'categories')
+    return { on: 'feed', feed: route.feed };
+  return { on: 'anywhere' };
+}
+
+function Starters({
+  disabled = false,
   onPick,
+  note,
 }: {
-  disabled: boolean;
+  disabled?: boolean;
   onPick: (text: string) => void;
+  note?: ReactNode;
 }) {
-  const interests = useStore(interestsStore);
   const city = useStore(cityStore);
-  const chips = suggestions(interests, city, taxonomy().onboardingInterests);
+  const picks = quickQuestions(useQuickContext(), city);
   return (
-    <Empty className="min-h-0 gap-5 overflow-y-auto px-4 py-8 md:p-8">
-      <EmptyHeader>
-        <EmptyMedia variant="icon" className="bg-brand rounded-lg text-white">
-          <Icon name="spark" className="size-5" />
-        </EmptyMedia>
-        <EmptyTitle className="text-fg text-lg font-semibold">
-          {titleCase('What are you looking for?')}
-        </EmptyTitle>
-      </EmptyHeader>
-      <EmptyContent className="max-w-none gap-5">
-        <div className="flex flex-wrap justify-center gap-2">
-          {chips.map((chip) => (
-            <button
-              key={chip}
-              type="button"
-              disabled={disabled}
-              onClick={() => onPick(chip)}
-              className="border-line-2 text-fg-2 hover:bg-soft-hover hover:text-fg rounded-full border px-3.5 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50"
-            >
-              {chip}
-            </button>
-          ))}
-        </div>
-        <p className="text-fg-4 text-[13px]">
-          Chats are deleted when you start a new one.
-        </p>
-      </EmptyContent>
-    </Empty>
+    <div className="grid min-h-0 flex-1 content-start gap-2.5 overflow-y-auto px-4 pb-4">
+      <AskHero />
+      {picks.map((pick) => (
+        <button
+          key={pick.label}
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(pick.ask)}
+          className="bg-soft text-fg-2 hover:bg-soft-hover hover:text-fg flex items-center gap-3 rounded-lg px-4 py-3.5 text-left text-[15px] transition-colors disabled:pointer-events-none disabled:opacity-50"
+        >
+          <Icon
+            name="compose"
+            className="text-fg-3 h-[18px] w-[18px] shrink-0"
+          />
+          <span className="min-w-0 flex-1">{pick.label}</span>
+          <Icon name="chevronRight" className="text-fg-3 h-4 w-4 shrink-0" />
+        </button>
+      ))}
+      {note && <p className="text-fg-3 px-1 pt-2 text-[13px]">{note}</p>}
+    </div>
   );
 }
 
-function Conversation({ onPick }: { onPick: (text: string) => void }) {
+/** The orb and the open question that start an empty chat. */
+function AskHero() {
+  const { tool } = useStore(askWithStore);
+  const name = ASK_TOOLS.find((t) => t.id === tool)?.name ?? 'membrs';
+  return (
+    <div className="ask-hero -mx-4 mb-4 grid justify-items-center gap-6 px-6 pt-8 pb-6 text-center">
+      <span aria-hidden="true" className="ask-orb size-[88px]" />
+      <h3 className="text-[28px] leading-tight font-semibold tracking-tight">
+        {titleCase(`Ask ${name} anything`)}
+      </h3>
+    </div>
+  );
+}
+
+/**
+ * The round button at the start of the composer. It picks which assistant
+ * answers, membrs or one of the outside ones, and lists each with its logo.
+ */
+function ToolMenu() {
+  const { tool } = useStore(askWithStore);
+  return (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger
+        aria-label="Open with"
+        className="bg-bg text-fg hover:bg-soft-hover grid size-11 shrink-0 place-items-center rounded-md shadow-[0_1px_3px_rgb(0_0_0/0.12)] transition-colors"
+      >
+        <Icon name="menu" className="h-5 w-5" />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side="top"
+          align="start"
+          sideOffset={10}
+          className="bg-panel border-line-2 text-fg z-[70] min-w-56 rounded-md border p-1 shadow-[0_16px_48px_rgb(0_0_0/0.35)]"
+        >
+          <DropdownMenu.Label className="text-fg-3 px-3 pt-2 pb-1 text-[13px]">
+            Open with
+          </DropdownMenu.Label>
+          {ASK_TOOLS.map((option) => (
+            <DropdownMenu.Item
+              key={option.id}
+              onSelect={() => pickTool(option.id)}
+              className="data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-[15px] outline-none"
+            >
+              <ToolLogo src={option.logo} />
+              <span className="flex-1">{option.name}</span>
+              {option.id === tool && (
+                <Icon name="check" className="text-accent h-4 w-4" />
+              )}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+function Conversation() {
   const state = useStore(assistantStore);
   const reduced = useReducedMotion();
   const messages = state.conversation?.messages ?? [];
   const [seen] = useState(() => new Set(messages.map((m) => m.id)));
 
-  if (!messages.length && !state.streaming)
-    return <EmptyState disabled={!canSend(state)} onPick={onPick} />;
   return (
     <MessageScrollerProvider>
       <MessageScroller className="flex-1">
@@ -463,14 +573,29 @@ function Conversation({ onPick }: { onPick: (text: string) => void }) {
   );
 }
 
-function Composer() {
-  const state = useStore(assistantStore);
+interface ComposerProps {
+  onSend: (text: string) => Promise<boolean>;
+  allowed: boolean;
+  busy: boolean;
+  streaming: boolean;
+  placeholder: string;
+  counts: string[];
+  error?: string | null;
+}
+
+function Composer({
+  onSend,
+  allowed,
+  busy,
+  streaming,
+  placeholder,
+  counts,
+  error,
+}: ComposerProps) {
   const [text, setText] = useState('');
   const field = useRef<HTMLTextAreaElement>(null);
-  const streaming = Boolean(state.streaming);
-  const allowed = canSend(state);
-  const busy = streaming || state.starting;
   const left = MAX_MESSAGE_LENGTH - text.length;
+  const phone = useIsPhone();
 
   useEffect(() => {
     if (!isPhone()) field.current?.focus();
@@ -479,7 +604,7 @@ function Composer() {
   async function send(value = text) {
     if (!value.trim() || busy || !allowed) return;
     setText('');
-    if (!(await ask(value))) setText((current) => current || value);
+    if (!(await onSend(value))) setText((current) => current || value);
   }
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -493,63 +618,86 @@ function Composer() {
     void send();
   }
 
-  const counts = [
-    state.conversation ? messagesLeftLine(state.messagesLeft) : '',
-    chatsLeftLine(state.conversationsLeftToday),
-  ].filter(Boolean);
-
   return (
-    <form onSubmit={onSubmit} className="shrink-0 px-3 pt-1 pb-3">
-      {state.error && (
+    <form
+      onSubmit={onSubmit}
+      className={`shrink-0 px-3 pt-1 pb-3 max-md:p-0 ${PHONE_PILL_PLACE}`}
+    >
+      {error && (
         <p
           role="alert"
-          className="text-urgent mb-2 px-1 text-[13px] font-medium"
+          className="text-urgent mb-2 px-1 text-[13px] font-medium max-md:px-4"
         >
-          {state.error}
+          {error}
         </p>
       )}
-      <InputGroup
-        data-disabled={!allowed}
-        className="bg-bg dark:bg-bg has-[[data-slot=input-group-control]:focus-visible]:border-accent rounded-xl has-[[data-slot=input-group-control]:focus-visible]:ring-0"
+      <motion.div
+        layoutId={phone ? PHONE_PILL : undefined}
+        transition={PILL_SPRING}
+        style={phone ? { borderRadius: 6 } : undefined}
+        className={phone ? GLASS : undefined}
       >
-        <InputGroupTextarea
-          ref={field}
-          rows={1}
-          value={text}
-          maxLength={MAX_MESSAGE_LENGTH}
-          disabled={!allowed}
-          aria-label="Message"
-          placeholder={allowed ? 'Ask about events and opportunities' : ''}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={onKey}
-          className="max-h-[calc(5lh+12px)] min-h-0 overflow-y-auto px-3.5 pt-3 pb-1 text-[15px] leading-6 focus-visible:outline-none! md:text-[15px]"
-        />
-        <InputGroupAddon align="block-end" className="justify-end px-2 pb-2">
-          {streaming ? (
-            <InputGroupButton
-              size="icon-sm"
-              variant="secondary"
-              aria-label="Stop"
-              onClick={stop}
-              className="rounded-full"
-            >
-              <Icon name="stop" className="size-4" />
-            </InputGroupButton>
-          ) : (
-            <InputGroupButton
-              type="submit"
-              size="icon-sm"
-              variant="default"
-              aria-label="Send"
-              disabled={!text.trim() || busy || !allowed}
-              className="bg-brand hover:bg-brand-hover rounded-full text-white"
-            >
-              <Icon name="arrowUp" className="size-4" />
-            </InputGroupButton>
+        <InputGroup
+          data-disabled={!allowed}
+          className={cn(
+            'has-[[data-slot=input-group-control]:focus-visible]:border-accent has-[[data-slot=input-group-control]:focus-visible]:ring-0',
+            'min-h-14 rounded-lg border-0 p-1.5 shadow-none',
+            phone
+              ? 'bg-transparent dark:bg-transparent'
+              : 'bg-soft dark:bg-soft',
           )}
-        </InputGroupAddon>
-      </InputGroup>
-      <div className="text-fg-4 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1 text-xs">
+        >
+          <InputGroupTextarea
+            ref={field}
+            rows={1}
+            value={text}
+            maxLength={MAX_MESSAGE_LENGTH}
+            disabled={!allowed}
+            aria-label="Message"
+            placeholder={allowed ? placeholder : phone ? counts[0] : ''}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={onKey}
+            className={cn(
+              'max-h-[calc(5lh+12px)] min-h-0 overflow-y-auto text-[15px] leading-6 focus-visible:outline-none! md:text-[15px]',
+              'self-center px-3 py-1.5',
+            )}
+          />
+          <InputGroupAddon
+            align="inline-start"
+            className="self-end p-0 has-[>button]:ml-0"
+          >
+            <ToolMenu />
+          </InputGroupAddon>
+          <InputGroupAddon
+            align="inline-end"
+            className="self-end p-0 has-[>button]:mr-0"
+          >
+            {streaming ? (
+              <InputGroupButton
+                size="icon-sm"
+                variant="secondary"
+                aria-label="Stop"
+                onClick={stop}
+                className="size-11 rounded-md"
+              >
+                <Icon name="stop" className="size-4" />
+              </InputGroupButton>
+            ) : (
+              <InputGroupButton
+                type="submit"
+                size="icon-sm"
+                variant="default"
+                aria-label="Send"
+                disabled={!text.trim() || busy || !allowed}
+                className="bg-brand hover:bg-brand-hover size-11 rounded-md text-white"
+              >
+                <Icon name="arrowUp" className="size-4" />
+              </InputGroupButton>
+            )}
+          </InputGroupAddon>
+        </InputGroup>
+      </motion.div>
+      <div className="text-fg-4 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1 text-xs max-md:hidden">
         <span className={cn(!allowed && 'text-fg-2 font-medium')}>
           {counts[0]}
         </span>
@@ -565,14 +713,114 @@ function Composer() {
   );
 }
 
+function MembrsComposer() {
+  const state = useStore(assistantStore);
+  const streaming = Boolean(state.streaming);
+  const counts = [
+    state.conversation ? messagesLeftLine(state.messagesLeft) : '',
+    chatsLeftLine(state.conversationsLeftToday),
+  ].filter(Boolean);
+  return (
+    <Composer
+      onSend={ask}
+      allowed={canSend(state)}
+      busy={streaming || state.starting}
+      streaming={streaming}
+      placeholder="Ask about events and opportunities"
+      counts={counts}
+      error={state.error}
+    />
+  );
+}
+
+function carriedNote(
+  tool: OutsideTool,
+  chat: AssistantMessage[],
+  usedUp: boolean,
+) {
+  const name = ASK_TOOLS.find((t) => t.id === tool)?.name ?? tool;
+  const lines = [];
+  if (chat.length)
+    lines.push(
+      usedUp
+        ? `No membrs messages left in this chat, so it goes to ${name} with your question.`
+        : `Your membrs chat goes to ${name} with your question.`,
+    );
+  if (!takesPromptInLink(tool))
+    lines.push(`${name} opens empty, so your question is copied to paste in.`);
+  return lines.join(' ');
+}
+
+function OutsideBody({ tool }: { tool: OutsideTool }) {
+  const state = useStore(assistantStore);
+  const chat = state.conversation?.messages ?? [];
+  const name = ASK_TOOLS.find((t) => t.id === tool)?.name ?? tool;
+  const send = (question: string) => {
+    openOutside(tool, question, chat);
+    return Promise.resolve(true);
+  };
+  return (
+    <>
+      <Starters
+        onPick={(text) => void send(text)}
+        note={carriedNote(
+          tool,
+          chat,
+          state.status === 'ready' && !canSend(state),
+        )}
+      />
+      <Composer
+        onSend={send}
+        allowed
+        busy={false}
+        streaming={false}
+        placeholder={`Ask ${name}`}
+        counts={[]}
+      />
+    </>
+  );
+}
+
+function useSwitchWhenUsedUp() {
+  const state = useStore(assistantStore);
+  const { tool } = useStore(askWithStore);
+  const switched = useRef(false);
+  const usedUp =
+    state.status === 'ready' &&
+    !state.streaming &&
+    !state.starting &&
+    !canSend(state);
+  useEffect(() => {
+    if (!usedUp) {
+      switched.current = false;
+      return;
+    }
+    if (tool !== 'membrs' || switched.current) return;
+    switched.current = true;
+    switchToOutside();
+  }, [usedUp, tool]);
+}
+
 function Body() {
   const session = useStore(sessionStore);
-  const state = useStore(assistantStore);
-  const signedIn = Boolean(session?.accessToken);
+  const { tool } = useStore(askWithStore);
+  const known = Boolean(session?.accessToken);
 
+  useLayoutEffect(() => pickTool('membrs'), []);
   useEffect(() => {
-    if (signedIn) void loadAssistant();
-  }, [signedIn]);
+    if (known) void loadAssistant();
+  }, [known]);
+  useSwitchWhenUsedUp();
+
+  return (
+    <>{tool === 'membrs' ? <MembrsBody /> : <OutsideBody tool={tool} />}</>
+  );
+}
+
+function MembrsBody() {
+  const session = useStore(sessionStore);
+  const state = useStore(assistantStore);
+  const known = Boolean(session?.accessToken);
 
   if (!API_BASE || state.status === 'unavailable')
     return (
@@ -581,16 +829,21 @@ function Body() {
         <p className="text-fg-3 text-[15px]">{ASSISTANT_UNAVAILABLE}</p>
       </Centered>
     );
-  if (!signedIn)
+  if (!known)
     return (
       <Centered>
-        <Button
-          type="button"
-          onClick={() => openSignIn('in')}
-          className="bg-brand hover:bg-brand-hover h-11 px-6 text-[15px] font-semibold text-white"
-        >
-          Sign in
-        </Button>
+        <AskHero />
+        <p className="text-fg-3 max-w-xs text-[15px]">
+          Enter your email to ask membrs about events, opportunities and
+          deadlines.
+        </p>
+        <div className="w-full max-w-xs">
+          <EmailStep actionLabel="Continue" onContinue={() => undefined} />
+        </div>
+        <div className="text-fg-3 flex items-center gap-3 text-[15px]">
+          <ToolMenu />
+          Or ask another assistant
+        </div>
       </Centered>
     );
   if (state.status === 'idle' || state.status === 'loading')
@@ -612,10 +865,18 @@ function Body() {
         </Button>
       </Centered>
     );
+  const empty = !state.conversation?.messages.length && !state.streaming;
   return (
     <>
-      <Conversation onPick={(text) => void ask(text)} />
-      <Composer />
+      {empty ? (
+        <Starters
+          disabled={!canSend(state) || state.starting}
+          onPick={(text) => void ask(text)}
+        />
+      ) : (
+        <Conversation />
+      )}
+      <MembrsComposer />
     </>
   );
 }
@@ -645,6 +906,9 @@ export function AssistantPanel() {
   const ready =
     Boolean(API_BASE && session?.accessToken) && state.status === 'ready';
   const hasMessages = Boolean(state.conversation?.messages.length);
+  const { tool } = useStore(askWithStore);
+  const chatting =
+    tool === 'membrs' && (hasMessages || Boolean(state.streaming));
   const [expanded, setExpanded] = useState(readExpanded);
   useDialog(panel, closeOverlay);
 
@@ -665,13 +929,13 @@ export function AssistantPanel() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pointer-events-none md:inset-auto md:right-6 md:bottom-[calc(24px+env(safe-area-inset-bottom,0px))] md:pb-0">
+    <div className="fixed inset-0 z-[60] flex items-end md:pointer-events-none md:inset-auto md:right-6 md:bottom-[calc(24px+env(safe-area-inset-bottom,0px))]">
       <button
         type="button"
         aria-label="Close"
         tabIndex={-1}
         onClick={closeOverlay}
-        className={`absolute inset-0 bg-black/60 backdrop-blur-sm md:hidden ${BACKDROP_MOTION}`}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden starting:opacity-0"
       />
       <div
         ref={panel}
@@ -680,20 +944,31 @@ export function AssistantPanel() {
         aria-labelledby="ask-title"
         tabIndex={-1}
         className={cn(
-          'bg-panel border-line-2 text-fg relative mx-3 flex h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-88px)] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border shadow-2xl outline-none md:mx-0 md:flex-none',
+          'bg-bg text-fg md:bg-panel md:border-line-2 relative flex min-w-0 flex-1 flex-col overflow-hidden pb-[calc(84px+env(safe-area-inset-bottom,0px))] outline-none md:flex-none md:border md:pb-0',
+          PHONE_SHEET,
           'md:pointer-events-auto md:origin-bottom-right md:rounded-lg md:shadow-[0_24px_64px_rgb(0_0_0/0.35)] md:transition-[width,height] md:duration-300 md:ease-out',
           expanded
             ? 'md:h-[calc(100dvh-48px)] md:w-[min(820px,calc(100vw-48px))]'
-            : 'md:h-[min(780px,calc(100dvh-48px))] md:w-[min(520px,calc(100vw-48px))]',
+            : 'md:w-[min(520px,calc(100vw-48px))]',
+          !expanded &&
+            (chatting
+              ? 'md:h-[min(780px,calc(100dvh-48px))]'
+              : 'md:max-h-[min(780px,calc(100dvh-48px))]'),
           SHEET_MOTION,
+          // Phones open at half height and grow to full once a reply is there to read.
+          !chatting && 'max-md:h-[55dvh]',
+          'max-md:transition-[translate,scale,opacity,height]',
         )}
       >
         <header className="flex h-14 shrink-0 items-center gap-1 pr-2 pl-4">
-          <h2
-            id="ask-title"
-            className="flex-1 truncate text-[17px] font-semibold tracking-tight"
-          >
-            {TITLE}
+          <h2 id="ask-title" className="flex-1 truncate">
+            <span className="sr-only">{TITLE}</span>
+            <span
+              aria-hidden="true"
+              className="text-[22px] leading-none font-black tracking-[-0.05em]"
+            >
+              MEMBRS
+            </span>
           </h2>
           {ready && (
             <TooltipProvider delayDuration={300}>
@@ -710,7 +985,11 @@ export function AssistantPanel() {
                       state.starting ||
                       state.conversationsLeftToday <= 0
                     }
-                    onClick={() => void newChat()}
+                    onClick={() =>
+                      void newChat().then(
+                        (started) => started && pickTool('membrs'),
+                      )
+                    }
                     className="text-fg-2"
                   >
                     <Icon name="compose" className="h-5 w-5" />
@@ -739,7 +1018,7 @@ export function AssistantPanel() {
             size="icon"
             aria-label="Close"
             onClick={closeOverlay}
-            className="text-fg-2"
+            className="text-destructive hover:text-destructive"
           >
             <Icon name="x" className="h-5 w-5" />
           </Button>
