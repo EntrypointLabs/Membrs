@@ -1,8 +1,7 @@
-import { DEFAULT_EVENT_MS, clockMinutes, eventLocalDay } from './dates';
+import { DAY_MS, DEFAULT_EVENT_MS, clockMinutes, eventLocalDay } from './dates';
 import { slugify } from './text';
 import type { EventListing, OpportunityListing } from './types';
 
-const DAY_MS = 86_400_000;
 const VENUE_TBA = 'Venue TBA';
 
 interface CalendarDates {

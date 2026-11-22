@@ -27,6 +27,7 @@ export function Pager({
     (e: MouseEvent<HTMLButtonElement>) => {
       track('page_changed', { page: next, pages, method }, e.currentTarget);
       onChange(next);
+      scrollToSectionTop(e.currentTarget);
     };
   const button =
     'h-10 min-w-10 rounded-md px-3 text-[15px] font-semibold transition-colors disabled:opacity-40';
@@ -77,6 +78,18 @@ export function Pager({
       </button>
     </nav>
   );
+}
+
+function scrollToSectionTop(from: HTMLElement): void {
+  const section = from.closest('section') ?? from.closest('main');
+  if (!section) return;
+  const bar = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue(
+      '--spacing-bar',
+    ),
+  );
+  const top = section.getBoundingClientRect().top - (bar || 0);
+  if (top < 0) window.scrollBy({ top });
 }
 
 const SLOTS = 7;

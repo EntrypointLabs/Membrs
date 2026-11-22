@@ -65,6 +65,19 @@ describe('feeds', () => {
     ).not.toContain(first.id);
   });
 
+  it("orders Popular by each listing's popularity, highest first", () => {
+    const scores = api.mostPopular(10).map((l) => l.popularity ?? 50);
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+  });
+
+  it('keeps Popular to one kind when asked', () => {
+    expect(
+      api
+        .mostPopular(10, new Set(), 'opportunity')
+        .every((l) => l.kind === 'opportunity'),
+    ).toBe(true);
+  });
+
   it('fills Most Popular to the full count when few listings are trending', () => {
     const count = Math.min(10, api.listings().length);
     expect(api.mostPopular(count)).toHaveLength(count);
@@ -87,21 +100,40 @@ function sample(
     kind === 'event'
       ? { inDays: days, trending: false }
       : { daysLeft: days, trending: false };
-  return { ...base, ...when, id, listedRank: 0, ...extra } as Listing;
+  return {
+    ...base,
+    ...when,
+    id,
+    title: `Sample ${id}`,
+    listedRank: 0,
+    ...extra,
+  } as Listing;
 }
 
 describe('heroPicks', () => {
-  it('leads with soon and trending events over the lowest listed rank', () => {
+  it('leads with the most popular events in the next sixty days', () => {
     const pool = [
-      sample('event', 'far-first', 734, { listedRank: 0, trending: true }),
-      sample('event', 'soon', 5, { listedRank: 9 }),
-      sample('event', 'trending', 20, { listedRank: 8, trending: true }),
-      sample('event', 'later', 40, { listedRank: 7 }),
+      sample('event', 'far-first', 734, { popularity: 99 }),
+      sample('event', 'soon', 5, { popularity: 60 }),
+      sample('event', 'popular', 20, { popularity: 90 }),
+      sample('event', 'later', 40, { popularity: 40 }),
     ];
     expect(api.heroPicks(3, pool).map((l) => l.id)).toEqual([
-      'trending',
+      'popular',
       'soon',
       'later',
+    ]);
+  });
+
+  it('shows one stop of a tour, not every city', () => {
+    const pool = [
+      sample('event', 'atlanta', 5, { title: 'Tyla: The A*POP World Tour' }),
+      sample('event', 'houston', 6, { title: 'Tyla: The A*POP World Tour' }),
+      sample('event', 'wizkid', 7, { title: 'Wizkid Live' }),
+    ];
+    expect(api.heroPicks(3, pool).map((l) => l.id)).toEqual([
+      'atlanta',
+      'wizkid',
     ]);
   });
 
@@ -156,22 +188,20 @@ describe('similar', () => {
 });
 
 describe('forYou', () => {
-  it('keeps only picked categories, soonest first, alternating kinds', () => {
+  it('keeps only the matched listings, soonest first, alternating kinds', () => {
     const pool = [
-      sample('event', 'music-late', 9, { category: 'Music' }),
-      sample('event', 'film', 1, { category: 'Film' }),
-      sample('opportunity', 'grant', 3, { category: 'Grants' }),
-      sample('event', 'music-soon', 2, { category: 'Music' }),
-      sample('opportunity', 'job', 1, { category: 'Jobs' }),
+      sample('event', 'music-late', 9),
+      sample('event', 'film', 1),
+      sample('opportunity', 'grant', 3),
+      sample('event', 'music-soon', 2),
+      sample('opportunity', 'job', 1),
     ];
-    expect(api.forYou(['Music', 'Grants'], pool).map((l) => l.id)).toEqual([
-      'music-soon',
-      'grant',
-      'music-late',
-    ]);
+    expect(
+      api.forYou(['music-late', 'grant', 'music-soon'], pool).map((l) => l.id),
+    ).toEqual(['music-soon', 'grant', 'music-late']);
   });
 
-  it('is empty without interests', () => {
+  it('is empty without matches', () => {
     expect(api.forYou([])).toEqual([]);
   });
 });

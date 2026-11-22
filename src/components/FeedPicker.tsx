@@ -1,12 +1,15 @@
 import { useState, type ReactNode } from 'react';
 import { area, track } from '../lib/analytics';
-import { setSearchParams } from '../lib/router';
+import { useIsPhone } from '../lib/media';
+import { searchHref, useLocation } from '../lib/router';
 import { slugify } from '../lib/text';
 import { Icon } from './Icon';
+import { Link } from './Link';
 import { categoryStyle } from './CategoryLabel';
 import { Modal } from './Modal';
 import { PageTitle } from './PageTitle';
 import { Presence } from './Presence';
+import { SelectDrill, type DrillMenu } from './Select';
 
 export interface PickerOption {
   value: string;
@@ -53,22 +56,30 @@ export function FeedPicker({
   allLabel,
 }: FeedPickerProps) {
   const [open, setOpen] = useState(false);
+  const [drill, setDrill] = useState<DrillMenu | null>(null);
+  const phone = useIsPhone();
   const typeName = types.find((t) => t.value === type)?.label;
   const current = views.find((v) => v.value === view)?.label ?? typeName;
-  const pick = (next: { view?: string | null; type?: string | null }) => {
-    track('picker_option_selected', {
-      section: title,
-      view: next.view ?? null,
-      type: next.type ?? null,
-    });
-    setSearchParams({
+  const location = useLocation();
+  const pick = (next: { view?: string | null; type?: string | null }) =>
+    searchHref(location, {
       view: next.view ?? null,
       type: next.type ?? null,
       page: null,
     });
+  const close = () => {
     setOpen(false);
-    window.scrollTo({ top: 0 });
+    setDrill(null);
   };
+  const choose =
+    (next: { view?: string | null; type?: string | null }) => () => {
+      track('picker_option_selected', {
+        section: title,
+        view: next.view ?? null,
+        type: next.type ?? null,
+      });
+      close();
+    };
 
   return (
     <>
@@ -84,52 +95,112 @@ export function FeedPicker({
       />
       <Presence value={open}>
         {() => (
-          <Modal title={sheetTitle} onClose={() => setOpen(false)}>
+          <Modal title={drill?.label ?? sheetTitle} onClose={close}>
             <div {...area('picker')}>
-              {filters && (
-                <div className="mb-5 flex flex-wrap gap-2">{filters}</div>
-              )}
-              <Group>
-                <Option
-                  label={allLabel ?? `All ${title.toLowerCase()}`}
-                  count={total}
-                  on={!view && !type}
-                  onClick={() => pick({})}
-                />
-              </Group>
-              <Heading icon="clock">By date</Heading>
-              <Group>
-                {views.map((v) => (
-                  <Option
-                    key={v.value}
-                    label={v.label}
-                    count={v.count}
-                    on={view === v.value}
-                    onClick={() => pick({ view: v.value })}
-                  />
-                ))}
-              </Group>
-              {types.length > 0 && (
+              {drill ? (
+                <DrillOptions menu={drill} onDone={() => setDrill(null)} />
+              ) : (
                 <>
-                  <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
+                  {filters &&
+                    (phone ? (
+                      <SelectDrill.Provider value={setDrill}>
+                        <div className="mb-5">
+                          <Group>{filters}</Group>
+                        </div>
+                      </SelectDrill.Provider>
+                    ) : (
+                      <div className="mb-5 flex flex-wrap gap-2">{filters}</div>
+                    ))}
                   <Group>
-                    {types.map((t) => (
+                    <Option
+                      label={allLabel ?? `All ${title.toLowerCase()}`}
+                      count={total}
+                      on={!view && !type}
+                      href={pick({})}
+                      onClick={choose({})}
+                    />
+                  </Group>
+                  <Heading icon="clock">By date</Heading>
+                  <Group>
+                    {views.map((v) => (
                       <Option
-                        key={t.value}
-                        label={t.label}
-                        count={t.count}
-                        dot
-                        on={type === t.value}
-                        onClick={() => pick({ type: t.value })}
+                        key={v.value}
+                        label={v.label}
+                        count={v.count}
+                        on={view === v.value}
+                        href={pick({ view: v.value })}
+                        onClick={choose({ view: v.value })}
                       />
                     ))}
                   </Group>
+                  {types.length > 0 && (
+                    <>
+                      <Heading icon="tag">{`By ${typeLabel.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '')}`}</Heading>
+                      <Group>
+                        {types.map((t) => (
+                          <Option
+                            key={t.value}
+                            label={t.label}
+                            count={t.count}
+                            dot
+                            on={type === t.value}
+                            href={pick({ type: t.value })}
+                            onClick={choose({ type: t.value })}
+                          />
+                        ))}
+                      </Group>
+                    </>
+                  )}
                 </>
               )}
             </div>
           </Modal>
         )}
       </Presence>
+    </>
+  );
+}
+
+/** One filter's options, in place of the sheet, with a way back to every filter. */
+function DrillOptions({
+  menu,
+  onDone,
+}: {
+  menu: DrillMenu;
+  onDone: () => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onDone}
+        className="text-accent mb-4 flex items-center gap-1 text-[15px] font-semibold"
+      >
+        <Icon name="chevronLeft" className="h-4 w-4" />
+        All filters
+      </button>
+      <Group>
+        {menu.options.map((o) => {
+          const on = o.value === menu.value;
+          return (
+            <li key={o.value}>
+              <button
+                type="button"
+                disabled={o.disabled}
+                aria-pressed={on}
+                onClick={() => {
+                  menu.onChange(o.value);
+                  onDone();
+                }}
+                className={`hover:bg-soft-hover flex w-full items-center justify-between px-4 py-[15px] text-left text-[16.5px] disabled:opacity-40 ${on ? 'text-accent' : ''}`}
+              >
+                {o.label}
+                {on && <Icon name="check" />}
+              </button>
+            </li>
+          );
+        })}
+      </Group>
     </>
   );
 }
@@ -164,20 +235,22 @@ function Option({
   count,
   on,
   dot,
+  href,
   onClick,
 }: {
   label: string;
   count: number;
   on: boolean;
   dot?: boolean;
+  href: string;
   onClick: () => void;
 }) {
   return (
     <li>
-      <button
-        type="button"
+      <Link
+        href={href}
         onClick={onClick}
-        aria-pressed={on}
+        aria-current={on ? 'page' : undefined}
         className={`hover:bg-soft-hover flex w-full items-center justify-between px-4 py-[15px] text-left text-[16.5px] ${on ? 'text-accent' : ''}`}
       >
         <span className="flex items-center gap-2.5">
@@ -195,7 +268,7 @@ function Option({
           </small>
         </span>
         {on && <Icon name="check" />}
-      </button>
+      </Link>
     </li>
   );
 }

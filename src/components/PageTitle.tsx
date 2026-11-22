@@ -54,7 +54,7 @@ export function PageTitle({
         </Link>
       ) : (
         section
-      )}
+      )}{' '}
       <span
         className={`flex min-w-0 items-center gap-1.5 ${tone}`}
         style={category ? categoryStyle(category) : undefined}
@@ -68,7 +68,7 @@ export function PageTitle({
       </span>
     </>
   );
-  const shape = `flex max-w-full items-baseline gap-3 font-semibold tracking-tight whitespace-nowrap ${size}`;
+  const shape = `flex max-w-full items-center gap-3 font-semibold tracking-tight whitespace-nowrap ${size}`;
   return (
     <h1 className="min-w-0 md:mb-10">
       {onOpen ? (

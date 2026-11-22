@@ -77,9 +77,17 @@ public/images/          built AVIF and WebP at five widths (git-ignored)
 
 ## Deploying
 
-`vercel.json` builds with `npm run build`, serves `dist/` and rewrites every
-path to `index.html` so deep links work. Hashed files in `/assets` are cached
-for a year; photos for a day, then revalidated in the background.
+The site is not deployed on its own. The backend image builds this repository
+with `VITE_API_BASE=/api` and its Go server serves `dist/` on the same origin as
+the API, at `https://membrs.xyz` (see `docs/adr/0012-served-by-the-backend.md`).
+A push to `main` runs `.github/workflows/release.yml`: lint, types, tests and a
+build, then it starts the backend's production deploy with this commit.
+
+The server serves prerendered pages and files from `dist/`, renders
+`/listing/:id` and the sitemaps from live listings using `dist/site.json` (the
+site name, origin, description and page list written by `npm run prerender`),
+and answers every other path with `spa.html`. Hashed files in `/assets` are
+cached for a year; photos for a day, then revalidated in the background.
 
 ## Speed
 

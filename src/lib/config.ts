@@ -16,5 +16,17 @@ export const CONTACT = {
   ads: 'ads@membrs.app',
 } as const;
 
-/** How many listings a feed shows per page. */
-export const PAGE_SIZE = 12;
+/** Cards per row on web, wherever cards sit in a grid. */
+export const GRID_COLUMNS = 4;
+
+/** How many listings a feed shows per page: three full rows of cards. */
+export const PAGE_SIZE = GRID_COLUMNS * 3;
+
+export const POPULAR_SIZE = PAGE_SIZE * 3;
+
+/** Where a reader is assumed to be until they share a location or pick a city. */
+export const DEFAULT_CITY = 'Lagos';
+export const DEFAULT_COUNTRY = 'NG';
+
+/** How recently a listing must have been added to show under Just Added. */
+export const JUST_ADDED_DAYS = 7;

@@ -1,21 +1,31 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { track } from '../lib/analytics';
+import { refreshForReader } from '../lib/api';
 import { useDialog } from '../lib/focus';
+import { locationChoiceStore, shareLocation } from '../lib/location';
 import { useIsPhone } from '../lib/media';
 import { sessionStore } from '../lib/auth';
-import { tourSeenStore } from '../lib/preferences';
+import { cityStore, tourSeenStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
 import { titleCase } from '../lib/text';
-import { overlayStore, signUpPromptedStore, tourDue } from '../lib/ui';
+import { overlayStore, tourDue } from '../lib/ui';
 
 interface Step {
   /** The data-tour value of the element to spotlight. */
-  target: string;
+  target?: string;
   title: string;
-  body: string;
+  /** Left out on the location step, whose text names the reader's own place. */
+  body?: string;
+  locate?: boolean;
 }
 
+const LOCATION_STEP: Step = {
+  title: 'Your location',
+  locate: true,
+};
+
 const WEB_STEPS: Step[] = [
+  LOCATION_STEP,
   {
     target: 'nav-events',
     title: 'Sections',
@@ -39,6 +49,7 @@ const WEB_STEPS: Step[] = [
 ];
 
 const PHONE_STEPS: Step[] = [
+  LOCATION_STEP,
   {
     target: 'city',
     title: 'Your city',
@@ -76,19 +87,23 @@ function Progress({ step, total }: { step: number; total: number }) {
 }
 
 function targetOf(step: Step): HTMLElement | undefined {
+  if (!step.target) return undefined;
   return [
     ...document.querySelectorAll<HTMLElement>(`[data-tour="${step.target}"]`),
   ].find((el) => el.getClientRects().length > 0);
 }
 
 function visibleSteps(steps: Step[]): Step[] {
-  return steps.filter((step) => targetOf(step));
+  return steps.filter((step) =>
+    step.locate
+      ? locationChoiceStore.get() === 'unasked'
+      : Boolean(targetOf(step)),
+  );
 }
 
 export function OnboardingTour() {
   useStore(tourSeenStore);
   useStore(sessionStore);
-  useStore(signUpPromptedStore);
   const overlay = useStore(overlayStore);
   if (!tourDue(overlay)) return null;
   return <Tour />;
@@ -107,7 +122,10 @@ function Tour() {
 function TourDialog({ steps }: { steps: Step[] }) {
   const [index, setIndex] = useState(0);
   const box = useRef<HTMLDivElement>(null);
-  const done = () => tourSeenStore.set(true);
+  const done = () => {
+    tourSeenStore.set(true);
+    void refreshForReader();
+  };
   const skip = () => {
     track('tour_skipped', { step: index + 1, total: steps.length });
     done();
@@ -160,10 +178,15 @@ function Spotlight({
   onSkip: () => void;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const city = useStore(cityStore);
   // Each step mounts fresh (it is keyed by step), so this runs once a step.
   useEffect(() => {
-    track('tour_step_viewed', { step: number, total, target: step.target });
-  }, [number, total, step.target]);
+    track('tour_step_viewed', {
+      step: number,
+      total,
+      target: step.target ?? (step.locate ? 'location' : 'page'),
+    });
+  }, [number, total, step.target, step.locate]);
 
   useLayoutEffect(() => {
     const el = targetOf(step);
@@ -226,20 +249,32 @@ function Spotlight({
         className="bg-panel border-line-2 absolute rounded-md border p-5 shadow-2xl"
         style={{ top, left, width: cardWidth }}
       >
-        <Progress step={number} total={total} />
-        <h3 className="mt-4 mb-1.5 text-[17px] font-bold tracking-tight">
-          {titleCase(step.title)}
-        </h3>
-        <p className="text-fg-3 text-[14.5px] leading-snug">{step.body}</p>
-        <div className="mt-5 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <Progress step={number} total={total} />
+          </div>
           <button
             type="button"
             onClick={onSkip}
-            className="text-fg-3 text-sm font-semibold"
+            className="text-fg-3 hover:text-fg shrink-0 text-sm font-semibold"
           >
             Skip tour
           </button>
-          <span className="flex gap-2">
+        </div>
+        <h3 className="mt-4 mb-1.5 text-[17px] font-bold tracking-tight">
+          {titleCase(step.title)}
+        </h3>
+        <p className="text-fg-3 text-[14.5px] leading-snug">
+          {step.locate
+            ? `You are seeing ${city}. Share your location to see what is closest to you instead.`
+            : step.body}
+        </p>
+        <div className="mt-5 flex justify-end">
+          <span
+            className={
+              step.locate ? 'grid w-full grid-cols-2 gap-2' : 'flex gap-2'
+            }
+          >
             {onBack && (
               <button
                 type="button"
@@ -251,11 +286,23 @@ function Spotlight({
             )}
             <button
               type="button"
-              onClick={onNext}
+              onClick={() => {
+                if (step.locate) void shareLocation();
+                onNext();
+              }}
               className="bg-fg text-bg rounded-sm px-4 py-2 text-sm font-semibold"
             >
-              {last ? 'Done' : 'Next'}
+              {step.locate ? 'Use my location' : last ? 'Done' : 'Next'}
             </button>
+            {step.locate && (
+              <button
+                type="button"
+                onClick={onNext}
+                className="bg-btn rounded-sm px-4 py-2 text-sm font-semibold"
+              >
+                Not now
+              </button>
+            )}
           </span>
         </div>
       </div>

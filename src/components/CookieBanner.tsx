@@ -145,7 +145,7 @@ export function CookieSettings() {
     <Modal title="Cookie settings" onClose={closeOverlay}>
       <Switch
         label="Essential"
-        detail="Keep MEMBRS working: your city, theme, sign-in and security. Always on."
+        detail="Keep MEMBRS working: your city, theme, the email you gave us and security. Always on."
         on
         locked
       />

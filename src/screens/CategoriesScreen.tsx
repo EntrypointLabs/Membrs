@@ -5,7 +5,7 @@ import {
   taxonomy,
 } from '../lib/api';
 import { area, track } from '../lib/analytics';
-import { bySoonest } from '../lib/dates';
+import { byPopularity } from '../lib/dates';
 import { paths, useSearchParam, type FeedKind } from '../lib/router';
 import { EVENT_VIEWS, findView, OPPORTUNITY_VIEWS } from '../lib/views';
 import { plural, slugify, titleCase } from '../lib/text';
@@ -26,9 +26,10 @@ export function CategoryTiles({
   kind: 'event' | 'opportunity';
   limit?: number;
 }) {
-  const list = categories()
-    .filter((c) => c.kind === kind)
-    .slice(0, limit);
+  const all = categories().filter((c) => c.kind === kind);
+  const list = limit
+    ? [...all].sort((a, b) => b.count - a.count).slice(0, limit)
+    : all;
   return (
     <div
       className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6"
@@ -53,6 +54,7 @@ export function CategoryTiles({
           <Photo
             size="tile"
             id={c.photo}
+            src={c.coverUrl}
             alt=""
             className="aspect-square transition-transform duration-500 group-hover:scale-105"
           />
@@ -137,7 +139,7 @@ export function CategoryScreen({ slug }: { slug: string }) {
   const known = categories().find((c) => c.slug === slug);
   const all = listings()
     .filter((l) => slugify(l.category) === slug || l.category === known?.name)
-    .sort(bySoonest);
+    .sort(byPopularity);
   const events = all.filter((l) => l.kind === 'event').length;
   const kind =
     known?.kind ?? (events * 2 >= all.length ? 'event' : 'opportunity');

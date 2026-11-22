@@ -11,7 +11,7 @@ type Section = keyof typeof SECTION_TAGS;
 export function Tag({ name }: { name: string }) {
   return (
     <span
-      className="rounded-tag inline-flex h-[22px] items-center bg-(--tag) px-2 text-[12px] leading-none font-semibold whitespace-nowrap text-[#141414]"
+      className="rounded-tag inline-flex h-[22px] max-w-full items-center truncate bg-(--tag) px-2 text-[12px] leading-none font-semibold whitespace-nowrap text-[#141414]"
       style={{ '--tag': tagFill(name) } as CSSProperties}
     >
       {name}
@@ -29,13 +29,15 @@ export function Tags({ section, names, className = '' }: TagsProps) {
   const cats = cardTags(undefined, names);
   const all = cardTags(section, names);
   return (
-    <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
-      <span className="inline-flex flex-wrap items-center gap-1.5 md:hidden">
+    <span
+      className={`inline-flex max-w-full min-w-0 flex-wrap items-center gap-1.5 ${className}`}
+    >
+      <span className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-1.5 md:hidden">
         {cats.map((n) => (
           <Tag key={n} name={n} />
         ))}
       </span>
-      <span className="hidden flex-wrap items-center gap-1.5 md:inline-flex">
+      <span className="hidden max-w-full min-w-0 flex-wrap items-center gap-1.5 md:inline-flex">
         {all.map((n) => (
           <Tag key={n} name={n} />
         ))}

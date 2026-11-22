@@ -110,9 +110,11 @@ export function Photo({
         role="img"
         aria-label={alt}
       >
-        <p className="line-clamp-3 p-[7cqw] text-[8cqw] leading-[1.15] font-bold tracking-tight">
-          {cover.title}
-        </p>
+        <div className="p-[7cqw]">
+          <p className="line-clamp-3 text-[8cqw] leading-[1.15] font-bold tracking-tight">
+            {cover.title}
+          </p>
+        </div>
       </div>
     );
   if (!meta)

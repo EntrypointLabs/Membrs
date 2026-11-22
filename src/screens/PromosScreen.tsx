@@ -8,7 +8,7 @@ import { PromoCard } from '../components/PromoCard';
 import { PromoRow } from '../components/PromoRow';
 import { Select } from '../components/Select';
 import { TitleBar } from '../components/TitleBar';
-import { FeedBody, FilterLine, MoreFilters } from './FeedLayout';
+import { FeedBody, FilterLine, MoreFilters, Tally } from './FeedLayout';
 
 /** Promos, ending soonest first. */
 export function PromosScreen() {
@@ -50,8 +50,7 @@ export function PromosScreen() {
         />
       </TitleBar>
       <FilterLine
-        count={items.length}
-        noun={['promo', 'promos']}
+        summary={<Tally count={items.length} noun={['promo', 'promos']} />}
         onClear={
           filtered
             ? () => setSearchParams({ view: null, type: null, page: null })
@@ -86,7 +85,7 @@ export function PromosScreen() {
         noun={['promo', 'promos']}
         keyOf={(p) => p.id}
         row={(p) => <PromoRow promo={p} />}
-        rail={{ title: 'Ending Soon', items: ending }}
+        rails={[{ title: 'Ending Soon', items: ending }]}
         card={(p) => <PromoCard key={p.id} promo={p} />}
       />
     </div>

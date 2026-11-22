@@ -1,4 +1,4 @@
-# 0012: PostHog analytics follow cookie consent
+# 0013: PostHog analytics follow cookie consent
 
 **Status:** Accepted
 **Date:** 2026-11-14
@@ -47,7 +47,7 @@ Errors caught by the page error boundary are reported with
 `reportError()`, because they never reach the browser's global error handler.
 
 Events go to `/ingest` on our own origin. Vite forwards it in development and
-the rewrites in `vercel.json` forward it in production.
+the backend that serves the site forwards it in production.
 
 Custom events are typed in the `Events` interface. Named regions carry a
 `data-ph-capture-attribute-area` attribute (`area()` and `context()` add it),
@@ -66,9 +66,9 @@ region scrolls into view.
 - ⚠️ **Bad:** the project must have cookieless server hash mode switched on
   in PostHog, or cookieless events are dropped.
 - ⚠️ **Bad:** the PostHog region lives in two places, `VITE_POSTHOG_REGION`
-  and the rewrites in `vercel.json`.
+  and the backend's `/ingest` proxy.
 
 ## More Information
 
-- `src/lib/analytics.ts`, `src/lib/cookies.ts`, `vercel.json`, `vite.config.ts`
+- `src/lib/analytics.ts`, `src/lib/cookies.ts`, `vite.config.ts`
 - [PostHog cookieless tracking](https://posthog.com/docs/libraries/js/persistence)

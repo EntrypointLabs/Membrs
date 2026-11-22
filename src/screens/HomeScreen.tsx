@@ -1,40 +1,53 @@
+import { useHomeFilters } from './HomeFilters';
 import { shown } from '../lib/sections';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { area, context, track } from '../lib/analytics';
 import {
   alternated,
   closingSoon,
   forYou,
+  forYouStore,
   heroPicks,
-  inCity,
   launchCities,
+  attendable,
   mostPopular,
   places,
   promos,
   within,
+  readerCountryStore,
 } from '../lib/api';
-import { area, context, track } from '../lib/analytics';
-import { grantedPosition, nearestCity } from '../lib/geo';
+import { chooseCity, readGrantedLocation } from '../lib/location';
+import { africanCountry } from '../lib/africa';
+import { distinctFamilies } from '../lib/families';
+import { useIsPhone } from '../lib/media';
+import { justAdded } from '../lib/filters';
+import { placement } from '../lib/placement';
 import { openStateNow } from '../lib/hours';
-import {
-  cityStore,
-  interestsStore,
-  subscriptionStore,
-} from '../lib/preferences';
+import { cityStore, subscriptionStore } from '../lib/preferences';
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
-import { titleCase } from '../lib/text';
 import { openOverlay } from '../lib/ui';
 import type { Listing, OpportunityListing } from '../lib/types';
 import { DeadlineRow } from '../components/DeadlineRow';
 import { HeroCarousel } from '../components/HeroCarousel';
-import { ListingRow } from '../components/ListingRow';
+import { UseMyLocation } from '../components/UseMyLocation';
+import { HomeShelves, LocalShelves, useShelfInputs } from './HomeShelves';
+import { localShelves } from '../lib/homeShelves';
+import { PagedGrid } from '../components/PagedGrid';
+import {
+  HOME_LIST,
+  PhoneList,
+  PhoneSectionHead,
+  SeeAll,
+} from '../components/PhoneList';
 import { ContributeMenu } from '../components/ContributeMenu';
 import { HeadingCount } from '../components/HeadingCount';
+import { PhoneSettings } from '../components/Header';
 import { Icon } from '../components/Icon';
 import { Link } from '../components/Link';
 import { ListingCard } from '../components/ListingCard';
 import { MostPopular } from '../components/MostPopular';
-import { clampPage, Pager, pageOf } from '../components/Pager';
+import { Pager, pageOf } from '../components/Pager';
 import { PlaceCard } from '../components/PlaceCard';
 import { PlaceRow } from '../components/PlaceRow';
 import { PromoCard } from '../components/PromoCard';
@@ -44,46 +57,169 @@ import { Select } from '../components/Select';
 import { Tabs } from '../components/Tabs';
 import { TitleBar } from '../components/TitleBar';
 import { CategoryTiles } from './CategoriesScreen';
+import { PAGE_SIZE, POPULAR_SIZE } from '../lib/config';
 
 type Range = 'week' | 'month';
 
-const HOME_LIST = 5;
 type KindFilter = 'all' | Listing['kind'];
 
-/**
- * Home, ordered by importance: what to do soonest, what closes soonest, what
- * is near you, then places, promos, categories and the latest digest.
- */
+const KIND_TABS: { value: KindFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'event', label: 'Events' },
+  { value: 'opportunity', label: 'Opportunities' },
+];
+
 const POPULAR_PANEL = 10;
 
 export function HomeScreen() {
   const city = useStore(cityStore);
-  const picks = useMemo(() => heroPicks(3), []);
-  const popular = useMemo(
-    () => mostPopular(POPULAR_PANEL, new Set(picks.map((p) => p.id))),
-    [picks],
-  );
+  useStore(readerCountryStore);
+  useLocationOnVisit();
+  const phone = useIsPhone();
+  const filters = useHomeFilters();
 
   return (
     <div className="page">
+      <h1 className="sr-only">MEMBRS</h1>
       <MobileTop city={city} />
+      <div className="hidden md:block md:h-10" />
+      {filters.line}
+      {filters.results ? (
+        <>
+          {filters.results}
+          <CategoriesSection />
+        </>
+      ) : phone ? (
+        <PhoneSections />
+      ) : (
+        <WebSections />
+      )}
+    </div>
+  );
+}
 
-      <section className="mt-12 hidden gap-8 md:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:gap-12">
+function WebSections() {
+  const country = useStore(readerCountryStore);
+  const [popularKind, setPopularKind] = useState<KindFilter>('all');
+  const [range, setRange] = useState<Range>('week');
+  const [weekKind, setWeekKind] = useState<KindFilter>('all');
+  const picks = heroPicks(3);
+  const panel = distinctFamilies(
+    mostPopular(POPULAR_PANEL * 2, idsOf(picks)),
+    picks,
+    POPULAR_PANEL,
+  );
+  const page = placement([...picks, ...panel]);
+  const popular = page.take(
+    distinctFamilies(
+      mostPopular(POPULAR_SIZE * 2, new Set(), popularKind),
+      page.placed(),
+    ),
+    POPULAR_SIZE,
+  );
+  const fresh = page.take(
+    distinctFamilies(justAdded(attendable()), page.placed()),
+    POPULAR_SIZE,
+  );
+  const local = localShelves(useShelfInputs(page.placed()));
+  page.take(local.flatMap((shelf) => shelf.items));
+  const closing = page.take(closingSoon());
+  const week = page.take(within(range === 'week' ? 7 : 30, weekKind));
+  return (
+    <>
+      <section className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:gap-12">
         <div className="lg:top-bar self-start lg:sticky">
           <HeroCarousel picks={picks} />
         </div>
-        <MostPopular items={popular} />
+        <MostPopular items={panel} />
       </section>
+      <PopularSection
+        items={popular}
+        kind={popularKind}
+        onKind={setPopularKind}
+      />
+      <JustAddedSection items={fresh} />
+      <LocalShelves key={country} shelves={local} />
+      <ThisWeek
+        items={week}
+        range={range}
+        onRange={setRange}
+        kind={weekKind}
+        onKind={setWeekKind}
+      />
+      <ClosingSoon items={closing} />
+      <LaterSections shown={page.placed()} />
+    </>
+  );
+}
 
-      <PhoneHome />
-      <ThisWeek />
-      <ClosingSoon />
-      <NearYou key={city} city={city} />
+function PhoneSections() {
+  const country = useStore(readerCountryStore);
+  const matches = useStore(forYouStore);
+  const subscribed = useStore(subscriptionStore);
+  const page = placement();
+  const soon = page.take(
+    alternated<Listing>(within(3, 'event'), closingSoon()),
+    HOME_LIST,
+  );
+  const popular = page.take(
+    distinctFamilies(mostPopular(HOME_LIST * 3), page.placed()),
+    HOME_LIST,
+  );
+  const fresh = page.take(
+    distinctFamilies(justAdded(attendable()), page.placed()),
+    HOME_LIST,
+  );
+  const local = localShelves(useShelfInputs(page.placed()));
+  page.take(local.flatMap((shelf) => shelf.items.slice(0, HOME_LIST)));
+  const picked = subscribed ? page.take(forYou(matches), HOME_LIST) : [];
+  const week = page.take(within(7), HOME_LIST);
+  const month = page.take(within(30), HOME_LIST);
+  return (
+    <>
+      <HappeningSoon items={soon} />
+      <PhoneList title="Popular" items={popular} />
+      <PhoneList title="Just Added" items={fresh} />
+      <LocalShelves key={country} shelves={local} />
+      {subscribed && (
+        <PhoneList
+          title="For You"
+          items={picked}
+          href={paths.forYou()}
+          link="See all"
+        />
+      )}
+      <PhoneList
+        title="This Week"
+        items={week}
+        href={paths.feed('events')}
+        link="Events"
+        tour="week"
+      />
+      <PhoneList
+        title="This Month"
+        items={month}
+        href={paths.feed('opportunities')}
+        link="Opportunities"
+      />
+      <LaterSections shown={page.placed()} />
+    </>
+  );
+}
+
+function LaterSections({ shown: placed }: { shown: Listing[] }) {
+  return (
+    <>
       {shown('places') && <PlacesToGo />}
       {shown('promos') && <PromosSection />}
       <CategoriesSection />
-    </div>
+      <HomeShelves shown={placed} />
+    </>
   );
+}
+
+function idsOf(listings: Listing[]): Set<string> {
+  return new Set(listings.map((l) => l.id));
 }
 
 function MobileTop({ city }: { city: string }) {
@@ -93,19 +229,16 @@ function MobileTop({ city }: { city: string }) {
         className="flex items-center justify-between"
         {...area('mobile_top')}
       >
-        <span data-tour="city">
+        <span data-tour="city" className="flex items-center gap-2">
           <Select
             label="City"
             icon="pin"
             value={city}
-            onChange={(c) => cityStore.set(c)}
+            onChange={chooseCity}
             className="h-11 font-semibold"
-            options={launchCities().map((c) => ({
-              value: c.name,
-              label: c.status === 'soon' ? `${c.name} (soon)` : c.name,
-              disabled: c.status === 'soon',
-            }))}
+            options={withCity(placeOptions(), city)}
           />
+          <UseMyLocation iconOnly className="bg-btn h-11 w-11 rounded-md" />
         </span>
         <span className="flex gap-2">
           <ContributeMenu
@@ -125,95 +258,51 @@ function MobileTop({ city }: { city: string }) {
             type="button"
             data-tour="plans"
             onClick={() => openOverlay('plans')}
+            {...context({ action: 'plans' })}
             aria-label="Your plans"
             className="bg-btn grid h-11 w-11 place-items-center rounded-md"
           >
             <Icon name="cal" className="h-5 w-5" />
           </button>
+          <PhoneSettings />
         </span>
       </div>
     </TitleBar>
   );
 }
 
-function PhoneSectionHead({
-  title,
-  href,
-  link,
-  count,
-}: {
-  title: string;
-  href?: string;
-  link?: string;
-  count: number;
-}) {
-  return (
-    <header className="mb-5 flex items-center justify-between gap-4 md:hidden">
-      <h2 className="text-[26px] font-semibold tracking-tight">
-        {titleCase(title)}
-        <HeadingCount count={count} />
-      </h2>
-      {href && link && (
-        <SeeAll href={href} className="-mr-2 shrink-0">
-          {link}
-        </SeeAll>
-      )}
-    </header>
-  );
-}
-
-function PhoneList({
-  title,
-  areaName,
-  items,
-  href,
-  link,
-  tour,
-}: {
-  title: string;
-  areaName: string;
-  items: Listing[];
-  href?: string;
-  link?: string;
-  tour?: string;
-}) {
-  if (!items.length) return null;
-  return (
-    <section data-tour={tour} className="mt-12 md:hidden" {...area(areaName)}>
-      <PhoneSectionHead
-        title={title}
-        href={href}
-        link={link}
-        count={items.length}
-      />
-      <div className="border-line border-t">
-        {items.slice(0, HOME_LIST).map((l) => (
-          <ListingRow key={l.id} listing={l} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function useGrantedCity(): string | null {
-  const [city, setCity] = useState<string | null>(null);
+function useLocationOnVisit(): void {
   useEffect(() => {
-    let live = true;
-    const cities = launchCities()
-      .filter((c) => c.status === 'live')
-      .map((c) => c.name);
-    void grantedPosition().then((at) => {
-      if (live && at) setCity(nearestCity(at, cities));
-    });
-    return () => {
-      live = false;
-    };
+    void readGrantedLocation();
   }, []);
-  return city;
 }
 
-function HappeningSoon() {
-  const all = alternated<Listing>(within(3, 'event'), closingSoon());
+/** The states of the reader's country, or the launch cities outside Africa. */
+function placeOptions(): {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}[] {
+  const country = africanCountry(readerCountryStore.get());
+  if (country?.states.length)
+    return country.states.map((state) => ({ value: state, label: state }));
+  return launchCities().map((c) => ({
+    value: c.name,
+    label: c.status === 'soon' ? `${c.name} (soon)` : c.name,
+    disabled: c.status === 'soon',
+  }));
+}
+
+function withCity<T extends { value: string; label: string }>(
+  options: T[],
+  city: string,
+): (T | { value: string; label: string })[] {
+  return options.some((o) => o.value === city)
+    ? options
+    : [...options, { value: city, label: city }];
+}
+
+function HappeningSoon({ items: all }: { items: Listing[] }) {
   const items = all.slice(0, HOME_LIST);
   if (!items.length) return null;
   return (
@@ -224,7 +313,7 @@ function HappeningSoon() {
         link="Events"
         count={all.length}
       />
-      <Rail>
+      <Rail swipe>
         {items.map((l) => (
           <ListingCard key={l.id} listing={l} mixed />
         ))}
@@ -233,61 +322,76 @@ function HappeningSoon() {
   );
 }
 
-function PhoneHome() {
-  const interests = useStore(interestsStore);
-  const subscribed = useStore(subscriptionStore);
-  const nearCity = useGrantedCity();
-  const week = within(7);
-  const seen = new Set(week.map((l) => l.id));
+function PopularSection({
+  items,
+  kind,
+  onKind,
+}: {
+  items: Listing[];
+  kind: KindFilter;
+  onKind: (kind: KindFilter) => void;
+}) {
+  const [page, setPage] = useState(1);
+  if (!items.length && kind === 'all') return null;
   return (
-    <>
-      <HappeningSoon />
-      {subscribed && (
-        <PhoneList
-          title="For You"
-          areaName="for_you"
-          items={forYou(interests)}
-          href={paths.forYou()}
-          link="See all"
-        />
-      )}
-      <PhoneList
-        title="This Week"
-        areaName="this_week"
-        items={week}
-        href={paths.feed('events')}
-        link="Events"
-        tour="week"
+    <section className="mt-[clamp(140px,11vw,200px)]" {...area('popular')}>
+      <SectionHeader
+        title="Popular"
+        count={items.length}
+        actions={
+          <Tabs
+            label="Show"
+            value={kind}
+            onChange={(k) => {
+              onKind(k);
+              setPage(1);
+            }}
+            options={KIND_TABS}
+          />
+        }
       />
-      <PhoneList
-        title="This Month"
-        areaName="this_month"
-        items={within(30).filter((l) => !seen.has(l.id))}
-        href={paths.feed('opportunities')}
-        link="Opportunities"
+      <PagedGrid
+        items={items}
+        page={page}
+        onPage={setPage}
+        render={(l) => <ListingCard key={l.id} listing={l} mixed />}
       />
-      <PhoneList
-        title="Most Popular"
-        areaName="most_popular"
-        items={mostPopular(HOME_LIST)}
-      />
-      {nearCity && (
-        <PhoneList
-          title={`Near You in ${nearCity}`}
-          areaName="near_you"
-          items={inCity(nearCity)}
-        />
-      )}
-    </>
+    </section>
   );
 }
 
-function ThisWeek() {
-  const [range, setRange] = useState<Range>('week');
-  const [kind, setKind] = useState<KindFilter>('all');
+function JustAddedSection({ items }: { items: Listing[] }) {
   const [page, setPage] = useState(1);
-  const items = within(range === 'week' ? 7 : 30, kind);
-  const pages = Math.ceil(items.length / HOME_LIST);
+  if (!items.length) return null;
+  return (
+    <section className="mt-[clamp(140px,11vw,200px)]" {...area('just_added')}>
+      <SectionHeader title="Just Added" count={items.length} />
+      <PagedGrid
+        items={items}
+        page={page}
+        onPage={setPage}
+        render={(l) => <ListingCard key={l.id} listing={l} mixed />}
+      />
+    </section>
+  );
+}
+
+function ThisWeek({
+  items,
+  range,
+  onRange,
+  kind,
+  onKind,
+}: {
+  items: Listing[];
+  range: Range;
+  onRange: (range: Range) => void;
+  kind: KindFilter;
+  onKind: (kind: KindFilter) => void;
+}) {
+  const [page, setPage] = useState(1);
+  const pages = Math.ceil(items.length / PAGE_SIZE);
+  if (!items.length && kind === 'all' && range === 'week') return null;
   return (
     <section
       className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
@@ -303,7 +407,7 @@ function ThisWeek() {
                   type="button"
                   onClick={() => {
                     if (r !== range) track('range_changed', { range: r });
-                    setRange(r);
+                    onRange(r);
                     setPage(1);
                   }}
                   className={`mr-4 ${range === r ? 'text-fg' : 'text-fg-4 hover:text-fg-3'}`}
@@ -320,20 +424,16 @@ function ThisWeek() {
             label="Show"
             value={kind}
             onChange={(k) => {
-              setKind(k);
+              onKind(k);
               setPage(1);
             }}
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'event', label: 'Events' },
-              { value: 'opportunity', label: 'Opportunities' },
-            ]}
+            options={KIND_TABS}
           />
         </div>
       </header>
       <div data-tour="week">
         <Rail>
-          {pageOf(items, page, HOME_LIST).map((l) => (
+          {pageOf(items, page, PAGE_SIZE).map((l) => (
             <ListingCard key={l.id} listing={l} mixed />
           ))}
         </Rail>
@@ -348,10 +448,11 @@ function ThisWeek() {
   );
 }
 
-function ClosingSoon() {
+function ClosingSoon({ items: listed }: { items: Listing[] }) {
   const [page, setPage] = useState(1);
-  const items = closingSoon() as OpportunityListing[];
+  const items = listed as OpportunityListing[];
   const pages = Math.ceil(items.length / HOME_LIST);
+  if (!items.length) return null;
   return (
     <section
       data-tour="closing"
@@ -400,41 +501,6 @@ function ClosingSoon() {
   );
 }
 
-function NearYou({ city }: { city: string }) {
-  const [page, setPage] = useState(1);
-  const items = inCity(city, 'event');
-  return (
-    <section
-      className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
-      {...area('near_you')}
-    >
-      <SectionHeader
-        title="Near you"
-        count={items.length}
-        actions={
-          <>
-            <Select
-              label="City"
-              value={city}
-              onChange={(c) => cityStore.set(c)}
-              options={launchCities()
-                .filter((c) => c.status === 'live')
-                .map((c) => ({ value: c.name, label: c.name }))}
-            />
-            <SeeAll href={paths.feed('events')}>All events</SeeAll>
-          </>
-        }
-      />
-      <PagedGrid
-        items={items}
-        page={page}
-        onPage={setPage}
-        render={(l) => <ListingCard key={l.id} listing={l} mixed />}
-      />
-    </section>
-  );
-}
-
 function PlacesToGo() {
   const [page, setPage] = useState(1);
   const openNow = places().filter((p) => openStateNow(p).open);
@@ -448,29 +514,31 @@ function PlacesToGo() {
             link="Places"
             count={openNow.length}
           />
-          <div className="border-line border-t">
+          <div>
             {openNow.slice(0, HOME_LIST).map((p) => (
               <PlaceRow key={p.id} place={p} />
             ))}
           </div>
         </section>
       )}
-      <section
-        className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
-        {...area('places_to_go')}
-      >
-        <SectionHeader
-          title="Places to go"
-          count={places().length}
-          actions={<SeeAll href={paths.feed('places')}>All places</SeeAll>}
-        />
-        <PagedGrid
-          items={places()}
-          page={page}
-          onPage={setPage}
-          render={(p) => <PlaceCard key={p.id} place={p} mixed />}
-        />
-      </section>
+      {places().length > 0 && (
+        <section
+          className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+          {...area('places_to_go')}
+        >
+          <SectionHeader
+            title="Places to go"
+            count={places().length}
+            actions={<SeeAll href={paths.feed('places')}>All places</SeeAll>}
+          />
+          <PagedGrid
+            items={places()}
+            page={page}
+            onPage={setPage}
+            render={(p) => <PlaceCard key={p.id} place={p} mixed />}
+          />
+        </section>
+      )}
     </>
   );
 }
@@ -495,22 +563,24 @@ function PromosSection() {
           </Rail>
         </section>
       )}
-      <section
-        className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
-        {...area('promos')}
-      >
-        <SectionHeader
-          title="Promos"
-          count={promos().length}
-          actions={<SeeAll href={paths.feed('promos')}>All promos</SeeAll>}
-        />
-        <PagedGrid
-          items={promos()}
-          page={page}
-          onPage={setPage}
-          render={(p) => <PromoCard key={p.id} promo={p} mixed />}
-        />
-      </section>
+      {promos().length > 0 && (
+        <section
+          className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
+          {...area('promos')}
+        >
+          <SectionHeader
+            title="Promos"
+            count={promos().length}
+            actions={<SeeAll href={paths.feed('promos')}>All promos</SeeAll>}
+          />
+          <PagedGrid
+            items={promos()}
+            page={page}
+            onPage={setPage}
+            render={(p) => <PromoCard key={p.id} promo={p} mixed />}
+          />
+        </section>
+      )}
     </>
   );
 }
@@ -538,55 +608,5 @@ function CategoriesSection() {
       />
       <CategoryTiles kind={kind} limit={8} />
     </section>
-  );
-}
-
-function PagedGrid<T>({
-  items,
-  page,
-  onPage,
-  render,
-}: {
-  items: T[];
-  page: number;
-  onPage: (page: number) => void;
-  render: (item: T) => ReactNode;
-}) {
-  const pages = Math.ceil(items.length / HOME_LIST);
-  const current = clampPage(String(page), pages);
-  return (
-    <>
-      <Rail>{pageOf(items, current, HOME_LIST).map(render)}</Rail>
-      <div className="hidden md:block">
-        <Pager
-          page={current}
-          pages={pages}
-          total={items.length}
-          onChange={onPage}
-        />
-      </div>
-    </>
-  );
-}
-
-export function SeeAll({
-  href,
-  children,
-  className = '',
-}: {
-  href: string;
-  children: string;
-  className?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={(e) =>
-        track('see_all_clicked', { label: children, href }, e.currentTarget)
-      }
-      className={`text-fg-3 hover:text-fg flex h-10 items-center gap-1 px-2 text-[15px] font-semibold ${className}`}
-    >
-      {children} <Icon name="chevronRight" className="h-4 w-4" />
-    </Link>
   );
 }

@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 /**
  * Analytics go to /ingest on our own origin and are forwarded to PostHog, so
- * ad blockers do not drop them. vercel.json does the same in production.
+ * ad blockers do not drop them. The backend does the same in production.
  */
 function posthogProxy(region: string) {
   const host = region === 'eu' ? 'eu' : 'us';

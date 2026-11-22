@@ -8,7 +8,6 @@ import { API_BASE } from './config';
 import { apiError, dataOf, MembrsApiError, newIdempotencyKey } from './http';
 import { createStore } from './store';
 import { plural } from './text';
-import type { Taxonomy } from './types';
 
 export type Role = 'user' | 'assistant';
 
@@ -344,32 +343,6 @@ export function messagesLeftLine(left: number | null): string {
   return left > 0 ? `${plural(left, 'message')} left` : NO_MESSAGES;
 }
 
-const FALLBACK_SUGGESTIONS = (city: string) => [
-  `What's on in ${city} this weekend`,
-  `Free events in ${city} this week`,
-  'Opportunities closing this week',
-  'Scholarships closing this month',
-];
-
-export function suggestions(
-  interests: readonly string[],
-  city: string,
-  groups: Taxonomy['onboardingInterests'],
-  limit = 4,
-): string[] {
-  const picked = interests.flatMap((name) => {
-    if (groups.event.includes(name))
-      return [`${name} events in ${city} this week`];
-    if (groups.opportunity.includes(name))
-      return [`${name} closing this month`];
-    if (groups.place.includes(name)) return [`${name} to visit in ${city}`];
-    return [];
-  });
-  return [
-    ...new Set([...picked.slice(0, limit - 1), ...FALLBACK_SUGGESTIONS(city)]),
-  ].slice(0, limit);
-}
-
 export type AssistantStatus =
   'idle' | 'loading' | 'ready' | 'failed' | 'unavailable';
 
@@ -391,7 +364,7 @@ const INITIAL: AssistantState = {
   conversation: null,
   conversationsLeftToday: 0,
   messagesLeft: null,
-  limits: { conversationsPerDay: 3, messagesPerConversation: 10 },
+  limits: { conversationsPerDay: 3, messagesPerConversation: 3 },
   streaming: null,
   starting: false,
   error: null,

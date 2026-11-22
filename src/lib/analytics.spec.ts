@@ -5,8 +5,10 @@ import { eventListing } from './testing';
 // The catalogue comes from the API at runtime, so lookups are stubbed here.
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./api')>()),
-  listingById: (id: string) =>
-    id === 'e7' ? eventListing({ id: 'e7', category: 'Theatre' }) : undefined,
+  listingByKey: (key: string) =>
+    key === 'jazz-night'
+      ? eventListing({ id: 'e7', slug: 'jazz-night', category: 'Theatre' })
+      : undefined,
   placeById: () => undefined,
 }));
 
@@ -103,7 +105,9 @@ describe('positionOf', () => {
 
 describe('routeProperties', () => {
   it('names the listing behind a listing page', () => {
-    expect(routeProperties({ page: 'listing', id: 'e7' })).toMatchObject({
+    expect(
+      routeProperties({ page: 'listing', id: 'jazz-night' }),
+    ).toMatchObject({
       route: 'listing',
       item_kind: 'event',
       item_id: 'e7',

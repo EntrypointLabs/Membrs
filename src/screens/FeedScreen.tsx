@@ -1,97 +1,122 @@
 import { useMemo } from 'react';
-import { feed, launchCities } from '../lib/api';
-import { bySoonest } from '../lib/dates';
-import { setSearchParams, useSearchParam } from '../lib/router';
-import { slugify } from '../lib/text';
+import { feed } from '../lib/api';
+import { CONCERT_CATEGORY } from '../lib/homeShelves';
+import {
+  budgetFacet,
+  cityFacet,
+  countryFacet,
+  deadlineFacet,
+  eligibleFacet,
+  type Facet,
+  fundingFacet,
+  levelFacet,
+  modeFacet,
+  optionsOf,
+  regionFacet,
+  rewardFacet,
+  SORT_NAMES,
+  type SortKey,
+  DEFAULT_SORT,
+  justAdded,
+  sortKeyOf,
+  sortedBy,
+  sourceFacet,
+  topicFacet,
+  typeFacet,
+  viewFacet,
+} from '../lib/filters';
+import { setSearchParams } from '../lib/router';
 import type { Listing } from '../lib/types';
 import { EVENT_VIEWS, OPPORTUNITY_VIEWS, findView } from '../lib/views';
-import { countBy, FeedPicker } from '../components/FeedPicker';
-import { ListingCard, shownPrice } from '../components/ListingCard';
+import { FeedPicker } from '../components/FeedPicker';
+import { ListingCard, priceKnown } from '../components/ListingCard';
 import { ListingRow } from '../components/ListingRow';
 import { Select } from '../components/Select';
 import { TitleBar } from '../components/TitleBar';
-import { FeedBody, FilterLine, MoreFilters } from './FeedLayout';
+import { POPULAR_SIZE } from '../lib/config';
+import { distinctFamilies } from '../lib/families';
+import { FeedBody, FilterLine, MoreFilters, Tally } from './FeedLayout';
+import { useFacetFilters } from './useFacetFilters';
 
-type Budget = 'any' | 'free' | 'paid';
-const BUDGETS: readonly Budget[] = ['any', 'free', 'paid'];
-const REMOTE = 'Remote';
+const EVENT_SORTS: SortKey[] = ['popular', 'soonest', 'recent', 'title'];
+const OPPORTUNITY_SORTS: SortKey[] = [
+  'popular',
+  'soonest',
+  'reward',
+  'recent',
+  'title',
+];
 
-function budgetOf(listing: Listing): Budget {
-  if (listing.kind !== 'event') return 'any';
-  if (listing.free) return 'free';
-  return shownPrice(listing) ? 'paid' : 'any';
+/** The facets on the filter line itself; the rest sit under Filters. */
+const ON_THE_LINE = new Set(['type', 'city']);
+
+function facetsFor(kind: Listing['kind']): Facet[] {
+  const where = [topicFacet, regionFacet, countryFacet, sourceFacet];
+  if (kind === 'event') {
+    return [
+      typeFacet,
+      cityFacet,
+      viewFacet('When', EVENT_VIEWS),
+      modeFacet,
+      budgetFacet((l) => l.kind === 'event' && priceKnown(l)),
+      ...where,
+    ];
+  }
+  return [
+    typeFacet,
+    cityFacet,
+    viewFacet('Closing', OPPORTUNITY_VIEWS),
+    deadlineFacet,
+    rewardFacet,
+    fundingFacet,
+    levelFacet,
+    modeFacet,
+    eligibleFacet,
+    ...where,
+  ];
 }
 
 /**
- * Events and Opportunities. Type and City sit on the one filter line (City
- * starts on All); When and Budget live under Filters. With
- * nothing else picked the page opens on a rail of cards and the time groups.
+ * Events and Opportunities. Type and City sit on the filter line;
+ * everything else, the order included, lives under Filters. Each menu counts
+ * its options against the other filters that are set. With nothing picked
+ * the page opens on a rail of cards and the time groups.
  */
 export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
   const event = kind === 'event';
   const views = event ? EVENT_VIEWS : OPPORTUNITY_VIEWS;
-  const viewId = useSearchParam('view');
-  const all = useMemo(() => [...feed(kind)].sort(bySoonest), [kind]);
-  const types = countBy(all, (l) => l.category);
-  const cities = [
-    ...launchCities()
-      .filter((c) => c.status === 'live')
-      .map((c) => c.name),
-    REMOTE,
-  ];
-  const typeParam = useSearchParam('type');
-  const typeSlug = types.some((t) => t.value === typeParam) ? typeParam : null;
-  const cityParam = useSearchParam('city');
-  const city = cityParam && cities.includes(cityParam) ? cityParam : 'all';
-  const budgetParam = useSearchParam('budget');
-  const budget: Budget =
-    event && BUDGETS.includes(budgetParam as Budget)
-      ? (budgetParam as Budget)
-      : 'any';
-  const setCity = (c: string) => setSearchParams({ city: c, page: null });
-  const setBudget = (b: Budget) =>
-    setSearchParams({ budget: b === 'any' ? null : b, page: null });
-
-  const view = findView(views, viewId);
-  const items = all.filter(
-    (l) =>
-      (!view || view.test(l)) &&
-      (!typeSlug || slugify(l.category) === typeSlug) &&
-      (city === 'all' || l.city === city) &&
-      (budget === 'any' || budgetOf(l) === budget),
+  const sorts = event ? EVENT_SORTS : OPPORTUNITY_SORTS;
+  const all = useMemo(() => feed(kind), [kind]);
+  const facets = facetsFor(kind);
+  const {
+    query,
+    picks,
+    pick,
+    menu,
+    items: matched,
+    active,
+    lineFacets,
+    panelFacets,
+    panelActive,
+    cleared,
+  } = useFacetFilters(all, facets, ON_THE_LINE);
+  const sort = sortKeyOf(query.get('sort'), sorts);
+  const items = sortedBy(matched, sort);
+  const isFiltered = active.length > 0 || sort !== DEFAULT_SORT;
+  const view = findView(views, picks.view ?? null);
+  const popular = distinctFamilies(items, [], POPULAR_SIZE);
+  const concerts = items.filter(
+    (l) => l.kind === 'event' && l.category === CONCERT_CATEGORY,
   );
-  const filtered = Boolean(
-    view || typeSlug || budget !== 'any' || city !== 'all',
-  );
-  const rail = [...items]
-    .filter((l) =>
-      l.kind === 'event' ? l.inDays <= 3 : l.daysLeft >= 0 && l.daysLeft <= 31,
-    )
-    .sort(bySoonest);
-
-  const cityFilter = (
+  const sortMenu = (
     <Select
-      label="City"
-      value={city}
-      onChange={setCity}
-      options={[
-        { value: 'all', label: 'All' },
-        ...cities.map((c) => ({ value: c, label: c })),
-      ]}
+      label="Order"
+      value={sort}
+      onChange={(s) => pick('sort', s === DEFAULT_SORT ? null : s)}
+      options={sorts.map((s) => ({ value: s, label: SORT_NAMES[s] }))}
     />
   );
-  const budgetFilter = event && (
-    <Select
-      label="Budget"
-      value={budget}
-      onChange={setBudget}
-      options={[
-        { value: 'any', label: 'Any' },
-        { value: 'free', label: 'Free' },
-        { value: 'paid', label: 'Paid' },
-      ]}
-    />
-  );
+  const typeOptions = optionsOf(typeFacet, all, facets, picks);
 
   return (
     <div className="page pt-0 md:pt-14">
@@ -107,66 +132,61 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
               count: all.filter(v.test).length,
             }))
             .filter((v) => v.count)}
-          types={types}
+          types={typeOptions}
           view={view ? view.id : null}
-          type={typeSlug}
+          type={picks.type ?? null}
           total={all.length}
           filters={
             <>
-              {cityFilter}
-              {budgetFilter}
+              {facets
+                .filter((f) => f.param !== 'type' && f.param !== 'view')
+                .map(menu)}
+              {sortMenu}
             </>
           }
         />
       </TitleBar>
       <FilterLine
-        count={items.length}
-        noun={event ? ['event', 'events'] : ['opportunity', 'opportunities']}
+        summary={
+          <Tally
+            count={items.length}
+            noun={
+              event ? ['event', 'events'] : ['opportunity', 'opportunities']
+            }
+          />
+        }
         onClear={
-          filtered
-            ? () => {
+          isFiltered
+            ? () =>
                 setSearchParams({
-                  view: null,
-                  type: null,
-                  city: null,
-                  budget: null,
+                  ...cleared,
+                  sort: null,
                   page: null,
-                });
-              }
+                })
             : undefined
         }
       >
-        <Select
-          label="Type"
-          value={typeSlug ?? 'all'}
-          onChange={(t) => setSearchParams({ type: t, page: null })}
-          options={[
-            { value: 'all', label: 'All' },
-            ...types.map((t) => ({ value: t.value, label: t.label })),
-          ]}
-        />
-        {cityFilter}
-        <MoreFilters active={Number(Boolean(view)) + Number(budget !== 'any')}>
-          <Select
-            label={event ? 'When' : 'Closing'}
-            value={view?.id ?? 'all'}
-            onChange={(v) => setSearchParams({ view: v, page: null })}
-            options={[
-              { value: 'all', label: 'Any time' },
-              ...views.map((v) => ({ value: v.id, label: v.label })),
-            ]}
-          />
-          {budgetFilter}
+        {lineFacets.map(menu)}
+        <MoreFilters active={panelActive + Number(sort !== DEFAULT_SORT)}>
+          {sortMenu}
+          {panelFacets.map(menu)}
         </MoreFilters>
       </FilterLine>
       <FeedBody
         items={items}
         views={views}
-        filtered={filtered}
+        filtered={isFiltered}
         noun={event ? ['event', 'events'] : ['opportunity', 'opportunities']}
         keyOf={(l) => l.id}
         row={(l) => <ListingRow listing={l} />}
-        rail={{ title: event ? 'Happening Soon' : 'Closing Soon', items: rail }}
+        rails={[
+          { title: 'Popular', items: popular },
+          { title: 'Concerts', items: concerts },
+          {
+            title: 'Just Added',
+            items: justAdded(items).slice(0, POPULAR_SIZE),
+          },
+        ]}
         card={(l) => <ListingCard key={l.id} listing={l} />}
       />
     </div>

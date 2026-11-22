@@ -81,16 +81,51 @@ const SOURCE_NAMES: Record<string, string> = {
 
 export function sourceName(source: string): string {
   const name = source.trim();
-  const known = SOURCE_NAMES[name.toLowerCase()];
+  const key = name.toLowerCase();
+  const known = Object.hasOwn(SOURCE_NAMES, key)
+    ? SOURCE_NAMES[key]
+    : undefined;
   if (known) return known;
   return name === name.toLowerCase() && name
     ? name[0]!.toUpperCase() + name.slice(1)
     : name;
 }
 
+const PER: [RegExp, string][] = [
+  [/\s+(?:a|per)\s+month\b|\s+monthly\b/gi, '/mo'],
+  [/\s+(?:a|per)\s+year\b|\s+annually\b|\s+yearly\b/gi, '/yr'],
+  [/\s+(?:a|per)\s+week\b|\s+weekly\b/gi, '/wk'],
+  [/\s+(?:a|per)\s+day\b|\s+daily\b/gi, '/day'],
+];
+
+const SCALES: [number, string][] = [
+  [1e9, 'B'],
+  [1e6, 'M'],
+  [1e3, 'K'],
+];
+
+export function shortAmount(amount: number): string {
+  for (const [index, [size, suffix]] of SCALES.entries()) {
+    if (amount < size) continue;
+    const scaled = amount / size;
+    const rounded =
+      scaled < 10 ? Math.round(scaled * 10) / 10 : Math.round(scaled);
+    const bigger = SCALES[index - 1];
+    return rounded >= 1000 && bigger ? `1${bigger[1]}` : `${rounded}${suffix}`;
+  }
+  return String(amount);
+}
+
 export function priceText(price: string): string {
-  return price.replace(
-    /(\d)\.(\d)(?!\d)/g,
+  const shortened = price.replace(
+    /\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{4,}(?:\.\d+)?/g,
+    (amount) => shortAmount(Number(amount.replaceAll(',', ''))),
+  );
+  return PER.reduce(
+    (text, [pattern, unit]) => text.replace(pattern, unit),
+    shortened,
+  ).replace(
+    /(\d)\.(\d)(?![\dKMB])/g,
     (_, whole: string, tenth: string) => `${whole}.${tenth}0`,
   );
 }

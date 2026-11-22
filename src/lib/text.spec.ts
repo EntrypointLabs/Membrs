@@ -70,11 +70,24 @@ describe('sourceName', () => {
 describe('priceText', () => {
   it('shows two decimals where a price has one', () => {
     expect(priceText('£4.5')).toBe('£4.50');
-    expect(priceText('Up to $1,200.5 a month')).toBe('Up to $1,200.50 a month');
+    expect(priceText('$108.5')).toBe('$108.50');
   });
 
-  it('leaves whole and two decimal prices alone', () => {
-    expect(priceText('₦15,000')).toBe('₦15,000');
+  it('shortens thousands, millions and the period', () => {
+    expect(priceText('₦15,000')).toBe('₦15K');
+    expect(priceText('Up to $1,200.5 a month')).toBe('Up to $1.2K/mo');
+    expect(priceText('$1,750 a month')).toBe('$1.8K/mo');
+    expect(priceText('$11,709 a year')).toBe('$12K/yr');
+    expect(priceText('€30,500 a year')).toBe('€31K/yr');
+    expect(priceText('Up to $1,000,000')).toBe('Up to $1M');
+    expect(priceText('$999,999')).toBe('$1M');
+    expect(priceText('₦2500000')).toBe('₦2.5M');
+    expect(priceText('JPY 120,000 per month')).toBe('JPY 120K/mo');
+    expect(priceText('$400 a week')).toBe('$400/wk');
+  });
+
+  it('leaves small and wordy prices alone', () => {
+    expect(priceText('$100')).toBe('$100');
     expect(priceText('€9.99')).toBe('€9.99');
     expect(priceText('Free')).toBe('Free');
   });

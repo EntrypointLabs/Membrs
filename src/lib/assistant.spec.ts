@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import taxonomyFixture from '../fixtures/taxonomy.json';
 
 const BASE = 'http://api.test/api';
 
@@ -56,7 +55,7 @@ async function live() {
   vi.stubEnv('VITE_API_BASE', BASE);
   const assistant = await import('./assistant');
   const auth = await import('./auth');
-  auth.sessionStore.set({ provider: 'google', at: 0, accessToken: 'token' });
+  auth.sessionStore.set({ at: 0, accessToken: 'token' });
   return { assistant, auth };
 }
 
@@ -479,34 +478,5 @@ describe('steps', () => {
       'Opening',
     );
     expect(stepTitle({ id: 'o', kind: 'open', status: 'done' })).toBe('Opened');
-  });
-});
-
-describe('suggestions', () => {
-  it('builds chips from interests and city', async () => {
-    const { suggestions } = await import('./assistant');
-    expect(
-      suggestions(
-        ['Tech', 'Scholarships'],
-        'Lagos',
-        taxonomyFixture.onboardingInterests,
-      ),
-    ).toEqual([
-      'Tech events in Lagos this week',
-      'Scholarships closing this month',
-      "What's on in Lagos this weekend",
-      'Free events in Lagos this week',
-    ]);
-  });
-
-  it('never repeats a chip', async () => {
-    const { suggestions } = await import('./assistant');
-    const chips = suggestions(
-      ['Scholarships'],
-      'Accra',
-      taxonomyFixture.onboardingInterests,
-    );
-    expect(chips).toHaveLength(4);
-    expect(new Set(chips).size).toBe(4);
   });
 });

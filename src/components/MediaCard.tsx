@@ -30,10 +30,12 @@ export function MediaFacts({
       <span className="text-fg-3 flex max-w-full min-w-0 flex-col gap-1 md:flex-row md:items-center md:gap-4">
         {meta}
       </span>
-      <div className="mt-1.5 flex w-full items-center justify-between gap-3 md:mt-2.5">
-        <div className="flex min-w-0">{tags}</div>
+      <div className="mt-1.5 flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1.5 md:mt-2.5">
+        <div className="flex max-w-full min-w-0">{tags}</div>
         {figure && (
-          <span className="text-fg shrink-0 font-medium">{figure}</span>
+          <span className="text-fg ml-auto max-w-full min-w-0 truncate font-medium">
+            {figure}
+          </span>
         )}
       </div>
     </div>
@@ -67,7 +69,7 @@ export function MediaCard({
       />
       <h3
         className={cn(
-          'group-hover:text-accent mt-3 line-clamp-2 text-base leading-snug font-semibold tracking-tight',
+          'group-hover:text-accent mt-3 line-clamp-2 min-h-[2lh] text-base leading-snug font-semibold tracking-tight',
           !compact && 'md:mt-5 md:text-[23px] md:leading-tight',
         )}
       >

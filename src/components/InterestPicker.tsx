@@ -1,8 +1,14 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { track } from '../lib/analytics';
-import { loadAccount, taxonomy } from '../lib/api';
+import { loadAccount, readerCountryStore, taxonomy } from '../lib/api';
+import {
+  africanCountry,
+  matchingCountries,
+  matchingStates,
+  placeLabel,
+  readerPlaceOf,
+} from '../lib/africa';
 import { shown } from '../lib/sections';
-import { digestCities } from '../lib/digest';
 import { asksField, FIELD_QUESTION, FIELDS } from '../lib/followups';
 import {
   cityStore,
@@ -13,6 +19,7 @@ import {
 import { useStore } from '../lib/store';
 import { titleCase } from '../lib/text';
 import { Icon } from './Icon';
+import { Input } from './ui/input';
 
 /**
  * A pick: outlined with a plus when off, membrs blue with a tick when on, so
@@ -104,26 +111,20 @@ export function PreferenceAccordions({
   return (
     <div className="flex flex-col gap-4">
       <Accordion
-        title="City"
-        summary={city}
+        title="Location"
+        summary={placeLabel(readerPlaceOf(city, readerCountryStore.get()))}
         open={open === 'city'}
         onToggle={() => openSection('city')}
       >
-        <div className="flex flex-wrap gap-2">
-          {digestCities(city).map((c) => (
-            <Chip
-              key={c}
-              on={city === c}
-              onClick={() => {
-                track('preferences_city_picked', { city: c });
-                onCity(c);
-                onOpen('event');
-              }}
-            >
-              {c}
-            </Chip>
-          ))}
-        </div>
+        <PlacePicker
+          key={readerPlaceOf(city, readerCountryStore.get()).country}
+          label={city}
+          onPick={(label, done) => {
+            track('preferences_city_picked', { city: label });
+            onCity(label);
+            if (done) onOpen('event');
+          }}
+        />
       </Accordion>
       <Accordion
         title="Events"
@@ -152,6 +153,110 @@ export function PreferenceAccordions({
           {chips(offered.place)}
         </Accordion>
       )}
+    </div>
+  );
+}
+
+/** Lists longer than this get a search box, so a short list stays one tap away. */
+const SEARCH_FROM = 12;
+
+/**
+ * Any African country, then any state or region in it. Picking a country
+ * alone already counts, so a reader who does not want to name a state is
+ * not forced to.
+ */
+function PlacePicker({
+  label,
+  onPick,
+}: {
+  label: string;
+  onPick: (label: string, done: boolean) => void;
+}) {
+  const place = readerPlaceOf(label, readerCountryStore.get());
+  const [code, setCode] = useState(place.country);
+  const [query, setQuery] = useState('');
+  const country = africanCountry(code);
+
+  if (!country) {
+    const countries = matchingCountries(query);
+    return (
+      <div className="flex flex-col gap-3">
+        <Input
+          type="search"
+          aria-label="Search countries"
+          placeholder="Search countries"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="border-line-2 h-11 text-[15px]"
+        />
+        <div className="flex max-h-72 flex-wrap gap-2 overflow-y-auto">
+          {countries.map((c) => (
+            <Chip
+              key={c.code}
+              mark={false}
+              on={false}
+              onClick={() => {
+                setCode(c.code);
+                setQuery('');
+                onPick(
+                  placeLabel({ country: c.code, state: '' }),
+                  !c.states.length,
+                );
+              }}
+            >
+              {c.name}
+            </Chip>
+          ))}
+          {!countries.length && (
+            <p className="text-fg-3 text-[15px]">No country matches that.</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const states = matchingStates(country, query);
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="flex items-center gap-3 text-[15px]">
+        <b className="font-semibold">{country.name}</b>
+        <button
+          type="button"
+          onClick={() => {
+            setCode('');
+            setQuery('');
+          }}
+          className="text-accent font-semibold"
+        >
+          Change country
+        </button>
+      </p>
+      {country.states.length > SEARCH_FROM && (
+        <Input
+          type="search"
+          aria-label={`Search ${country.name}`}
+          placeholder="Search states and regions"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="border-line-2 h-11 text-[15px]"
+        />
+      )}
+      <div className="flex max-h-72 flex-wrap gap-2 overflow-y-auto">
+        {states.map((s) => (
+          <Chip
+            key={s}
+            on={place.country === country.code && place.state === s}
+            onClick={() =>
+              onPick(placeLabel({ country: country.code, state: s }), true)
+            }
+          >
+            {s}
+          </Chip>
+        ))}
+        {!states.length && (
+          <p className="text-fg-3 text-[15px]">No state matches that.</p>
+        )}
+      </div>
     </div>
   );
 }

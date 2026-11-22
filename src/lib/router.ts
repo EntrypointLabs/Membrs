@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import type { ContributeKind, LegalSlug } from './types';
-import { shown } from './sections';
+import { shown } from './sections.js';
 
 /**
  * A dependency-free history router, the same shape as the merchant portal's.
@@ -57,15 +57,16 @@ export type Route =
   | { page: 'search'; query: string }
   | { page: 'for-you' }
   | { page: 'legal'; doc: LegalSlug }
+  | { page: 'unsubscribe'; token: string; notYou: boolean }
   | { page: 'not-found' };
 
-const FEEDS: readonly FeedKind[] = [
+export const FEEDS: readonly FeedKind[] = [
   'events',
   'opportunities',
   'places',
   'promos',
 ];
-const LEGAL: readonly LegalSlug[] = [
+export const LEGAL: readonly LegalSlug[] = [
   'terms',
   'privacy',
   'cookies',
@@ -118,6 +119,15 @@ export function parseRoute(location: string): Route {
     if (first === 'listing') return { page: 'listing', id: second };
     if (first === 'place' && shown(first)) return { page: 'place', id: second };
     if (first === 'promo' && shown(first)) return { page: 'promo', id: second };
+    if (
+      first === 'newsletter' &&
+      (second === 'unsubscribe' || second === 'not-you')
+    )
+      return {
+        page: 'unsubscribe',
+        token: params.get('token') ?? '',
+        notYou: second === 'not-you',
+      };
   }
   if (parts.length === 1) {
     if (first === 'search')
@@ -136,22 +146,32 @@ export function parseRoute(location: string): Route {
 }
 
 /** One query parameter of the current URL, re-read on every navigation. */
-export function useSearchParam(name: string): string | null {
+export function useSearchParams(): URLSearchParams {
   const location = useLocation();
-  return new URLSearchParams(location.split('?')[1] ?? '').get(name);
+  return new URLSearchParams(location.split('?')[1] ?? '');
 }
 
-/** Set or clear query parameters, keeping the path and the rest. */
-export function setSearchParams(next: Record<string, string | null>): void {
-  const params = new URLSearchParams(window.location.search);
+export function useSearchParam(name: string): string | null {
+  return useSearchParams().get(name);
+}
+
+export function searchHref(
+  location: string,
+  next: Record<string, string | null>,
+): string {
+  const [path = '/', search = ''] = location.split('?');
+  const params = new URLSearchParams(search);
   for (const [k, v] of Object.entries(next)) {
     if (v === null || v === '' || v === 'all') params.delete(k);
     else params.set(k, v);
   }
   const query = params.toString();
-  navigate(window.location.pathname + (query ? `?${query}` : ''), {
-    replace: true,
-  });
+  return path + (query ? `?${query}` : '');
+}
+
+/** Set or clear query parameters, keeping the path and the rest. */
+export function setSearchParams(next: Record<string, string | null>): void {
+  navigate(searchHref(snapshot(), next), { replace: true });
 }
 
 export function useRoute(): Route {
@@ -196,4 +216,8 @@ export const paths = {
   search: (query = '') =>
     query ? `/search?q=${encodeURIComponent(query)}` : '/search',
   legal: (doc: LegalSlug) => `/${doc}`,
+  unsubscribe: (token: string) =>
+    `/newsletter/unsubscribe?${new URLSearchParams({ token })}`,
+  notYou: (token: string) =>
+    `/newsletter/not-you?${new URLSearchParams({ token })}`,
 };

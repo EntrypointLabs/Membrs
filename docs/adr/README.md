@@ -20,4 +20,5 @@ contested. Routine choices do not need one.
 | [0009](./0009-responsive-images-and-route-splitting.md)    | Responsive images and route splitting       | Accepted |
 | [0010](./0010-shadcn-for-forms.md)                         | shadcn/ui for forms                         | Accepted |
 | [0011](./0011-sections-open-on-a-rail-and-groups.md)       | Sections open on a rail and time groups     | Accepted |
-| [0012](./0012-posthog-analytics-follows-cookie-consent.md) | PostHog analytics follow cookie consent     | Accepted |
+| [0012](./0012-served-by-the-backend.md)                    | The backend serves the site                 | Accepted |
+| [0013](./0013-posthog-analytics-follows-cookie-consent.md) | PostHog analytics follow cookie consent     | Accepted |

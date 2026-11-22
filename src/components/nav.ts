@@ -1,6 +1,6 @@
 import { shown } from '../lib/sections';
 import type { IconName } from './Icon';
-import type { FeedKind } from '../lib/router';
+import { paths, type FeedKind } from '../lib/router';
 
 export interface NavItem {
   key: FeedKind | 'home' | 'contribute';
@@ -19,7 +19,7 @@ const ALL_NAV: NavItem[] = [
   {
     key: 'home',
     label: 'Home',
-    href: '/',
+    href: paths.home(),
     icon: 'home',
     color: 'text-fg-3',
     bar: 'bg-fg',
@@ -27,7 +27,7 @@ const ALL_NAV: NavItem[] = [
   {
     key: 'events',
     label: 'Events',
-    href: '/events',
+    href: paths.feed('events'),
     icon: 'cal',
     color: 'text-[#fd7a6e]',
     bar: 'bg-[#fd7a6e]',
@@ -36,7 +36,7 @@ const ALL_NAV: NavItem[] = [
     key: 'opportunities',
     label: 'Opportunities',
     short: 'Opps',
-    href: '/opportunities',
+    href: paths.feed('opportunities'),
     icon: 'award',
     color: 'text-[#a996ff]',
     bar: 'bg-[#a996ff]',
@@ -44,7 +44,7 @@ const ALL_NAV: NavItem[] = [
   {
     key: 'places',
     label: 'Places',
-    href: '/places',
+    href: paths.feed('places'),
     icon: 'pin',
     color: 'text-[#4cc98a]',
     bar: 'bg-[#4cc98a]',
@@ -52,7 +52,7 @@ const ALL_NAV: NavItem[] = [
   {
     key: 'promos',
     label: 'Promos',
-    href: '/promos',
+    href: paths.feed('promos'),
     icon: 'tag',
     color: 'text-[#f47fb0]',
     bar: 'bg-[#f47fb0]',
@@ -60,7 +60,7 @@ const ALL_NAV: NavItem[] = [
   {
     key: 'contribute',
     label: 'Contribute',
-    href: '/contribute',
+    href: paths.contribute(),
     icon: 'plus',
     color: 'text-[#6f93ff]',
     bar: 'bg-[#6f93ff]',

@@ -23,8 +23,9 @@ import {
   shareAndConfirm,
   SmallButton,
 } from './DetailParts';
-import { SeeAll } from './HomeScreen';
+import { SeeAll } from '../components/PhoneList';
 import { NotFoundScreen } from './NotFoundScreen';
+import { GRID_COLUMNS } from '../lib/config';
 
 export function PlaceScreen({ id }: { id: string }) {
   const place = placeById(id);
@@ -37,7 +38,7 @@ export function PlaceScreen({ id }: { id: string }) {
       (p) =>
         p.id !== place.id && (p.type === place.type || p.city === place.city),
     )
-    .slice(0, 3);
+    .slice(0, GRID_COLUMNS);
   const item = itemRef.place(place);
   const findSimilar = (e: MouseEvent<HTMLElement>) =>
     track('find_similar_clicked', item, e.currentTarget);
@@ -125,7 +126,7 @@ export function PlaceScreen({ id }: { id: string }) {
           <Fact
             label="Where"
             action={
-              <FactAction href={maps} action="directions">
+              <FactAction href={maps} icon="pin" action="directions">
                 Directions
               </FactAction>
             }

@@ -13,7 +13,6 @@ export interface ContributeDraft {
   agreed: boolean;
   photoId?: string;
   hosted?: HostedPhoto;
-  resume?: boolean;
 }
 
 const KINDS: ContributeKind[] = [
@@ -41,7 +40,6 @@ export function readDraft(kind: ContributeKind): ContributeDraft | null {
     agreed: Boolean(draft.agreed),
     ...(draft.photoId ? { photoId: draft.photoId } : {}),
     ...(draft.hosted ? { hosted: draft.hosted } : {}),
-    ...(draft.resume ? { resume: true } : {}),
   };
 }
 

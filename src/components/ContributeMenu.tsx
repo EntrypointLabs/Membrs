@@ -2,9 +2,10 @@ import { useRef, type ReactElement } from 'react';
 import { DropdownMenu } from 'radix-ui';
 import { area, contextOf, track } from '../lib/analytics';
 import { CONTRIBUTE_KINDS } from '../lib/contribute';
-import { navigate, paths, useRoute } from '../lib/router';
+import { paths, useRoute } from '../lib/router';
 import type { ContributeKind } from '../lib/types';
 import { Icon, type IconName } from './Icon';
+import { Link } from './Link';
 import { navItem } from './nav';
 
 const SECTION_OF_KIND = {
@@ -31,7 +32,8 @@ export function ContributeMenu({
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   // The items render in a portal, outside the area the trigger sits in, so
-  // the placement is read off the trigger instead.
+  // the placement is read off the trigger instead. Each item is a link, so
+  // this only records the choice.
   function choose(kind: ContributeKind) {
     const placement = contextOf(triggerRef.current).area;
     track('contribute_menu_selected', {
@@ -40,7 +42,6 @@ export function ContributeMenu({
     });
     if (route.page === 'contribute' && route.kind !== kind)
       track('contribute_kind_switched', { from: route.kind, to: kind });
-    navigate(paths.contribute(kind));
   }
 
   return (
@@ -60,14 +61,17 @@ export function ContributeMenu({
             return (
               <DropdownMenu.Item
                 key={k.value}
+                asChild
                 onSelect={() => choose(k.value)}
                 className="data-[highlighted]:bg-soft-hover flex h-11 cursor-pointer items-center gap-3 rounded-md px-3.5 text-[15px] font-semibold outline-none"
               >
-                <Icon
-                  name={look.icon}
-                  className={`h-[18px] w-[18px] ${look.color}`}
-                />
-                {k.label}
+                <Link href={paths.contribute(k.value)}>
+                  <Icon
+                    name={look.icon}
+                    className={`h-[18px] w-[18px] ${look.color}`}
+                  />
+                  {k.label}
+                </Link>
               </DropdownMenu.Item>
             );
           })}

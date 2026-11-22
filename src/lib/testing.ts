@@ -2,6 +2,7 @@ import type { EventListing, OpportunityListing } from './types';
 
 export const eventListing = (over: Partial<EventListing>): EventListing => ({
   id: 'e',
+  slug: 'show-lagos-2026-11-07',
   kind: 'event',
   title: 'Show',
   category: 'Music',
@@ -12,6 +13,7 @@ export const eventListing = (over: Partial<EventListing>): EventListing => ({
   trending: false,
   blurb: '',
   listedRank: 1,
+  popularity: 50,
   photo: 'p1',
   area: 'Onikan',
   venue: 'Hall',
@@ -31,6 +33,7 @@ export const opportunityListing = (
   over: Partial<OpportunityListing>,
 ): OpportunityListing => ({
   id: 'o',
+  slug: 'grant',
   kind: 'opportunity',
   title: 'Grant',
   category: 'Grants',
@@ -41,6 +44,7 @@ export const opportunityListing = (
   trending: false,
   blurb: '',
   listedRank: 1,
+  popularity: 50,
   photo: 'p1',
   deadline: { weekday: 'Mon', day: 16, month: 'Nov', label: 'Mon 16 Nov 2026' },
   daysLeft: 2,

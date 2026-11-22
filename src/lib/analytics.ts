@@ -2,7 +2,7 @@ import type { CaptureResult, PostHog, Properties } from 'posthog-js';
 import {
   catalogueStore,
   categoryBySlug,
-  listingById,
+  listingByKey,
   placeById,
   promoById,
 } from './api';
@@ -41,8 +41,8 @@ const REGION = import.meta.env.VITE_POSTHOG_REGION === 'eu' ? 'eu' : 'us';
 
 /**
  * Events go to /ingest on our own domain and are forwarded to PostHog by the
- * Vite dev server and by the Vercel rewrites. Ad blockers drop requests to
- * posthog.com, and a fifth or more of readers run one.
+ * Vite dev server and by the backend that serves the site. Ad blockers drop
+ * requests to posthog.com, and a fifth or more of readers run one.
  */
 const API_HOST = '/ingest';
 
@@ -60,6 +60,10 @@ export type ItemRef = {
 };
 
 type Placement<T extends string> = { placement: T };
+
+/** Where a reader gave the email that made them known. */
+export type SignInPlacement =
+  'footer' | 'preferences' | 'contribute' | 'assistant';
 type None = Record<string, never>;
 
 /**
@@ -97,18 +101,15 @@ export interface Events {
     position: number;
   };
 
-  // Accounts and the Sunday Digest.
-  sign_in_started: {
-    provider: string;
-    mode: 'up' | 'in';
-  } & Placement<'auth_modal' | 'footer'>;
+  // Accounts and the weekly email. A reader is known by the email a feature
+  // asked for in place, so the email step is the only way in.
+  sign_in_started: { provider: 'email' } & Placement<SignInPlacement>;
   sign_in_failed: {
-    provider: string;
-    reason: string;
-  } & Placement<'auth_modal' | 'footer'>;
-  signed_in: { provider: string };
+    provider: 'email';
+    reason: 'not_accepted' | 'error';
+  } & Placement<SignInPlacement>;
+  signed_in: { provider: 'email' };
   signed_out: None;
-  auth_mode_switched: { mode: 'up' | 'in' };
   digest_opened: Placement<string>;
   preferences_section_opened: { section: string };
   preferences_city_picked: { city: string };
@@ -248,6 +249,14 @@ export interface Events {
   assistant_new_chat: { conversations_left: number };
   assistant_expanded: { expanded: boolean };
   assistant_retry_clicked: None;
+  // Outside assistants get the question in a link, so only its shape is sent.
+  assistant_tool_picked: { tool: string };
+  assistant_outside_opened: {
+    tool: string;
+    source: 'composer' | 'suggestion';
+    length: number;
+    carried_messages: number;
+  };
 
   // Reliability.
   catalogue_load_failed: None;
@@ -406,7 +415,7 @@ export function routeProperties(route: Route): Properties {
         category: categoryBySlug(route.slug)?.name ?? route.slug,
       };
     case 'listing': {
-      const listing = listingById(route.id);
+      const listing = listingByKey(route.id);
       return {
         route: route.page,
         ...(listing ? itemRef.listing(listing) : { item_id: route.id }),
@@ -445,7 +454,7 @@ function liveProperties(): Properties {
     city: cityStore.get(),
     theme: themeStore.get(),
     signed_in: Boolean(session),
-    auth_provider: session?.provider ?? null,
+    auth_provider: session ? 'email' : null,
     digest_subscribed: Boolean(subscriptionStore.get()),
     interests: interestsStore.get(),
     viewport: window.matchMedia('(min-width: 768px)').matches ? 'web' : 'phone',
@@ -508,11 +517,13 @@ function watchStores(): void {
   watch(cityStore, (city, previous) =>
     send('city_changed', { city, previous }),
   );
-  watch(sessionStore, (session) =>
-    session
-      ? send('signed_in', { provider: session.provider })
-      : send('signed_out', {}),
-  );
+  // A refreshed token replaces the session too, so only the reader becoming
+  // known or unknown counts.
+  watch(sessionStore, (session, previous) => {
+    if (Boolean(session) === Boolean(previous)) return;
+    if (session) send('signed_in', { provider: 'email' });
+    else send('signed_out', {});
+  });
   let openedAt = 0;
   watch<Overlay>(overlayStore, (next, prev) => {
     if (prev)
