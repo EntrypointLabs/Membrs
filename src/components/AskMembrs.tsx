@@ -1058,8 +1058,6 @@ export function AssistantPanel() {
               ? 'md:h-[min(780px,calc(100dvh-48px))]'
               : 'md:max-h-[min(780px,calc(100dvh-48px))]'),
           SHEET_MOTION,
-          // Phones open at half height and grow to full once a reply is there to read.
-          !chatting && 'max-md:h-[55dvh]',
           'max-md:transition-[translate,scale,opacity,height]',
         )}
       >
