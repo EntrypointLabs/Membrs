@@ -8,6 +8,13 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
 export const API_TIMEOUT_MS = 5000;
 
+/**
+ * The whole catalogue is one response of a few megabytes, and the timeout
+ * covers downloading it too, so a phone on a slow network needs far longer
+ * than a small request does.
+ */
+export const CATALOGUE_TIMEOUT_MS = 30000;
+
 export const ADS_CHECKOUT = import.meta.env.VITE_ADS_CHECKOUT === 'true';
 
 /** Where the digest and contact emails go. */

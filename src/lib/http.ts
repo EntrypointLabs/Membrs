@@ -46,8 +46,11 @@ export function apiFetch(path: string, init: RequestInit = {}) {
   });
 }
 
-export async function getJson<T>(path: string): Promise<T> {
-  const res = await apiFetch(path);
+export async function getJson<T>(
+  path: string,
+  timeoutMs = API_TIMEOUT_MS,
+): Promise<T> {
+  const res = await apiFetch(path, { signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw await apiError(res, `GET ${path} failed`);
   return (await res.json()) as T;
 }

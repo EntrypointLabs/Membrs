@@ -1,6 +1,7 @@
 import {
   API_BASE,
   CAPPED_KINDS,
+  CATALOGUE_TIMEOUT_MS,
   DEFAULT_COUNTRY,
   GRID_COLUMNS,
   MAX_PICKS_PER_KIND,
@@ -327,7 +328,9 @@ export function listingsInCategory(name: string): Listing[] {
 /* Remote variants, for when VITE_API_BASE points at a backend. */
 
 export async function fetchListings(): Promise<Listing[]> {
-  return API_BASE ? getJson<Listing[]>('/v1/listings') : catalogue;
+  return API_BASE
+    ? getJson<Listing[]>('/v1/listings', CATALOGUE_TIMEOUT_MS)
+    : catalogue;
 }
 
 const SEARCH_LIMIT = 50;
