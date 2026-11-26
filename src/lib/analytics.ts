@@ -63,7 +63,7 @@ type Placement<T extends string> = { placement: T };
 
 /** Where a reader gave the email that made them known. */
 export type SignInPlacement =
-  'footer' | 'preferences' | 'contribute' | 'assistant';
+  'footer' | 'preferences' | 'contribute' | 'assistant' | 'tour';
 type None = Record<string, never>;
 
 /**

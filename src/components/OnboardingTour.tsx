@@ -5,12 +5,13 @@ import { catalogueStore, listings, refreshForReader } from '../lib/api';
 import { useDialog } from '../lib/focus';
 import { locationChoiceStore, shareLocation } from '../lib/location';
 import { useIsPhone } from '../lib/media';
-import { sessionStore } from '../lib/auth';
+import { readerKnown, sessionStore } from '../lib/auth';
 import { cityStore, tourSeenStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
 import { titleCase } from '../lib/text';
 import { overlayStore, tourDue } from '../lib/ui';
 import { cn } from '../lib/utils';
+import { ReaderEmailField, useReaderEmail } from './EmailStep';
 
 const PAD = 6;
 const GAP = 12;
@@ -27,7 +28,14 @@ interface Step {
   /** Left out on the location step, whose text names the reader's own place. */
   body?: string;
   locate?: boolean;
+  askEmail?: boolean;
 }
+
+const EMAIL_STEP: Step = {
+  title: 'Your email',
+  body: 'We send the week’s picks for your interests.',
+  askEmail: true,
+};
 
 const LOCATION_STEP: Step = {
   title: 'Your location',
@@ -35,6 +43,7 @@ const LOCATION_STEP: Step = {
 };
 
 const WEB_STEPS: Step[] = [
+  EMAIL_STEP,
   LOCATION_STEP,
   {
     target: 'nav-events',
@@ -59,6 +68,7 @@ const WEB_STEPS: Step[] = [
 ];
 
 const PHONE_STEPS: Step[] = [
+  EMAIL_STEP,
   LOCATION_STEP,
   {
     target: 'city',
@@ -104,11 +114,11 @@ function targetOf(step: Step): HTMLElement | undefined {
 }
 
 function visibleSteps(steps: Step[]): Step[] {
-  return steps.filter((step) =>
-    step.locate
-      ? locationChoiceStore.get() === 'unasked'
-      : Boolean(targetOf(step)),
-  );
+  return steps.filter((step) => {
+    if (step.askEmail) return !readerKnown(sessionStore.get());
+    if (step.locate) return locationChoiceStore.get() === 'unasked';
+    return Boolean(targetOf(step));
+  });
 }
 
 export function OnboardingTour() {
@@ -197,9 +207,11 @@ function Spotlight({
     track('tour_step_viewed', {
       step: number,
       total,
-      target: step.target ?? (step.locate ? 'location' : 'page'),
+      target:
+        step.target ??
+        (step.askEmail ? 'email' : step.locate ? 'location' : 'page'),
     });
-  }, [number, total, step.target, step.locate]);
+  }, [number, total, step.target, step.locate, step.askEmail]);
 
   const phone = useIsPhone();
   const bottomEdge = phone ? TAB_BAR + EDGE : EDGE;
@@ -328,43 +340,82 @@ function Spotlight({
             ? `You are seeing ${city}. Share your location to see what is closest to you instead.`
             : step.body}
         </p>
-        <div className="mt-4 flex justify-end">
-          <span
-            className={
-              step.locate ? 'grid w-full grid-cols-2 gap-2' : 'flex gap-2'
-            }
-          >
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="bg-btn h-9 rounded-sm px-3.5 text-[13px] font-semibold"
-              >
-                Back
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                if (step.locate) void shareLocation();
-                onNext();
-              }}
-              className="bg-fg text-bg h-9 rounded-sm px-3.5 text-[13px] font-semibold"
+        {step.askEmail ? (
+          <TourEmail onDone={onNext} />
+        ) : (
+          <div className="mt-4 flex justify-end">
+            <span
+              className={
+                step.locate ? 'grid w-full grid-cols-2 gap-2' : 'flex gap-2'
+              }
             >
-              {step.locate ? 'Use my location' : last ? 'Done' : 'Next'}
-            </button>
-            {step.locate && (
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="bg-btn h-9 rounded-sm px-3.5 text-[13px] font-semibold"
+                >
+                  Back
+                </button>
+              )}
               <button
                 type="button"
-                onClick={onNext}
-                className="bg-btn h-9 rounded-sm px-3.5 text-[13px] font-semibold"
+                onClick={() => {
+                  if (step.locate) void shareLocation();
+                  onNext();
+                }}
+                className="bg-fg text-bg h-9 rounded-sm px-3.5 text-[13px] font-semibold"
               >
-                Not now
+                {step.locate ? 'Use my location' : last ? 'Done' : 'Next'}
               </button>
-            )}
-          </span>
-        </div>
+              {step.locate && (
+                <button
+                  type="button"
+                  onClick={onNext}
+                  className="bg-btn h-9 rounded-sm px-3.5 text-[13px] font-semibold"
+                >
+                  Not now
+                </button>
+              )}
+            </span>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function TourEmail({ onDone }: { onDone: () => void }) {
+  const { email, setEmail, busy, ready, ensureKnown } = useReaderEmail('tour');
+  return (
+    <form
+      className="mt-4 grid gap-2"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (await ensureKnown()) onDone();
+      }}
+    >
+      <ReaderEmailField
+        value={email}
+        onChange={setEmail}
+        className="h-10 text-sm md:text-sm"
+      />
+      <span className="grid grid-cols-2 gap-2">
+        <button
+          type="submit"
+          disabled={!ready || busy}
+          className="bg-fg text-bg h-9 rounded-sm px-3.5 text-[13px] font-semibold disabled:opacity-60"
+        >
+          Continue
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          className="bg-btn h-9 rounded-sm px-3.5 text-[13px] font-semibold"
+        >
+          Not now
+        </button>
+      </span>
+    </form>
   );
 }
