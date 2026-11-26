@@ -1,3 +1,4 @@
+import { CATALOGUE_PATH } from './catalogue-path';
 import {
   API_BASE,
   CAPPED_KINDS,
@@ -23,6 +24,7 @@ import {
   dataOf,
   getData,
   getJson,
+  getPreloadedJson,
   MembrsApiError,
   newIdempotencyKey,
 } from './http';
@@ -329,7 +331,7 @@ export function listingsInCategory(name: string): Listing[] {
 
 export async function fetchListings(): Promise<Listing[]> {
   return API_BASE
-    ? getJson<Listing[]>('/v1/listings', CATALOGUE_TIMEOUT_MS)
+    ? getPreloadedJson<Listing[]>(CATALOGUE_PATH, CATALOGUE_TIMEOUT_MS)
     : catalogue;
 }
 

@@ -88,9 +88,9 @@ describe('asking an outside assistant about a listing', () => {
       'Grok',
       'Perplexity',
     ]);
-    expect(
-      OUTSIDE_TOOLS.every((tool) => tool.logo.startsWith('/images/ai/')),
-    ).toBe(true);
+    expect(new Set(OUTSIDE_TOOLS.map((tool) => tool.logo)).size).toBe(
+      OUTSIDE_TOOLS.length,
+    );
   });
 
   it('carries the question in the Grok link', () => {

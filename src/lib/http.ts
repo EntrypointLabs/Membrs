@@ -46,13 +46,27 @@ export function apiFetch(path: string, init: RequestInit = {}) {
   });
 }
 
+async function jsonOf<T>(res: Response, path: string): Promise<T> {
+  if (!res.ok) throw await apiError(res, `GET ${path} failed`);
+  return (await res.json()) as T;
+}
+
 export async function getJson<T>(
   path: string,
   timeoutMs = API_TIMEOUT_MS,
 ): Promise<T> {
   const res = await apiFetch(path, { signal: AbortSignal.timeout(timeoutMs) });
-  if (!res.ok) throw await apiError(res, `GET ${path} failed`);
-  return (await res.json()) as T;
+  return jsonOf<T>(res, path);
+}
+
+export async function getPreloadedJson<T>(
+  path: string,
+  timeoutMs: number,
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  return jsonOf<T>(res, path);
 }
 
 export async function getData<T>(path: string): Promise<T> {

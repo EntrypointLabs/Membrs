@@ -1,5 +1,10 @@
 import type { AssistantMessage } from './assistant';
 import { createStore } from './store';
+import chatgptLogo from '../assets/ai/chatgpt.png';
+import claudeLogo from '../assets/ai/claude.svg';
+import geminiLogo from '../assets/ai/gemini.png';
+import grokLogo from '../assets/ai/grok.svg';
+import perplexityLogo from '../assets/ai/perplexity.svg';
 
 export type OutsideTool =
   'claude' | 'chatgpt' | 'gemini' | 'grok' | 'perplexity';
@@ -13,11 +18,11 @@ export interface AskToolOption {
 }
 
 export const OUTSIDE_TOOLS: (AskToolOption & { id: OutsideTool })[] = [
-  { id: 'claude', name: 'Claude', logo: '/images/ai/claude.svg' },
-  { id: 'chatgpt', name: 'ChatGPT', logo: '/images/ai/chatgpt.png' },
-  { id: 'gemini', name: 'Gemini', logo: '/images/ai/gemini.png' },
-  { id: 'grok', name: 'Grok', logo: '/images/ai/grok.svg' },
-  { id: 'perplexity', name: 'Perplexity', logo: '/images/ai/perplexity.svg' },
+  { id: 'claude', name: 'Claude', logo: claudeLogo },
+  { id: 'chatgpt', name: 'ChatGPT', logo: chatgptLogo },
+  { id: 'gemini', name: 'Gemini', logo: geminiLogo },
+  { id: 'grok', name: 'Grok', logo: grokLogo },
+  { id: 'perplexity', name: 'Perplexity', logo: perplexityLogo },
 ];
 
 export const MEMBRS_LOGO = '/favicon.svg';
