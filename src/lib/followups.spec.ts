@@ -77,7 +77,7 @@ describe('defaults', () => {
 });
 
 describe('interestPicks', () => {
-  it('keeps the first four event and opportunity picks and every place', () => {
+  it('keeps the first three event picks, two opportunity picks and every place', () => {
     const picks = interestPicks([
       'Music',
       'Nightlife',
@@ -96,8 +96,8 @@ describe('interestPicks', () => {
     ]);
     expect(
       picks.filter((p) => p.kind === 'event').map((p) => p.category),
-    ).toEqual(['Music', 'Nightlife', 'Tech', 'Comedy']);
-    expect(picks.filter((p) => p.kind === 'opportunity')).toHaveLength(4);
+    ).toEqual(['Music', 'Nightlife', 'Tech']);
+    expect(picks.filter((p) => p.kind === 'opportunity')).toHaveLength(2);
     expect(picks.filter((p) => p.kind === 'place')).toHaveLength(4);
   });
 });

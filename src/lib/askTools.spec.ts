@@ -68,12 +68,13 @@ describe('quickQuestions', () => {
     expect(eligible).toEqual({
       label: 'Am I eligible?',
       ask: 'Who is eligible for "Chevening"?',
+      kind: 'opportunity',
     });
-    expect(apply.ask).toContain('"Chevening"');
+    expect(apply?.ask).toContain('"Chevening"');
   });
 
   it('uses the city everywhere else', () => {
-    expect(quickQuestions({ on: 'anywhere' }, 'Accra')[0].ask).toBe(
+    expect(quickQuestions({ on: 'anywhere' }, 'Accra')[0]?.ask).toBe(
       "What's on in Accra this weekend?",
     );
   });

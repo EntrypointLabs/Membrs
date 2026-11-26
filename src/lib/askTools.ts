@@ -123,9 +123,12 @@ export function listingQuestion(
     : `Explain "${title}": who is eligible, what it offers, and how to apply well.`;
 }
 
+export type QuickKind = 'event' | 'opportunity';
+
 export interface QuickQuestion {
   label: string;
   ask: string;
+  kind?: QuickKind;
 }
 
 export type QuickContext =
@@ -135,24 +138,26 @@ export type QuickContext =
   | { on: 'feed'; feed: 'events' | 'opportunities' | 'places' | 'promos' }
   | { on: 'anywhere' };
 
-function same(text: string): QuickQuestion {
-  return { label: text, ask: text };
+function same(text: string, kind?: QuickKind): QuickQuestion {
+  return kind ? { label: text, ask: text, kind } : { label: text, ask: text };
 }
 
 export function quickQuestions(
   context: QuickContext,
   city: string,
-): [QuickQuestion, QuickQuestion] {
+): QuickQuestion[] {
   switch (context.on) {
     case 'event':
       return [
         {
           label: 'What should I know before going?',
           ask: `What should I know before going to "${context.title}"?`,
+          kind: 'event',
         },
         {
           label: 'Find similar events',
           ask: `Find events like "${context.title}" in ${city}`,
+          kind: 'event',
         },
       ];
     case 'opportunity':
@@ -160,22 +165,24 @@ export function quickQuestions(
         {
           label: 'Am I eligible?',
           ask: `Who is eligible for "${context.title}"?`,
+          kind: 'opportunity',
         },
         {
           label: 'What do I need to apply?',
           ask: `What do I need to apply for "${context.title}"?`,
+          kind: 'opportunity',
         },
       ];
     case 'category':
       if (context.kind === 'event')
         return [
-          same(`${context.name} events in ${city} this week`),
-          same(`Free ${context.name} events in ${city}`),
+          same(`${context.name} events in ${city} this week`, 'event'),
+          same(`Free ${context.name} events in ${city}`, 'event'),
         ];
       if (context.kind === 'opportunity')
         return [
-          same(`${context.name} closing this month`),
-          same(`Fully funded ${context.name}`),
+          same(`${context.name} closing this month`, 'opportunity'),
+          same(`Fully funded ${context.name}`, 'opportunity'),
         ];
       return [
         same(`${context.name} to visit in ${city}`),
@@ -184,8 +191,8 @@ export function quickQuestions(
     case 'feed':
       if (context.feed === 'opportunities')
         return [
-          same('Which opportunities close this week?'),
-          same('Fully funded scholarships closing this month'),
+          same('Which opportunities close this week?', 'opportunity'),
+          same('Fully funded scholarships closing this month', 'opportunity'),
         ];
       if (context.feed === 'places')
         return [
@@ -198,13 +205,16 @@ export function quickQuestions(
           same(`Happy hours in ${city}`),
         ];
       return [
-        same(`What's on in ${city} this weekend?`),
-        same(`Free events in ${city} this week`),
+        same(`What's on in ${city} this weekend?`, 'event'),
+        same(`Free events in ${city} this week`, 'event'),
       ];
     case 'anywhere':
       return [
-        same(`What's on in ${city} this weekend?`),
-        same('Which opportunities close this week?'),
+        same(`What's on in ${city} this weekend?`, 'event'),
+        same('Which opportunities close this week?', 'opportunity'),
+        same(`Free events in ${city} this week`, 'event'),
+        same('Fully funded scholarships closing this month', 'opportunity'),
+        same(`What's on in ${city} tonight?`, 'event'),
       ];
   }
 }

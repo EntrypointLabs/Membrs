@@ -1,14 +1,12 @@
 import { useEffect } from 'react';
 import { area, context, itemRef, track, type Events } from '../lib/analytics';
 import { listingByKey, similar } from '../lib/api';
-import {
-  deadlineCalendarHref,
-  downloadIcs,
-  googleCalendarHref,
-} from '../lib/calendar';
+import { downloadIcs, googleCalendarHref } from '../lib/calendar';
 import { eventDay, hasDeadline } from '../lib/dates';
+import { countryName } from '../lib/filters';
 import { navigate, paths } from '../lib/router';
-import { toast } from '../lib/ui';
+import { useStore } from '../lib/store';
+import { openOverlay, overlayStore, toast } from '../lib/ui';
 import { rememberViewed } from '../lib/viewed';
 import { daysLeftLine, distinctParts, slugify, sourceName } from '../lib/text';
 import type { EventListing, Listing, OpportunityListing } from '../lib/types';
@@ -25,7 +23,6 @@ import {
   DetailHead,
   Fact,
   FactAction,
-  LinkRow,
   MapCard,
   OverlayButton,
   OverlayMenu,
@@ -49,7 +46,6 @@ export function ListingScreen({ id }: { id: string }) {
   const feed = listing.kind === 'event' ? 'events' : 'opportunities';
   const more = similar(listing);
   const item = itemRef.listing(listing);
-  const cta = listing.kind === 'event' ? 'get_ticket' : 'apply_now';
   return (
     <div className="page max-md:pt-0 md:pt-10" {...context(item)}>
       <DetailHead
@@ -88,11 +84,7 @@ export function ListingScreen({ id }: { id: string }) {
             <MapCard name={listing.venue} area={whereLine(listing)} />
           )
         }
-        primary={
-          <PrimaryLink href={listing.url} item={item} cta={cta}>
-            {listing.kind === 'event' ? 'Get ticket' : 'Apply now'}
-          </PrimaryLink>
-        }
+        primary={<ListingActions listing={listing} />}
         tail={
           <div className="mt-8 flex flex-wrap gap-2 md:mt-10">
             {[
@@ -118,37 +110,6 @@ export function ListingScreen({ id }: { id: string }) {
               </span>
             ))}
           </div>
-        }
-        links={
-          <>
-            <LinkRow
-              icon="spark"
-              label="Find similar"
-              action="find_similar"
-              href={paths.category(slugify(listing.category))}
-              onClick={(e) =>
-                track('find_similar_clicked', item, e.currentTarget)
-              }
-            />
-            <LinkRow
-              icon="share"
-              label="Share with a friend"
-              action="share"
-              onClick={(e) =>
-                shareAndConfirm(listing.title, item, e.currentTarget)
-              }
-            />
-            <LinkRow
-              icon="compose"
-              label="Ask AI about this"
-              action="ask_ai"
-              wrap={(control) => (
-                <AskAIMenu kind={listing.kind} title={listing.title}>
-                  {control}
-                </AskAIMenu>
-              )}
-            />
-          </>
         }
       >
         <dl {...area('facts')}>
@@ -274,7 +235,7 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
           hasDeadline(o) &&
           o.daysLeft >= 0 && (
             <FactAction
-              href={deadlineCalendarHref(o)}
+              href={googleCalendarHref(o)}
               icon="clock"
               action="remind_me"
               onClick={(e) => {
@@ -287,7 +248,9 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
           )
         }
       >
-        <p className="font-semibold">Closes {o.deadline.label}</p>
+        <p className="font-semibold">
+          {hasDeadline(o) ? `Closes ${o.deadline.label}` : 'No deadline'}
+        </p>
         {hasDeadline(o) && (
           <p className="text-fg-3 text-[15px]">{daysLeftLine(o.daysLeft)}</p>
         )}
@@ -313,7 +276,7 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
       {o.eligibility.length > 0 && (
         <Fact label="Who can apply">
           <p className="font-semibold">Who can apply</p>
-          {o.eligibility.map((line) => (
+          {whoCanApply(o.eligibility).map((line) => (
             <p key={line} className="text-fg-3 text-[15px] break-words">
               {line}
             </p>
@@ -322,6 +285,17 @@ function OpportunityFacts({ o }: { o: OpportunityListing }) {
       )}
     </>
   );
+}
+
+const COUNTRY_CODE = /^[A-Z]{2}$/;
+const AND_LIST = new Intl.ListFormat('en', { type: 'conjunction' });
+
+function whoCanApply(lines: string[]): string[] {
+  const countries = lines.filter((line) => COUNTRY_CODE.test(line));
+  const rest = lines.filter((line) => !COUNTRY_CODE.test(line));
+  if (!countries.length) return rest;
+  const named = AND_LIST.format(countries.map(countryName));
+  return [named, ...rest];
 }
 
 function HeadTools({ listing }: { listing: Listing }) {
@@ -334,9 +308,22 @@ function HeadTools({ listing }: { listing: Listing }) {
       onClick={(e) => shareAndConfirm(listing.title, item, e.currentTarget)}
     />
   );
+  const asking = useStore(overlayStore) === 'assistant';
+  const askButton = (
+    <OverlayButton
+      glyph={
+        <span aria-hidden="true" className="ask-orb ask-orb-small size-6" />
+      }
+      label="Ask membrs"
+      action="ask_membrs"
+      dialog={{ open: asking }}
+      onClick={() => openOverlay('assistant')}
+    />
+  );
   if (listing.kind === 'event') {
     return (
       <>
+        {askButton}
         {shareButton}
         <OverlayMenu
           icon="cal"
@@ -364,13 +351,14 @@ function HeadTools({ listing }: { listing: Listing }) {
   }
   return (
     <>
+      {askButton}
       {shareButton}
       {hasDeadline(listing) && listing.daysLeft >= 0 && (
         <OverlayButton
           icon="cal"
           label="Remind me before it closes"
           action="remind_me"
-          href={deadlineCalendarHref(listing)}
+          href={googleCalendarHref(listing)}
           onClick={(e) => {
             calendarAdded(listing, 'deadline_reminder', e.currentTarget);
             confirmReminder();
@@ -382,10 +370,18 @@ function HeadTools({ listing }: { listing: Listing }) {
 }
 
 function Sidebar({ listing }: { listing: Listing }) {
+  return (
+    <ActionCard>
+      <ListingActions listing={listing} />
+    </ActionCard>
+  );
+}
+
+function ListingActions({ listing }: { listing: Listing }) {
   const event = listing.kind === 'event';
   const item = itemRef.listing(listing);
   return (
-    <ActionCard>
+    <div>
       <PrimaryLink
         href={listing.url}
         item={item}
@@ -394,26 +390,22 @@ function Sidebar({ listing }: { listing: Listing }) {
         {event ? 'Get ticket' : 'Apply now'}
       </PrimaryLink>
       <div className="mt-3 grid grid-cols-2 gap-2 [&>:last-child:nth-child(odd)]:col-span-2">
-        {event && (
-          <SmallButton
-            href={googleCalendarHref(listing)}
-            action="add_to_calendar_google"
-            onClick={(e) => calendarAdded(listing, 'google', e.currentTarget)}
-          >
-            Google Calendar
-          </SmallButton>
-        )}
-        {event && (
-          <SmallButton
-            onClick={(e) => {
-              calendarAdded(listing, 'ics', e.currentTarget);
-              downloadIcs(listing);
-            }}
-            action="add_to_calendar_ics"
-          >
-            Apple or Outlook
-          </SmallButton>
-        )}
+        <SmallButton
+          href={googleCalendarHref(listing)}
+          action="add_to_calendar_google"
+          onClick={(e) => calendarAdded(listing, 'google', e.currentTarget)}
+        >
+          Google Calendar
+        </SmallButton>
+        <SmallButton
+          onClick={(e) => {
+            calendarAdded(listing, 'ics', e.currentTarget);
+            downloadIcs(listing);
+          }}
+          action="add_to_calendar_ics"
+        >
+          Apple or Outlook
+        </SmallButton>
         <SmallButton
           href={paths.category(slugify(listing.category))}
           action="find_similar"
@@ -435,6 +427,6 @@ function Sidebar({ listing }: { listing: Listing }) {
           </button>
         </AskAIMenu>
       </div>
-    </ActionCard>
+    </div>
   );
 }

@@ -1,11 +1,10 @@
 import { CATALOGUE_PATH } from './catalogue-path';
 import {
   API_BASE,
-  CAPPED_KINDS,
   CATALOGUE_TIMEOUT_MS,
   DEFAULT_COUNTRY,
   GRID_COLUMNS,
-  MAX_PICKS_PER_KIND,
+  MAX_PICKS,
 } from './config';
 import { authorizedFetch, sessionStore } from './auth';
 import { shown } from './sections';
@@ -412,7 +411,7 @@ export interface DigestSignup {
 }
 
 /**
- * The server refuses more than MAX_PICKS_PER_KIND event or opportunity
+ * The server refuses more than MAX_PICKS event or opportunity
  * interests, so picks saved on this device before the cap existed are trimmed
  * to the first ones rather than failing the whole save.
  */
@@ -423,12 +422,13 @@ export function interestPicks(labels: string[]): RemoteInterestPick[] {
     const kind = kinds.find((k) => groups[k].includes(category));
     return kind ? [{ kind, category }] : [];
   });
-  return picks.filter(
-    (pick, i) =>
-      !CAPPED_KINDS.includes(pick.kind) ||
-      picks.slice(0, i).filter((p) => p.kind === pick.kind).length <
-        MAX_PICKS_PER_KIND,
-  );
+  return picks.filter((pick, i) => {
+    const limit = MAX_PICKS[pick.kind];
+    return (
+      limit === undefined ||
+      picks.slice(0, i).filter((p) => p.kind === pick.kind).length < limit
+    );
+  });
 }
 
 const DIGEST_FREQUENCY = 'weekly';

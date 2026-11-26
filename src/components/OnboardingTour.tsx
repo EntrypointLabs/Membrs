@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { XIcon } from 'lucide-react';
 import { track } from '../lib/analytics';
 import { catalogueStore, listings, refreshForReader } from '../lib/api';
 import { useDialog } from '../lib/focus';
@@ -9,6 +10,15 @@ import { cityStore, tourSeenStore } from '../lib/preferences';
 import { useStore } from '../lib/store';
 import { titleCase } from '../lib/text';
 import { overlayStore, tourDue } from '../lib/ui';
+import { cn } from '../lib/utils';
+
+const PAD = 6;
+const GAP = 12;
+const EDGE = 16;
+const TAB_BAR = 72;
+const ARROW_INSET = 20;
+const WEB_CARD_WIDTH = 320;
+const CARD_ESTIMATE = 150;
 
 interface Step {
   /** The data-tour value of the element to spotlight. */
@@ -69,7 +79,7 @@ const PHONE_STEPS: Step[] = [
 
 function Progress({ step, total }: { step: number; total: number }) {
   return (
-    <div className="flex items-center gap-3 text-sm font-bold">
+    <div className="flex items-center gap-3 text-xs font-bold tabular-nums">
       <span>
         <em className="text-accent not-italic">
           {String(step).padStart(2, '0')}
@@ -191,16 +201,23 @@ function Spotlight({
     });
   }, [number, total, step.target, step.locate]);
 
+  const phone = useIsPhone();
+  const bottomEdge = phone ? TAB_BAR + EDGE : EDGE;
   useLayoutEffect(() => {
     const el = targetOf(step);
     if (!el) return;
-    // Scroll the page, never a rail: scrollIntoView would also slide a
-    // horizontal rail and hide its first card.
     const box = el.getBoundingClientRect();
-    window.scrollBy({
-      top: box.top - (window.innerHeight - box.height) / 2,
-      behavior: 'instant',
-    });
+    const spare =
+      window.innerHeight -
+      bottomEdge -
+      EDGE -
+      box.height -
+      PAD * 2 -
+      CARD_ESTIMATE -
+      GAP;
+    const landing =
+      spare >= 0 ? EDGE + PAD + spare / 2 : EDGE + CARD_ESTIMATE + GAP + PAD;
+    window.scrollBy({ top: box.top - landing, behavior: 'instant' });
     const measure = () => setRect(el.getBoundingClientRect());
     measure();
     window.addEventListener('resize', measure);
@@ -209,25 +226,50 @@ function Spotlight({
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure);
     };
-  }, [step]);
+  }, [step, bottomEdge]);
 
-  const pad = 6;
-  const cardWidth = Math.min(340, window.innerWidth - 24);
-  const below = rect ? rect.bottom + 220 < window.innerHeight : true;
-  const top = rect
-    ? below
-      ? rect.bottom + pad + 14
-      : Math.max(12, rect.top - pad - 14 - 200)
-    : window.innerHeight / 2 - 100;
-  const left = rect
-    ? Math.max(
-        12,
-        Math.min(
-          rect.left + rect.width / 2 - cardWidth / 2,
-          window.innerWidth - cardWidth - 12,
-        ),
+  const card = useRef<HTMLDivElement>(null);
+  const [cardHeight, setCardHeight] = useState(CARD_ESTIMATE);
+  useLayoutEffect(() => {
+    if (card.current) setCardHeight(card.current.offsetHeight);
+  }, [rect, step, phone]);
+
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const cardWidth = phone
+    ? viewportWidth - EDGE * 2
+    : Math.min(WEB_CARD_WIDTH, viewportWidth - EDGE * 2);
+  const ring = rect && {
+    top: rect.top - PAD,
+    bottom: rect.bottom + PAD,
+    centre: rect.left + rect.width / 2,
+  };
+  const spaceBelow = ring ? viewportHeight - bottomEdge - ring.bottom - GAP : 0;
+  const spaceAbove = ring ? ring.top - GAP - EDGE : 0;
+  const below = ring
+    ? spaceBelow >= cardHeight || spaceBelow >= spaceAbove
+    : false;
+  const top = ring
+    ? Math.min(
+        Math.max(EDGE, below ? ring.bottom + GAP : ring.top - GAP - cardHeight),
+        viewportHeight - bottomEdge - cardHeight,
       )
-    : (window.innerWidth - cardWidth) / 2;
+    : (viewportHeight - cardHeight) / 2;
+  const left = ring
+    ? Math.min(
+        Math.max(EDGE, ring.centre - cardWidth / 2),
+        viewportWidth - cardWidth - EDGE,
+      )
+    : (viewportWidth - cardWidth) / 2;
+  const arrowLeft = ring
+    ? Math.min(
+        Math.max(ARROW_INSET, ring.centre - left),
+        cardWidth - ARROW_INSET,
+      )
+    : null;
+  const pointsAtTarget =
+    ring !== null &&
+    (below ? top >= ring.bottom : top + cardHeight <= ring.top);
 
   return (
     <div className="fixed inset-0 z-[70]">
@@ -237,42 +279,56 @@ function Spotlight({
           aria-hidden="true"
           className="ease-in-out-strong pointer-events-none absolute rounded-md transition-[left,top,width,height] duration-250"
           style={{
-            left: rect.left - pad,
-            top: rect.top - pad,
-            width: rect.width + pad * 2,
-            height: rect.height + pad * 2,
+            left: rect.left - PAD,
+            top: rect.top - PAD,
+            width: rect.width + PAD * 2,
+            height: rect.height + PAD * 2,
             boxShadow: '0 0 0 9999px rgb(0 0 0 / 0.62)',
           }}
         />
       )}
       <div
+        ref={card}
         role="dialog"
         aria-modal="true"
         aria-label="Tour"
-        className="bg-panel border-line-2 absolute rounded-md border p-5 shadow-2xl"
+        className="bg-panel border-line-2 absolute rounded-md border p-4 shadow-2xl"
         style={{ top, left, width: cardWidth }}
       >
-        <div className="flex items-center gap-4">
+        {pointsAtTarget && arrowLeft !== null && (
+          <span
+            aria-hidden="true"
+            className={cn(
+              'bg-panel border-line-2 absolute size-3 -translate-x-1/2 rotate-45',
+              below
+                ? '-top-1.5 border-t border-l'
+                : '-bottom-1.5 border-r border-b',
+            )}
+            style={{ left: arrowLeft }}
+          />
+        )}
+        <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <Progress step={number} total={total} />
           </div>
           <button
             type="button"
             onClick={onSkip}
-            className="text-fg-3 hover:text-fg shrink-0 text-sm font-semibold"
+            aria-label="Skip tour"
+            className="text-fg-3 hover:text-fg hover:bg-btn -m-1.5 grid size-8 shrink-0 place-items-center rounded-sm"
           >
-            Skip tour
+            <XIcon className="size-4" />
           </button>
         </div>
-        <h3 className="mt-4 mb-1.5 text-[17px] font-bold tracking-tight">
+        <h3 className="mt-3 text-base font-bold tracking-tight">
           {titleCase(step.title)}
         </h3>
-        <p className="text-fg-3 text-[14.5px] leading-snug">
+        <p className="text-fg-3 mt-1 text-sm leading-snug">
           {step.locate
             ? `You are seeing ${city}. Share your location to see what is closest to you instead.`
             : step.body}
         </p>
-        <div className="mt-5 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <span
             className={
               step.locate ? 'grid w-full grid-cols-2 gap-2' : 'flex gap-2'
@@ -282,7 +338,7 @@ function Spotlight({
               <button
                 type="button"
                 onClick={onBack}
-                className="bg-btn rounded-sm px-4 py-2 text-sm font-semibold"
+                className="bg-btn h-9 rounded-sm px-3.5 text-[13px] font-semibold"
               >
                 Back
               </button>
@@ -293,7 +349,7 @@ function Spotlight({
                 if (step.locate) void shareLocation();
                 onNext();
               }}
-              className="bg-fg text-bg rounded-sm px-4 py-2 text-sm font-semibold"
+              className="bg-fg text-bg h-9 rounded-sm px-3.5 text-[13px] font-semibold"
             >
               {step.locate ? 'Use my location' : last ? 'Done' : 'Next'}
             </button>
@@ -301,7 +357,7 @@ function Spotlight({
               <button
                 type="button"
                 onClick={onNext}
-                className="bg-btn rounded-sm px-4 py-2 text-sm font-semibold"
+                className="bg-btn h-9 rounded-sm px-3.5 text-[13px] font-semibold"
               >
                 Not now
               </button>

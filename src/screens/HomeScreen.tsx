@@ -30,6 +30,7 @@ import { useStore } from '../lib/store';
 import { openOverlay } from '../lib/ui';
 import type { Listing, OpportunityListing } from '../lib/types';
 import { DeadlineRow } from '../components/DeadlineRow';
+import { FeedSearch } from '../components/FeedSearch';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { UseMyLocation } from '../components/UseMyLocation';
 import { HomeShelves, LocalShelves, useShelfInputs } from './HomeShelves';
@@ -79,13 +80,21 @@ export function HomeScreen() {
   useStore(readerCountryStore);
   useLocationOnVisit();
   const phone = useIsPhone();
-  const filters = useHomeFilters();
+  const toolbar = <MobileTop city={city} />;
+  const filters = useHomeFilters(toolbar);
   const listed = listings().length > 0;
 
   return (
     <div className="page">
       <h1 className="sr-only">MEMBRS</h1>
-      <MobileTop city={city} />
+      {!listed && (
+        <>
+          <TitleBar>
+            <FeedSearch />
+          </TitleBar>
+          {toolbar}
+        </>
+      )}
       <div className="hidden md:block md:h-10" />
       {listed && filters.line}
       {!listed ? (
@@ -244,7 +253,7 @@ function idsOf(listings: Listing[]): Set<string> {
 
 function MobileTop({ city }: { city: string }) {
   return (
-    <TitleBar>
+    <div className="mt-1 md:hidden">
       <div
         className="flex items-center justify-between"
         {...area('mobile_top')}
@@ -287,7 +296,7 @@ function MobileTop({ city }: { city: string }) {
           <PhoneSettings />
         </span>
       </div>
-    </TitleBar>
+    </div>
   );
 }
 

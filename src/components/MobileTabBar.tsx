@@ -1,10 +1,8 @@
-import { motion } from 'motion/react';
 import { area, context, track } from '../lib/analytics';
 import { listingByKey } from '../lib/api';
-import { PHONE_PILL, PILL_SPRING } from '../lib/motion';
-import { navSection, paths, type Route, useRoute } from '../lib/router';
+import { navSection, type Route, useRoute } from '../lib/router';
 import { useStore } from '../lib/store';
-import { openOverlay, overlayStore } from '../lib/ui';
+import { closeOverlay, openOverlay, overlayStore } from '../lib/ui';
 import { Icon } from './Icon';
 import { Link } from './Link';
 import { NAV } from './nav';
@@ -20,35 +18,28 @@ const ON = 'bg-soft-hover text-fg';
 const OFF = 'text-fg-2';
 const BAR_RADIUS = 22;
 
-/**
- * The phone tab bar: one floating rounded bar of icons, the sections, Ask
- * membrs as a small orb and, last, search. Icons share one colour and the
- * active one sits on a soft tile, so the bar stays quiet over photos.
- */
 export function MobileTabBar() {
   const route = useRoute();
   const active = sectionOf(route);
   const asking = useStore(overlayStore) === 'assistant';
   const searching = route.page === 'search';
-  if (asking || searching) return null;
+  if (searching) return null;
   return (
     <>
       <div
         aria-hidden="true"
-        className="from-bg via-bg/85 pointer-events-none fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t to-transparent md:hidden"
+        className={`from-bg via-bg/85 pointer-events-none fixed inset-x-0 bottom-0 bg-gradient-to-t to-transparent md:hidden ${asking ? 'z-[64]' : 'z-30'}`}
         style={{ height: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}
       />
       <nav
         aria-label="Sections"
         {...area('tab_bar')}
-        className="fixed inset-x-3 z-40 md:hidden"
+        className={`fixed inset-x-3 md:hidden ${asking ? 'z-[65]' : 'z-40'}`}
         style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
       >
-        <motion.ul
-          layoutId={PHONE_PILL}
-          transition={PILL_SPRING}
+        <ul
           style={{ borderRadius: BAR_RADIUS }}
-          className={`${GLASS} flex items-center justify-between px-3 py-1.5`}
+          className={`${GLASS} flex items-center justify-around px-3 py-1.5`}
         >
           {TABS.map((tab) => {
             const on = active === tab.key && !asking;
@@ -56,12 +47,13 @@ export function MobileTabBar() {
               <li key={tab.key}>
                 <Link
                   href={tab.href}
-                  onClick={() =>
+                  onClick={() => {
+                    if (asking) closeOverlay();
                     track('nav_clicked', {
                       item: tab.key,
                       placement: 'tab_bar',
-                    })
-                  }
+                    });
+                  }}
                   aria-label={tab.label}
                   aria-current={on ? 'page' : undefined}
                   className={`${ITEM} ${on ? ON : OFF}`}
@@ -77,28 +69,16 @@ export function MobileTabBar() {
               aria-label="Ask membrs"
               aria-haspopup="dialog"
               aria-expanded={asking}
-              onClick={() => openOverlay('assistant')}
+              onClick={() =>
+                asking ? closeOverlay() : openOverlay('assistant')
+              }
               {...context({ action: 'ask_membrs' })}
               className={`${ITEM} ${asking ? ON : OFF}`}
             >
-              <span
-                aria-hidden="true"
-                className="ask-orb ask-orb-small size-6"
-              />
+              <Icon name="robot" className="h-[22px] w-[22px]" />
             </button>
           </li>
-          <li>
-            <Link
-              href={paths.search()}
-              onClick={() => track('search_opened', { placement: 'tab_bar' })}
-              aria-label="Search"
-              aria-current={searching ? 'page' : undefined}
-              className={`${ITEM} ${searching && !asking ? ON : OFF}`}
-            >
-              <Icon name="search" className="h-[22px] w-[22px]" />
-            </Link>
-          </li>
-        </motion.ul>
+        </ul>
       </nav>
     </>
   );

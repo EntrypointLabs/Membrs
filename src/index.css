@@ -17,6 +17,7 @@
  */
 :root,
 [data-theme='dark'] {
+  --tab-bar-space: 80px;
   --bg: #0d0d0d;
   --fg: #f5f5f6;
   --fg-2: #e2e2e6;

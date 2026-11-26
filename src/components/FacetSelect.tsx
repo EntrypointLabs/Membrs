@@ -14,12 +14,14 @@ export function FacetSelect({
   options,
   onChange,
   anyLabel = 'Any',
+  chip = false,
 }: {
   label: string;
   value: string | null;
   options: FacetOption[];
   onChange: (value: string | null) => void;
   anyLabel?: string;
+  chip?: boolean;
 }) {
   if (options.length === 0 && !value) return null;
   return (
@@ -27,13 +29,8 @@ export function FacetSelect({
       label={label}
       value={value ?? NONE}
       onChange={(v) => onChange(v === NONE ? null : v)}
-      options={[
-        { value: NONE, label: anyLabel },
-        ...options.map((o) => ({
-          value: o.value,
-          label: `${o.label} · ${o.count}`,
-        })),
-      ]}
+      unset={chip ? NONE : undefined}
+      options={[{ value: NONE, label: anyLabel }, ...options]}
     />
   );
 }

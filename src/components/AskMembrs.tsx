@@ -1,6 +1,7 @@
 import {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -16,7 +17,7 @@ import {
   track,
   trackItemOpened,
 } from '../lib/analytics';
-import { categories, listingByKey } from '../lib/api';
+import { categories, feed, listingByKey } from '../lib/api';
 import {
   ASSISTANT_UNAVAILABLE,
   ask,
@@ -39,13 +40,7 @@ import { API_BASE } from '../lib/config';
 import { useDialog } from '../lib/focus';
 import { blocks, type Inline } from '../lib/markdown';
 import { isPhone, useIsPhone } from '../lib/media';
-import {
-  PHONE_PILL,
-  PHONE_PILL_PLACE,
-  PHONE_SHEET,
-  PILL_SPRING,
-  SHEET_MOTION,
-} from '../lib/motion';
+import { TOP_SHEET_MOTION } from '../lib/motion';
 import {
   ASK_TOOLS,
   askWithStore,
@@ -54,6 +49,7 @@ import {
   type OutsideTool,
   pickTool,
   type QuickContext,
+  type QuickQuestion,
   quickQuestions,
   switchToOutside,
   takesPromptInLink,
@@ -70,7 +66,7 @@ import { Icon } from './Icon';
 import { Link } from './Link';
 import { listingFace } from './ListingCard';
 import { MediaCard } from './MediaCard';
-import { GLASS } from './MobileTabBar';
+import { Photo } from './Photo';
 import { Bubble, BubbleContent } from './ui/bubble';
 import { Button } from './ui/button';
 import {
@@ -514,6 +510,17 @@ function Starters({
 }) {
   const city = useStore(cityStore);
   const picks = quickQuestions(useQuickContext(), city);
+  const phone = useIsPhone();
+  if (phone)
+    return (
+      <PhoneStarters
+        picks={picks}
+        city={city}
+        disabled={disabled}
+        onPick={onPick}
+        note={note}
+      />
+    );
   return (
     <div className="grid min-h-0 flex-1 content-start gap-2.5 overflow-y-auto px-4 pb-4">
       <AskHero />
@@ -539,6 +546,102 @@ function Starters({
   );
 }
 
+function dayPart(hour: number): string {
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  return 'evening';
+}
+
+function useStarterPhotos(picks: QuickQuestion[], city: string) {
+  const kinds = picks.map((pick) => pick.kind ?? '').join(',');
+  return useMemo(() => {
+    const used = new Set<string>();
+    return kinds.split(',').map((kind) => {
+      if (kind !== 'event' && kind !== 'opportunity') return null;
+      const pool = feed(kind).filter(
+        (listing) => listing.photoUrl && !used.has(listing.id),
+      );
+      const found =
+        pool.find((listing) => listing.city === city) ?? pool[0] ?? null;
+      if (found) used.add(found.id);
+      return found;
+    });
+  }, [kinds, city]);
+}
+
+const PHONE_STARTERS = 5;
+
+function withEverydayPicks(
+  picks: QuickQuestion[],
+  city: string,
+): QuickQuestion[] {
+  const labels = new Set(picks.map((pick) => pick.label));
+  const everyday = quickQuestions({ on: 'anywhere' }, city).filter(
+    (pick) => !labels.has(pick.label),
+  );
+  return [...picks, ...everyday].slice(0, PHONE_STARTERS);
+}
+
+function PhoneStarters({
+  picks,
+  city,
+  disabled,
+  onPick,
+  note,
+}: {
+  picks: QuickQuestion[];
+  city: string;
+  disabled: boolean;
+  onPick: (text: string) => void;
+  note?: ReactNode;
+}) {
+  const filled = withEverydayPicks(picks, city);
+  const photos = useStarterPhotos(filled, city);
+  const [part] = useState(() => dayPart(new Date().getHours()));
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pt-6 pb-4">
+      <h3 className="text-[26px] leading-[1.2] font-semibold tracking-tight">
+        What are you looking for this {part}?
+      </h3>
+      <ul className="mt-5 grid gap-0.5">
+        {filled.map((pick, i) => {
+          const photo = photos[i];
+          return (
+            <li key={pick.label}>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onPick(pick.ask)}
+                {...context({ action: 'suggestion' })}
+                className="active:bg-soft -mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-md px-2 py-2 text-left text-[15px] leading-snug transition-colors disabled:pointer-events-none disabled:opacity-50"
+              >
+                {photo ? (
+                  <Photo
+                    size="thumb"
+                    id={photo.photo}
+                    src={photo.photoUrl}
+                    alt=""
+                    className="size-10 shrink-0 rounded-[10px]"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="bg-soft grid size-10 shrink-0 place-items-center rounded-[10px]"
+                  >
+                    <Icon name="compose" className="text-fg-3 size-5" />
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">{pick.label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {note && <p className="text-fg-3 pt-4 text-[13px]">{note}</p>}
+    </div>
+  );
+}
+
 /** The orb and the open question that start an empty chat. */
 function AskHero() {
   const { tool } = useStore(askWithStore);
@@ -559,13 +662,19 @@ function AskHero() {
  */
 function ToolMenu() {
   const { tool } = useStore(askWithStore);
+  const phone = useIsPhone();
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger
         aria-label="Open with"
-        className="bg-bg text-fg hover:bg-soft-hover grid size-11 shrink-0 place-items-center rounded-md shadow-[0_1px_3px_rgb(0_0_0/0.12)] transition-colors"
+        className={cn(
+          'text-fg grid shrink-0 place-items-center transition-colors',
+          phone
+            ? 'bg-soft hover:bg-soft-hover size-9 rounded-full'
+            : 'bg-bg hover:bg-soft-hover size-11 rounded-md shadow-[0_1px_3px_rgb(0_0_0/0.12)]',
+        )}
       >
-        <Icon name="menu" className="h-5 w-5" />
+        <Icon name="menu" className={phone ? 'size-[18px]' : 'h-5 w-5'} />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
@@ -668,6 +777,7 @@ function Composer({
   const field = useRef<HTMLTextAreaElement>(null);
   const left = MAX_MESSAGE_LENGTH - text.length;
   const phone = useIsPhone();
+  const shown = phone ? 'Ask anything' : placeholder;
 
   useEffect(() => {
     if (!isPhone()) field.current?.focus();
@@ -693,10 +803,39 @@ function Composer({
     void send();
   }
 
+  const sendOrStop = streaming ? (
+    <InputGroupButton
+      size="icon-sm"
+      variant="secondary"
+      aria-label="Stop"
+      onClick={stopTracked}
+      className={phone ? 'size-9 rounded-full' : 'size-11 rounded-md'}
+    >
+      <Icon name="stop" className="size-4" />
+    </InputGroupButton>
+  ) : (
+    <InputGroupButton
+      type="submit"
+      size="icon-sm"
+      variant="default"
+      aria-label="Send"
+      disabled={!text.trim() || busy || !allowed}
+      className={cn(
+        'bg-brand hover:bg-brand-hover text-white',
+        phone ? 'size-9 rounded-full' : 'size-11 rounded-md',
+      )}
+    >
+      <Icon name="arrowUp" className="size-4" />
+    </InputGroupButton>
+  );
+
   return (
     <form
       onSubmit={onSubmit}
-      className={`shrink-0 px-3 pt-1 pb-3 max-md:p-0 ${PHONE_PILL_PLACE}`}
+      className={cn(
+        'shrink-0',
+        phone ? 'border-line border-t px-3 pt-2 pb-2' : 'px-3 pt-1 pb-3',
+      )}
     >
       {error && (
         <div
@@ -719,20 +858,15 @@ function Composer({
           )}
         </div>
       )}
-      <motion.div
-        layoutId={phone ? PHONE_PILL : undefined}
-        transition={PILL_SPRING}
-        style={phone ? { borderRadius: 6 } : undefined}
-        className={phone ? GLASS : undefined}
-      >
+      <div>
         <InputGroup
           data-disabled={!allowed}
           className={cn(
             'has-[[data-slot=input-group-control]:focus-visible]:border-accent has-[[data-slot=input-group-control]:focus-visible]:ring-0',
-            'min-h-14 rounded-lg border-0 p-1.5 shadow-none',
+            'rounded-lg border-0 shadow-none',
             phone
-              ? 'bg-transparent dark:bg-transparent'
-              : 'bg-soft dark:bg-soft',
+              ? 'bg-transparent p-0 dark:bg-transparent'
+              : 'bg-soft dark:bg-soft min-h-14 p-1.5',
           )}
         >
           <InputGroupTextarea
@@ -742,49 +876,40 @@ function Composer({
             maxLength={MAX_MESSAGE_LENGTH}
             disabled={!allowed}
             aria-label="Message"
-            placeholder={allowed ? placeholder : phone ? counts[0] : ''}
+            placeholder={allowed ? shown : phone ? counts[0] : ''}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKey}
             className={cn(
               'max-h-[calc(5lh+12px)] min-h-0 overflow-y-auto text-[15px] leading-6 focus-visible:outline-none! md:text-[15px]',
-              'self-center px-3 py-1.5',
+              phone ? 'px-2 pt-1 pb-2' : 'self-center px-3 py-1.5',
             )}
           />
-          <InputGroupAddon
-            align="inline-start"
-            className="self-end p-0 has-[>button]:ml-0"
-          >
-            <ToolMenu />
-          </InputGroupAddon>
-          <InputGroupAddon
-            align="inline-end"
-            className="self-end p-0 has-[>button]:mr-0"
-          >
-            {streaming ? (
-              <InputGroupButton
-                size="icon-sm"
-                variant="secondary"
-                aria-label="Stop"
-                onClick={stopTracked}
-                className="size-11 rounded-md"
+          {phone ? (
+            <InputGroupAddon
+              align="block-end"
+              className="justify-between p-0 pt-1 has-[>button]:mx-0"
+            >
+              <ToolMenu />
+              {sendOrStop}
+            </InputGroupAddon>
+          ) : (
+            <>
+              <InputGroupAddon
+                align="inline-start"
+                className="self-end p-0 has-[>button]:ml-0"
               >
-                <Icon name="stop" className="size-4" />
-              </InputGroupButton>
-            ) : (
-              <InputGroupButton
-                type="submit"
-                size="icon-sm"
-                variant="default"
-                aria-label="Send"
-                disabled={!text.trim() || busy || !allowed}
-                className="bg-brand hover:bg-brand-hover size-11 rounded-md text-white"
+                <ToolMenu />
+              </InputGroupAddon>
+              <InputGroupAddon
+                align="inline-end"
+                className="self-end p-0 has-[>button]:mr-0"
               >
-                <Icon name="arrowUp" className="size-4" />
-              </InputGroupButton>
-            )}
-          </InputGroupAddon>
+                {sendOrStop}
+              </InputGroupAddon>
+            </>
+          )}
         </InputGroup>
-      </motion.div>
+      </div>
       <div className="text-fg-4 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1 text-xs max-md:hidden">
         <span className={cn(!allowed && 'text-fg-2 font-medium')}>
           {counts[0]}
@@ -1047,8 +1172,7 @@ export function AssistantPanel() {
         tabIndex={-1}
         {...area('assistant')}
         className={cn(
-          'bg-bg text-fg md:bg-panel md:border-line-2 relative flex min-w-0 flex-1 flex-col overflow-hidden pb-[calc(84px+env(safe-area-inset-bottom,0px))] outline-none md:flex-none md:border md:pb-0',
-          PHONE_SHEET,
+          'bg-bg text-fg md:bg-panel md:border-line-2 relative flex min-w-0 flex-1 flex-col overflow-hidden pb-[calc(var(--tab-bar-space)+env(safe-area-inset-bottom,0px))] outline-none max-md:h-dvh max-md:pt-[env(safe-area-inset-top,0px)] md:flex-none md:border md:pb-0',
           'md:pointer-events-auto md:origin-bottom-right md:rounded-lg md:shadow-[0_24px_64px_rgb(0_0_0/0.35)] md:transition-[width,height] md:duration-300 md:ease-out',
           expanded
             ? 'md:h-[calc(100dvh-48px)] md:w-[min(820px,calc(100vw-48px))]'
@@ -1057,7 +1181,7 @@ export function AssistantPanel() {
             (chatting
               ? 'md:h-[min(780px,calc(100dvh-48px))]'
               : 'md:max-h-[min(780px,calc(100dvh-48px))]'),
-          SHEET_MOTION,
+          TOP_SHEET_MOTION,
           'max-md:transition-[translate,scale,opacity,height]',
         )}
       >

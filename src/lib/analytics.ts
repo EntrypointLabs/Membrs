@@ -75,7 +75,7 @@ export interface Events {
   // Getting around.
   nav_clicked: { item: string } & Placement<'header' | 'tab_bar' | 'footer'>;
   logo_clicked: Placement<'header' | 'header_docked' | 'footer'>;
-  search_opened: Placement<'header' | 'tab_bar'>;
+  search_opened: Placement<'header' | 'search_bar'>;
   see_all_clicked: { label: string; href: string };
   breadcrumb_clicked: { label: string; href: string; depth: number };
   back_clicked: None;

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import {
   area,
@@ -15,14 +14,9 @@ import {
   searchCataloguePage,
   searchLocally,
 } from '../lib/api';
+import { optionsOf, SHARED_FACETS, typeFacet } from '../lib/filters';
 import type { SearchHit } from '../lib/search';
 import { useIsPhone } from '../lib/media';
-import {
-  PHONE_PILL,
-  PHONE_PILL_PLACE,
-  PHONE_SHEET,
-  PILL_SPRING,
-} from '../lib/motion';
 import { navigate, parseRoute, paths } from '../lib/router';
 import {
   rememberSearch,
@@ -32,12 +26,22 @@ import {
 } from '../lib/searchShelves';
 import { useStore } from '../lib/store';
 import { plural, titleCase } from '../lib/text';
+import {
+  SEARCH_BAR,
+  SEARCH_BAR_BUTTON,
+  SEARCH_PLACEHOLDER,
+} from '../components/FeedSearch';
 import { Icon } from '../components/Icon';
-import { GLASS } from '../components/MobileTabBar';
+import { TitleBar } from '../components/TitleBar';
 import { ListingRow } from '../components/ListingRow';
 import { PlaceRow } from '../components/PlaceRow';
 import { PromoRow } from '../components/PromoRow';
 import { SearchTile } from '../components/SearchTile';
+import { FilterChips, MoreFilters } from './FeedLayout';
+import { useFacetFilters } from './useFacetFilters';
+
+const FACETS = [typeFacet, ...SHARED_FACETS];
+const ON_THE_LINE = new Set(['type', 'city']);
 
 interface Found {
   query: string;
@@ -95,6 +99,26 @@ export function SearchScreen({ query: raw }: { query: string }) {
   }, [query]);
   const hits = found.query === query ? found.hits : searchLocally(query);
   const more = found.query === query && found.more;
+  const phone = useIsPhone();
+  const listingHits = hits.flatMap((h) =>
+    h.kind === 'listing' ? [h.item] : [],
+  );
+  const {
+    picks,
+    menu,
+    chip,
+    items: kept,
+    active,
+  } = useFacetFilters(listingHits, FACETS, ON_THE_LINE);
+  const keptIds = new Set(kept.map((l) => l.id));
+  const shown =
+    !phone && active.length
+      ? hits.filter((h) => h.kind === 'listing' && keptIds.has(h.item.id))
+      : hits;
+  const chips = FACETS.some(
+    (f) =>
+      picks[f.param] || optionsOf(f, listingHits, FACETS, picks).length > 0,
+  );
   const showMore = () => {
     setFound((f) => ({ ...f, loading: true }));
     void searchCataloguePage(query, found.pages).then((next) => {
@@ -121,25 +145,12 @@ export function SearchScreen({ query: raw }: { query: string }) {
     if (q && q !== query) started = { query: q, source: 'form' };
     navigate(paths.search(q), { replace: true });
   };
-  const phone = useIsPhone();
   return (
-    <>
-      <div
-        aria-hidden="true"
-        className="fixed inset-0 z-[50] bg-black/80 backdrop-blur-sm transition-opacity duration-300 md:hidden starting:opacity-0"
-      />
-      <div
-        className={cn(
-          'max-md:bg-bg max-md:ease-drawer pt-6 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[55] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-28 max-md:transition-[translate,height] max-md:duration-300 md:pt-14 max-md:starting:translate-y-full',
-          PHONE_SHEET,
-        )}
-      >
-        <div className="page">
-          <h1 className="sr-only">Search</h1>
-          <motion.form
-            layoutId={phone ? PHONE_PILL : undefined}
-            transition={PILL_SPRING}
-            style={phone ? { borderRadius: 9999 } : undefined}
+    <div className="md:pt-14">
+      <div className="page">
+        <h1 className="sr-only">Search</h1>
+        <TitleBar desktop>
+          <form
             role="search"
             onSubmit={(e) => {
               e.preventDefault();
@@ -147,7 +158,7 @@ export function SearchScreen({ query: raw }: { query: string }) {
             }}
             className={
               phone
-                ? `${GLASS} ${PHONE_PILL_PLACE} flex h-14 items-center gap-3 pr-1.5 pl-5`
+                ? cn(SEARCH_BAR, 'focus-within:border-fg gap-3')
                 : 'bg-soft border-line-2 focus-within:border-fg flex h-16 items-center gap-3 rounded-lg border px-5'
             }
           >
@@ -156,7 +167,7 @@ export function SearchScreen({ query: raw }: { query: string }) {
               autoFocus
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Search events and opportunities"
+              placeholder={SEARCH_PLACEHOLDER}
               aria-label="Search"
               className="min-w-0 flex-1 bg-transparent text-lg outline-none max-md:text-base"
             />
@@ -169,53 +180,61 @@ export function SearchScreen({ query: raw }: { query: string }) {
                     ? window.history.back()
                     : navigate(paths.home())
                 }
-                className="text-destructive bg-soft-hover grid h-11 w-11 shrink-0 place-items-center rounded-full"
+                className={`${SEARCH_BAR_BUTTON} text-destructive bg-soft-hover grid w-9 place-items-center`}
               >
                 <Icon name="x" className="h-5 w-5" />
               </button>
             )}
-          </motion.form>
-          {!query ? (
-            <SearchStart />
-          ) : (
-            <div {...area('search_results')}>
-              <p className="text-fg-3 border-line mt-2 border-b pb-5 text-[15px] md:mt-8">
-                {more
-                  ? `Showing ${hits.length} for “${query}”`
-                  : `${plural(hits.length, 'result')} for “${query}”`}
+          </form>
+        </TitleBar>
+        {!query ? (
+          <SearchStart />
+        ) : (
+          <div {...area('search_results')}>
+            {chips && (
+              <FilterChips className="mt-6 hidden flex-wrap md:flex">
+                <MoreFilters align="start" active={active.length}>
+                  {FACETS.map(menu)}
+                </MoreFilters>
+                {FACETS.map(chip)}
+              </FilterChips>
+            )}
+            <p className="text-fg-3 border-line mt-2 border-b pb-5 text-[15px] md:mt-8">
+              {more
+                ? `Showing ${shown.length} for “${query}”`
+                : `${plural(shown.length, 'result')} for “${query}”`}
+            </p>
+            {shown.length === 0 && (
+              <p className="text-fg-3 py-20 text-center text-lg">
+                Nothing matched. Try a city, a category or fewer words.
               </p>
-              {hits.length === 0 && (
-                <p className="text-fg-3 py-20 text-center text-lg">
-                  Nothing matched. Try a city, a category or fewer words.
-                </p>
-              )}
-              {hits.map((h) =>
-                h.kind === 'listing' ? (
-                  <ListingRow key={h.item.id} listing={h.item} />
-                ) : h.kind === 'place' ? (
-                  <PlaceRow key={h.item.id} place={h.item} />
-                ) : (
-                  <PromoRow key={h.item.id} promo={h.item} />
-                ),
-              )}
-              {more && (
-                <div className="mt-10 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={showMore}
-                    disabled={found.loading}
-                    {...context({ action: 'search_show_more' })}
-                    className="bg-btn hover:bg-btn-hover h-11 rounded-md px-5 text-[15px] font-semibold disabled:opacity-40"
-                  >
-                    {found.loading ? 'Loading' : 'Show more'}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+            {shown.map((h) =>
+              h.kind === 'listing' ? (
+                <ListingRow key={h.item.id} listing={h.item} />
+              ) : h.kind === 'place' ? (
+                <PlaceRow key={h.item.id} place={h.item} />
+              ) : (
+                <PromoRow key={h.item.id} promo={h.item} />
+              ),
+            )}
+            {more && (
+              <div className="mt-10 flex justify-center">
+                <button
+                  type="button"
+                  onClick={showMore}
+                  disabled={found.loading}
+                  {...context({ action: 'search_show_more' })}
+                  className="bg-btn hover:bg-btn-hover h-11 rounded-md px-5 text-[15px] font-semibold disabled:opacity-40"
+                >
+                  {found.loading ? 'Loading' : 'Show more'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 

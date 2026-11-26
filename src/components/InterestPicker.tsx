@@ -8,7 +8,7 @@ import {
   placeLabel,
   readerPlaceOf,
 } from '../lib/africa';
-import { CAPPED_KINDS, MAX_PICKS_PER_KIND } from '../lib/config';
+import { MAX_PICKS } from '../lib/config';
 import type { RemoteInterestPick } from '../lib/remote';
 import { shown } from '../lib/sections';
 import { asksField, FIELD_QUESTION, FIELDS } from '../lib/followups';
@@ -95,16 +95,14 @@ export function PreferenceAccordions({
     return on.length ? on.join(', ') : '';
   };
   const chips = (names: string[], kind: RemoteInterestPick['kind']) => {
-    const capped = CAPPED_KINDS.includes(kind);
+    const limit = MAX_PICKS[kind];
     const full =
-      capped &&
-      names.filter((n) => picked.includes(n)).length >= MAX_PICKS_PER_KIND;
+      limit !== undefined &&
+      names.filter((n) => picked.includes(n)).length >= limit;
     return (
       <>
-        {capped && (
-          <p className="text-fg-3 mb-3 text-sm">
-            Pick up to {MAX_PICKS_PER_KIND}
-          </p>
+        {limit !== undefined && (
+          <p className="text-fg-3 mb-3 text-sm">Pick up to {limit}</p>
         )}
         <div className="flex flex-wrap gap-2">
           {names.map((n) => (

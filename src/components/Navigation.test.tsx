@@ -3,8 +3,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { paths } from '../lib/router';
 import { LEGAL_TITLES } from '../lib/title';
 import type { LegalSlug } from '../lib/types';
+import { FeedSearch } from './FeedSearch';
 import { Footer } from './Footer';
 import { Header } from './Header';
+import { MobileTabBar } from './MobileTabBar';
 import { NAV } from './nav';
 import { PageTitle } from './PageTitle';
 
@@ -16,6 +18,30 @@ describe('Header', () => {
     const links = hrefs(renderToStaticMarkup(<Header />));
     for (const item of NAV) expect(links).toContain(item.href);
     expect(links).toContain(paths.contribute());
+  });
+
+  it('keeps the search button on the web', () => {
+    expect(hrefs(renderToStaticMarkup(<Header />))).toContain(paths.search());
+  });
+});
+
+describe('MobileTabBar', () => {
+  it('links Home, Events and Opportunities and opens Ask membrs', () => {
+    const html = renderToStaticMarkup(<MobileTabBar />);
+    expect(hrefs(html)).toEqual([
+      paths.home(),
+      paths.feed('events'),
+      paths.feed('opportunities'),
+    ]);
+    expect(html).toContain('aria-label="Ask membrs"');
+  });
+});
+
+describe('FeedSearch', () => {
+  it('opens search and offers Ask membrs', () => {
+    const html = renderToStaticMarkup(<FeedSearch />);
+    expect(hrefs(html)).toEqual([paths.search()]);
+    expect(html).toContain('aria-label="Ask membrs"');
   });
 });
 

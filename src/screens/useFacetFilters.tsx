@@ -22,7 +22,7 @@ export function useFacetFilters(
   );
   const pick = (param: string, value: string | null) =>
     setSearchParams({ [param]: value, page: null });
-  const menu = (facet: Facet) => (
+  const control = (facet: Facet, chip: boolean) => (
     <FacetSelect
       key={facet.param}
       label={facet.label}
@@ -30,6 +30,7 @@ export function useFacetFilters(
       options={optionsOf(facet, all, facets, picks)}
       onChange={(v) => pick(facet.param, v)}
       anyLabel={onTheLine.has(facet.param) ? 'All' : 'Any'}
+      chip={chip}
     />
   );
   const panelFacets = facets.filter((f) => !onTheLine.has(f.param));
@@ -37,7 +38,8 @@ export function useFacetFilters(
     query,
     picks,
     pick,
-    menu,
+    menu: (facet: Facet) => control(facet, false),
+    chip: (facet: Facet) => control(facet, true),
     items: filtered(all, facets, picks),
     active: facets.filter((f) => picks[f.param]),
     lineFacets: facets.filter((f) => onTheLine.has(f.param)),

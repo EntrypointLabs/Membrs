@@ -10,6 +10,7 @@ import { area, context, track } from '../lib/analytics';
 import { useIsPhone } from '../lib/media';
 import { DesktopTilesProvider } from '../lib/rowLayout';
 import { useStore } from '../lib/store';
+import { cn } from '../lib/utils';
 import {
   searchHref,
   setSearchParams,
@@ -18,6 +19,7 @@ import {
 } from '../lib/router';
 import type { Listing } from '../lib/types';
 import { groupByView, type View } from '../lib/views';
+import { FeedSearch } from '../components/FeedSearch';
 import { HeadingCount } from '../components/HeadingCount';
 import { headerSlotStore } from '../components/Header';
 import { Icon } from '../components/Icon';
@@ -27,6 +29,7 @@ import { ListingRow } from '../components/ListingRow';
 import { clampPage, Pager, pageOf } from '../components/Pager';
 import { Rail } from '../components/Rail';
 import { ScrollMore } from '../components/ScrollMore';
+import { TitleBar } from '../components/TitleBar';
 import { GRID_COLUMNS, PAGE_SIZE } from '../lib/config';
 
 /** Cards a page in the lead rail on web: two rows of the grid. */
@@ -367,18 +370,7 @@ export function FilterLine({
     >
       <div className="flex items-baseline gap-5">
         {summary}
-        {onClear && (
-          <button
-            type="button"
-            onClick={(e) => {
-              track('filters_cleared', {}, e.currentTarget);
-              onClear();
-            }}
-            className="text-fg-2 hover:text-fg text-base"
-          >
-            Clear filters
-          </button>
-        )}
+        {onClear && <ClearFilters onClear={onClear} className="text-base" />}
       </div>
       {slot ? createPortal(controls, slot) : controls}
     </div>
@@ -405,27 +397,115 @@ function useSlotOnceScrolledUnder(line: RefObject<HTMLElement | null>) {
   return under ? slot : null;
 }
 
+function ClearFilters({
+  onClear,
+  className,
+}: {
+  onClear: () => void;
+  className: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        track('filters_cleared', {}, e.currentTarget);
+        onClear();
+      }}
+      className={`text-fg-2 hover:text-fg ${className}`}
+    >
+      Clear filters
+    </button>
+  );
+}
+
+export function FilterChips({
+  className,
+  children,
+}: {
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn('flex gap-2', className)} {...area('filters')}>
+      {children}
+    </div>
+  );
+}
+
+export function PhoneFilterBar({
+  summary,
+  onClear,
+  sort,
+  toolbar,
+  children,
+}: {
+  summary: ReactNode;
+  onClear?: () => void;
+  sort?: ReactNode;
+  toolbar?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <>
+      <TitleBar>
+        <FeedSearch />
+        {children && (
+          <FilterChips className="no-scrollbar -mx-4 mt-3 overflow-x-auto px-4">
+            {children}
+          </FilterChips>
+        )}
+      </TitleBar>
+      {toolbar}
+      <div
+        className="mt-1 flex min-h-11 items-center justify-between gap-4 md:hidden"
+        {...area('filters')}
+      >
+        <div className="flex min-w-0 items-baseline gap-4">
+          {summary}
+          {onClear && (
+            <ClearFilters
+              onClear={onClear}
+              className="text-[15px] whitespace-nowrap"
+            />
+          )}
+        </div>
+        {sort}
+      </div>
+    </>
+  );
+}
+
 export function Tally({
   count,
   noun,
   href,
+  compact = false,
 }: {
   count: number;
   noun: [string, string];
   href?: string;
+  compact?: boolean;
 }) {
   if (!count) return null;
   const body = (
     <>
-      <b className="text-5xl leading-none font-bold tracking-tight tabular-nums">
+      <b
+        className={
+          compact
+            ? 'text-fg font-semibold tabular-nums'
+            : 'text-5xl leading-none font-bold tracking-tight tabular-nums'
+        }
+      >
         {count.toLocaleString('en-US')}
       </b>
-      <span className="text-[22px] font-medium">
+      <span className={compact ? undefined : 'text-[22px] font-medium'}>
         {count === 1 ? noun[0] : noun[1]}
       </span>
     </>
   );
-  const layout = 'flex items-baseline gap-2.5';
+  const layout = compact
+    ? 'text-fg-2 flex items-baseline gap-1.5 text-[15px] whitespace-nowrap'
+    : 'flex items-baseline gap-2.5';
   return href ? (
     <Link href={href} className={`${layout} hover:text-fg-2`}>
       {body}
@@ -444,8 +524,10 @@ const MENU = '[data-radix-popper-content-wrapper]';
  */
 export function MoreFilters({
   active,
+  align = 'end',
   children,
 }: {
+  align?: 'start' | 'end';
   /** How many of the filters inside are set, shown as a badge. */
   active: number;
   children: ReactNode;
@@ -492,7 +574,7 @@ export function MoreFilters({
         <div
           role="dialog"
           aria-label="Filters"
-          className="bg-panel border-line-2 absolute top-12 right-0 z-30 flex w-72 flex-col gap-2 rounded-lg border p-4 shadow-2xl max-md:fixed max-md:inset-x-4 max-md:top-auto max-md:bottom-24 max-md:w-auto [&_label]:w-full [&_label]:justify-between"
+          className={`bg-panel border-line-2 absolute top-12 ${align === 'end' ? 'right-0' : 'left-0'} z-30 flex w-72 flex-col gap-2 rounded-lg border p-4 shadow-2xl max-md:fixed max-md:inset-x-4 max-md:top-auto max-md:bottom-24 max-md:w-auto [&_label]:w-full [&_label]:justify-between`}
         >
           {children}
         </div>

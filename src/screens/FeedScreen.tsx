@@ -11,7 +11,6 @@ import {
   fundingFacet,
   levelFacet,
   modeFacet,
-  optionsOf,
   regionFacet,
   rewardFacet,
   SORT_NAMES,
@@ -27,15 +26,19 @@ import {
 } from '../lib/filters';
 import { setSearchParams } from '../lib/router';
 import type { Listing } from '../lib/types';
-import { EVENT_VIEWS, OPPORTUNITY_VIEWS, findView } from '../lib/views';
-import { FeedPicker } from '../components/FeedPicker';
+import { EVENT_VIEWS, OPPORTUNITY_VIEWS } from '../lib/views';
 import { ListingCard, priceKnown } from '../components/ListingCard';
 import { ListingRow } from '../components/ListingRow';
 import { Select } from '../components/Select';
-import { TitleBar } from '../components/TitleBar';
 import { POPULAR_SIZE } from '../lib/config';
 import { distinctFamilies } from '../lib/families';
-import { FeedBody, FilterLine, MoreFilters, Tally } from './FeedLayout';
+import {
+  FeedBody,
+  FilterLine,
+  MoreFilters,
+  PhoneFilterBar,
+  Tally,
+} from './FeedLayout';
 import { useFacetFilters } from './useFacetFilters';
 
 const EVENT_SORTS: SortKey[] = ['popular', 'soonest', 'recent', 'title'];
@@ -90,9 +93,9 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
   const facets = facetsFor(kind);
   const {
     query,
-    picks,
     pick,
     menu,
+    chip,
     items: matched,
     active,
     lineFacets,
@@ -103,72 +106,50 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
   const sort = sortKeyOf(query.get('sort'), sorts);
   const items = sortedBy(matched, sort);
   const isFiltered = active.length > 0 || sort !== DEFAULT_SORT;
-  const view = findView(views, picks.view ?? null);
   const popular = distinctFamilies(items, [], POPULAR_SIZE);
   const concerts = items.filter(
     (l) => l.kind === 'event' && l.category === CONCERT_CATEGORY,
   );
-  const sortMenu = (
+  const sortMenu = (className?: string) => (
     <Select
       label="Order"
       value={sort}
       onChange={(s) => pick('sort', s === DEFAULT_SORT ? null : s)}
       options={sorts.map((s) => ({ value: s, label: SORT_NAMES[s] }))}
+      className={className}
     />
   );
-  const typeOptions = optionsOf(typeFacet, all, facets, picks);
+  const noun: [string, string] = event
+    ? ['event', 'events']
+    : ['opportunity', 'opportunities'];
+  const clear = isFiltered
+    ? () =>
+        setSearchParams({
+          ...cleared,
+          sort: null,
+          page: null,
+        })
+    : undefined;
 
   return (
     <div className="page pt-0 md:pt-14">
-      <TitleBar className="mb-3">
-        <FeedPicker
-          title={event ? 'Events' : 'Opportunities'}
-          sheetTitle={event ? 'Event categories' : 'Opportunity types'}
-          typeLabel={event ? 'Categories' : 'Types'}
-          views={views
-            .map((v) => ({
-              value: v.id,
-              label: v.label,
-              count: all.filter(v.test).length,
-            }))
-            .filter((v) => v.count)}
-          types={typeOptions}
-          view={view ? view.id : null}
-          type={picks.type ?? null}
-          total={all.length}
-          filters={
-            <>
-              {facets
-                .filter((f) => f.param !== 'type' && f.param !== 'view')
-                .map(menu)}
-              {sortMenu}
-            </>
-          }
-        />
-      </TitleBar>
+      <h1 className="sr-only md:hidden">
+        {event ? 'Events' : 'Opportunities'}
+      </h1>
+      <PhoneFilterBar
+        summary={<Tally compact count={items.length} noun={noun} />}
+        sort={sortMenu('h-10 bg-transparent px-2 text-[15px]')}
+        onClear={clear}
+      >
+        {facets.map(chip)}
+      </PhoneFilterBar>
       <FilterLine
-        summary={
-          <Tally
-            count={items.length}
-            noun={
-              event ? ['event', 'events'] : ['opportunity', 'opportunities']
-            }
-          />
-        }
-        onClear={
-          isFiltered
-            ? () =>
-                setSearchParams({
-                  ...cleared,
-                  sort: null,
-                  page: null,
-                })
-            : undefined
-        }
+        summary={<Tally count={items.length} noun={noun} />}
+        onClear={clear}
       >
         {lineFacets.map(menu)}
         <MoreFilters active={panelActive + Number(sort !== DEFAULT_SORT)}>
-          {sortMenu}
+          {sortMenu()}
           {panelFacets.map(menu)}
         </MoreFilters>
       </FilterLine>
@@ -176,7 +157,7 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
         items={items}
         views={views}
         filtered={isFiltered}
-        noun={event ? ['event', 'events'] : ['opportunity', 'opportunities']}
+        noun={noun}
         keyOf={(l) => l.id}
         row={(l) => <ListingRow listing={l} />}
         rails={[

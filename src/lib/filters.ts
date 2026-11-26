@@ -178,6 +178,15 @@ export const cityFacet: Facet = {
   name: (value) => value,
 };
 
+export const SHARED_FACETS: Facet[] = [
+  cityFacet,
+  topicFacet,
+  modeFacet,
+  regionFacet,
+  countryFacet,
+  sourceFacet,
+];
+
 export function budgetFacet(paid: (listing: Listing) => boolean): Facet {
   return {
     param: 'budget',

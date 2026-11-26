@@ -1,65 +1,61 @@
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { feed } from '../lib/api';
-import {
-  cityFacet,
-  countryFacet,
-  kindFacet,
-  modeFacet,
-  regionFacet,
-  sourceFacet,
-  topicFacet,
-} from '../lib/filters';
+import { kindFacet, SHARED_FACETS } from '../lib/filters';
 import { paths, setSearchParams } from '../lib/router';
 import type { Listing } from '../lib/types';
 import { ListingCard } from '../components/ListingCard';
 import { ListingRow } from '../components/ListingRow';
-import { FeedBody, FilterLine, MoreFilters, Tally } from './FeedLayout';
+import {
+  FeedBody,
+  FilterLine,
+  MoreFilters,
+  PhoneFilterBar,
+  Tally,
+} from './FeedLayout';
 import { useFacetFilters } from './useFacetFilters';
 
-const FACETS = [
-  kindFacet,
-  cityFacet,
-  topicFacet,
-  modeFacet,
-  regionFacet,
-  countryFacet,
-  sourceFacet,
-];
+const FACETS = [kindFacet, ...SHARED_FACETS];
 const ON_THE_LINE = new Set(['kind', 'city']);
 
-export function useHomeFilters() {
+export function useHomeFilters(toolbar: ReactNode) {
   const all = useMemo(() => feed(), []);
   const { menu, items, active, lineFacets, panelFacets, panelActive, cleared } =
     useFacetFilters(all, FACETS, ON_THE_LINE);
   const isFiltered = active.length > 0;
   const count = (kind: Listing['kind']) =>
     items.filter((l) => l.kind === kind).length;
+  const clear = isFiltered
+    ? () => setSearchParams({ ...cleared, page: null })
+    : undefined;
+  const tallies = (compact: boolean) => (
+    <>
+      <Tally
+        compact={compact}
+        count={count('event')}
+        noun={['event', 'events']}
+        href={paths.feed('events')}
+      />
+      <Tally
+        compact={compact}
+        count={count('opportunity')}
+        noun={['opportunity', 'opportunities']}
+        href={paths.feed('opportunities')}
+      />
+    </>
+  );
 
   const line = (
-    <FilterLine
-      summary={
-        <>
-          <Tally
-            count={count('event')}
-            noun={['event', 'events']}
-            href={paths.feed('events')}
-          />
-          <Tally
-            count={count('opportunity')}
-            noun={['opportunity', 'opportunities']}
-            href={paths.feed('opportunities')}
-          />
-        </>
-      }
-      onClear={
-        isFiltered
-          ? () => setSearchParams({ ...cleared, page: null })
-          : undefined
-      }
-    >
-      {lineFacets.map(menu)}
-      <MoreFilters active={panelActive}>{panelFacets.map(menu)}</MoreFilters>
-    </FilterLine>
+    <>
+      <PhoneFilterBar
+        toolbar={toolbar}
+        summary={tallies(true)}
+        onClear={clear}
+      />
+      <FilterLine summary={tallies(false)} onClear={clear}>
+        {lineFacets.map(menu)}
+        <MoreFilters active={panelActive}>{panelFacets.map(menu)}</MoreFilters>
+      </FilterLine>
+    </>
   );
 
   const results = isFiltered ? (

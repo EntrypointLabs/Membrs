@@ -9,7 +9,7 @@ import { categoryStyle } from './CategoryLabel';
 import { Modal } from './Modal';
 import { PageTitle } from './PageTitle';
 import { Presence } from './Presence';
-import { SelectDrill, type DrillMenu } from './Select';
+import { optionText, SelectDrill, type DrillMenu } from './Select';
 
 export interface PickerOption {
   value: string;
@@ -194,7 +194,7 @@ function DrillOptions({
                 }}
                 className={`hover:bg-soft-hover flex w-full items-center justify-between px-4 py-[15px] text-left text-[16.5px] disabled:opacity-40 ${on ? 'text-accent' : ''}`}
               >
-                {o.label}
+                {optionText(o)}
                 {on && <Icon name="check" />}
               </button>
             </li>

@@ -75,19 +75,23 @@ export function Crumbs({ trail }: { trail: [string, string][] }) {
 const OVERLAY_BUTTON =
   'grid h-11 w-11 place-items-center rounded-xl bg-black/45 text-white backdrop-blur-md transition-colors hover:bg-black/60';
 
+type OverlayGlyph =
+  { icon: IconName; glyph?: never } | { glyph: ReactNode; icon?: never };
+
 export function OverlayButton({
   icon,
+  glyph,
   label,
   action,
   onClick,
   href,
-}: {
-  icon: IconName;
+  dialog,
+}: OverlayGlyph & {
   label: string;
-  /** What the button does, for analytics: "share", "remind_me". */
   action?: string;
   onClick?: (e: MouseEvent<HTMLElement>) => void;
   href?: string;
+  dialog?: { open: boolean };
 }) {
   return href ? (
     <a
@@ -99,17 +103,19 @@ export function OverlayButton({
       {...context({ action })}
       className={OVERLAY_BUTTON}
     >
-      <Icon name={icon} />
+      {glyph ?? (icon && <Icon name={icon} />)}
     </a>
   ) : (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
+      aria-haspopup={dialog ? 'dialog' : undefined}
+      aria-expanded={dialog?.open}
       {...context({ action })}
       className={OVERLAY_BUTTON}
     >
-      <Icon name={icon} />
+      {glyph ?? (icon && <Icon name={icon} />)}
     </button>
   );
 }
@@ -370,7 +376,7 @@ export function DetailBody({
   about: ReactNode;
   action: ReactNode;
   primary: ReactNode;
-  links: ReactNode;
+  links?: ReactNode;
   tail?: ReactNode;
   map?: ReactNode;
   children: ReactNode;
@@ -391,9 +397,11 @@ export function DetailBody({
         {children}
         {/* On phones the map closes the page, after the links and tags; on wider screens it stays under the facts. */}
         {map && <div className="order-last md:order-none">{map}</div>}
-        <ul className="mt-6 md:hidden" {...area('mobile_links')}>
-          {links}
-        </ul>
+        {links && (
+          <ul className="mt-6 md:hidden" {...area('mobile_links')}>
+            {links}
+          </ul>
+        )}
         {tail}
       </div>
     </div>
