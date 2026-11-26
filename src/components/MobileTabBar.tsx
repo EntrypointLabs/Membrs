@@ -2,6 +2,7 @@ import { area, context, track } from '../lib/analytics';
 import { listingByKey } from '../lib/api';
 import { navSection, type Route, useRoute } from '../lib/router';
 import { useStore } from '../lib/store';
+import { typingStore } from '../lib/typing';
 import { closeOverlay, openOverlay, overlayStore } from '../lib/ui';
 import { Icon } from './Icon';
 import { Link } from './Link';
@@ -23,7 +24,8 @@ export function MobileTabBar() {
   const active = sectionOf(route);
   const asking = useStore(overlayStore) === 'assistant';
   const searching = route.page === 'search';
-  if (searching) return null;
+  const typing = useStore(typingStore);
+  if (searching || typing) return null;
   return (
     <>
       <div

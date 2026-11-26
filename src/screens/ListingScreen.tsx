@@ -33,6 +33,7 @@ import {
 } from './DetailParts';
 import { SeeAll } from '../components/PhoneList';
 import { NotFoundScreen } from './NotFoundScreen';
+import { MembrsMark } from '../components/MembrsMark';
 
 export function ListingScreen({ id }: { id: string }) {
   const listing = listingByKey(id);
@@ -311,9 +312,7 @@ function HeadTools({ listing }: { listing: Listing }) {
   const asking = useStore(overlayStore) === 'assistant';
   const askButton = (
     <OverlayButton
-      glyph={
-        <span aria-hidden="true" className="ask-orb ask-orb-small size-6" />
-      }
+      glyph={<MembrsMark className="size-6 rounded-md" />}
       label="Ask membrs"
       action="ask_membrs"
       dialog={{ open: asking }}

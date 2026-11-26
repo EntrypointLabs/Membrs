@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { area, track } from '../lib/analytics';
 import {
   acceptAll,
@@ -10,30 +10,14 @@ import {
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
 import { titleCase } from '../lib/text';
+import { typingStore } from '../lib/typing';
 import { closeOverlay, openOverlay } from '../lib/ui';
 import { Link } from './Link';
 import { Modal } from './Modal';
 
-const FIELDS = 'input, textarea, select, [contenteditable="true"]';
-
-function useTyping(): boolean {
-  const [typing, setTyping] = useState(false);
-  useEffect(() => {
-    const check = () =>
-      setTyping(document.activeElement?.matches(FIELDS) ?? false);
-    document.addEventListener('focusin', check);
-    document.addEventListener('focusout', check);
-    return () => {
-      document.removeEventListener('focusin', check);
-      document.removeEventListener('focusout', check);
-    };
-  }, []);
-  return typing;
-}
-
 export function CookieBanner() {
   const choice = useStore(cookieStore);
-  const typing = useTyping();
+  const typing = useStore(typingStore);
   if (isChoiceCurrent(choice)) return null;
   const button = 'rounded-md px-3 py-2 text-sm font-bold md:px-4 md:py-2.5';
   return (

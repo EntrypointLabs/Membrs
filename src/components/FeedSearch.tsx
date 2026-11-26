@@ -4,6 +4,7 @@ import { useStore } from '../lib/store';
 import { openOverlay, overlayStore } from '../lib/ui';
 import { Icon } from './Icon';
 import { Link } from './Link';
+import { MembrsMark } from './MembrsMark';
 
 export const SEARCH_PLACEHOLDER = 'Search events and opportunities';
 
@@ -34,7 +35,7 @@ export function FeedSearch() {
         {...context({ action: 'ask_membrs' })}
         className={`${SEARCH_BAR_BUTTON} bg-btn hover:bg-btn-hover flex gap-2 pr-3.5 pl-2 text-[15px] font-semibold`}
       >
-        <span aria-hidden="true" className="ask-orb ask-orb-small size-6" />
+        <MembrsMark className="size-6 rounded-md" />
         Ask
       </button>
     </div>

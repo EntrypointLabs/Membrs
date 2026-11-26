@@ -218,54 +218,6 @@ body {
   }
 }
 
-/*
- * The Ask membrs orb: a chrome ball made of layered gradients, with a soft
- * blue and pink sheen that drifts slowly. Its colours are the orb's own, not
- * theme tokens, because it should look the same on light and dark.
- */
-.ask-orb {
-  display: block;
-  border-radius: 9999px;
-  background:
-    radial-gradient(
-      circle at 34% 28%,
-      rgb(255 255 255 / 0.95) 0 7%,
-      transparent 28%
-    ),
-    radial-gradient(
-      ellipse 72% 30% at 56% 60%,
-      rgb(120 200 255 / 0.75),
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 58% 26% at 44% 52%,
-      rgb(255 170 220 / 0.6),
-      transparent 70%
-    ),
-    radial-gradient(circle at 50% 45%, #d9dbe3, #7b7f8d 62%, #3a3d47);
-  --orb-scale: 1;
-  box-shadow:
-    inset calc(-8px * var(--orb-scale)) calc(-12px * var(--orb-scale))
-      calc(20px * var(--orb-scale)) rgb(0 0 0 / 0.35),
-    inset calc(6px * var(--orb-scale)) calc(8px * var(--orb-scale))
-      calc(16px * var(--orb-scale)) rgb(255 255 255 / 0.55),
-    0 calc(18px * var(--orb-scale)) calc(36px * var(--orb-scale))
-      rgb(0 0 0 / 0.22);
-  animation: ask-orb-drift 7s ease-in-out infinite alternate;
-}
-
-/* The small orb in the phone tab bar, with its shading scaled down to match. */
-.ask-orb-small {
-  --orb-scale: 0.28;
-}
-
-@keyframes ask-orb-drift {
-  to {
-    filter: hue-rotate(50deg);
-  }
-}
-
-/* A faint dot grid behind the orb that fades out before the heading ends. */
 .ask-hero {
   position: relative;
   isolation: isolate;
@@ -284,8 +236,6 @@ body {
   mask-image: linear-gradient(to bottom, black, transparent 80%);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ask-orb {
-    animation: none;
-  }
+html[data-typing] {
+  --tab-bar-space: 0px;
 }

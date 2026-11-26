@@ -99,6 +99,7 @@ import {
   TraceLine,
   TraceTitle,
 } from './ui/trace';
+import { MembrsMark } from './MembrsMark';
 
 const TITLE = 'Ask membrs';
 const NEAR_LIMIT = 200;
@@ -642,13 +643,26 @@ function PhoneStarters({
   );
 }
 
-/** The orb and the open question that start an empty chat. */
 function AskHero() {
   const { tool } = useStore(askWithStore);
-  const name = ASK_TOOLS.find((t) => t.id === tool)?.name ?? 'membrs';
+  const picked = ASK_TOOLS.find((t) => t.id === tool);
+  const name = picked?.name ?? 'membrs';
   return (
     <div className="ask-hero -mx-4 mb-4 grid justify-items-center gap-6 px-6 pt-8 pb-6 text-center">
-      <span aria-hidden="true" className="ask-orb size-[88px]" />
+      {picked && picked.id !== 'membrs' ? (
+        <span
+          aria-hidden="true"
+          className="grid size-[88px] place-items-center rounded-[22px] bg-white p-4"
+        >
+          <img
+            src={picked.logo}
+            alt=""
+            className="h-full w-full object-contain"
+          />
+        </span>
+      ) : (
+        <MembrsMark className="size-[88px] rounded-[22px]" />
+      )}
       <h3 className="text-[28px] leading-tight font-semibold tracking-tight">
         {titleCase(`Ask ${name} anything`)}
       </h3>
@@ -1156,7 +1170,7 @@ export function AssistantPanel() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end md:pointer-events-none md:inset-auto md:right-6 md:bottom-[calc(24px+env(safe-area-inset-bottom,0px))]">
+    <div className="fixed inset-x-0 top-[var(--visible-top,0px)] z-[60] flex h-[var(--visible-height,100dvh)] items-end md:pointer-events-none md:inset-auto md:right-6 md:bottom-[calc(24px+env(safe-area-inset-bottom,0px))] md:h-auto">
       <button
         type="button"
         aria-label="Close"
@@ -1172,7 +1186,7 @@ export function AssistantPanel() {
         tabIndex={-1}
         {...area('assistant')}
         className={cn(
-          'bg-bg text-fg md:bg-panel md:border-line-2 relative flex min-w-0 flex-1 flex-col overflow-hidden pb-[calc(var(--tab-bar-space)+env(safe-area-inset-bottom,0px))] outline-none max-md:h-dvh max-md:pt-[env(safe-area-inset-top,0px)] md:flex-none md:border md:pb-0',
+          'bg-bg text-fg md:bg-panel md:border-line-2 relative flex min-w-0 flex-1 flex-col overflow-hidden pb-[calc(var(--tab-bar-space)+env(safe-area-inset-bottom,0px))] outline-none max-md:h-[var(--visible-height,100dvh)] max-md:pt-[env(safe-area-inset-top,0px)] md:flex-none md:border md:pb-0',
           'md:pointer-events-auto md:origin-bottom-right md:rounded-lg md:shadow-[0_24px_64px_rgb(0_0_0/0.35)] md:transition-[width,height] md:duration-300 md:ease-out',
           expanded
             ? 'md:h-[calc(100dvh-48px)] md:w-[min(820px,calc(100vw-48px))]'
