@@ -54,7 +54,9 @@ function pageName(route: Route): string | undefined {
   }
 }
 
+const HOME_TITLE = `${SITE_NAME} | Events and Opportunities`;
+
 export function documentTitle(route: Route): string {
   const name = pageName(route);
-  return name ? `${name} | ${SITE_NAME}` : SITE_NAME;
+  return name ? `${name} | ${SITE_NAME}` : HOME_TITLE;
 }

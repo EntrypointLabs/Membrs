@@ -3,7 +3,7 @@ export const SITE_NAME = 'MEMBRS';
 export const SITE_ORIGIN = 'https://membrs.xyz';
 
 export const SITE_DESCRIPTION =
-  'Events and opportunities worth your time, from gigs and meetups to grants, fellowships and jobs. Add your own listings or advertise to readers.';
+  'Events and opportunities worth your time: gigs, meetups, grants, fellowships and jobs, updated every day.';
 
 const DESCRIPTION_LIMIT = 160;
 
