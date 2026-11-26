@@ -54,7 +54,7 @@ function pageName(route: Route): string | undefined {
   }
 }
 
-const HOME_TITLE = `${SITE_NAME} | Events and Opportunities`;
+const HOME_TITLE = `${SITE_NAME} | Events, Scholarships, Grants, Fellowships and Jobs`;
 
 export function documentTitle(route: Route): string {
   const name = pageName(route);
