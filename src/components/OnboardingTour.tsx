@@ -4,6 +4,7 @@ import { track } from '../lib/analytics';
 import { catalogueStore, listings, refreshForReader } from '../lib/api';
 import { useDialog } from '../lib/focus';
 import { locationChoiceStore, shareLocation } from '../lib/location';
+import { cookieStore } from '../lib/cookies';
 import { useIsPhone } from '../lib/media';
 import { readerKnown, sessionStore } from '../lib/auth';
 import { cityStore, tourSeenStore } from '../lib/preferences';
@@ -124,6 +125,7 @@ function visibleSteps(steps: Step[]): Step[] {
 export function OnboardingTour() {
   useStore(tourSeenStore);
   useStore(sessionStore);
+  useStore(cookieStore);
   const overlay = useStore(overlayStore);
   const { status } = useStore(catalogueStore);
   // The tour points at shelves, so it waits for a catalogue that has some.

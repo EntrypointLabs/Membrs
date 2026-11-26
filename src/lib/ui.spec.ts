@@ -47,8 +47,11 @@ describe('the weekly email', () => {
 });
 
 describe('onboarding tour', () => {
-  it('starts on a first visit with nothing else open', async () => {
+  it('waits for the cookie choice, then starts with nothing else open', async () => {
     const { ui } = await visit();
+    expect(ui.tourDue()).toBe(false);
+    const { rejectOptional } = await import('./cookies');
+    rejectOptional();
     expect(ui.tourDue()).toBe(true);
     ui.openDigest();
     expect(ui.tourDue()).toBe(false);

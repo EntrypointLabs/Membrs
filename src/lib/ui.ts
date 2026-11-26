@@ -1,3 +1,4 @@
+import { cookieStore, isChoiceCurrent } from './cookies';
 import { sessionStore } from './auth';
 import { EXIT_MS } from './motion';
 import { tourSeenStore } from './preferences';
@@ -36,7 +37,12 @@ export function closeOverlay(): void {
 }
 
 export function tourDue(overlay: Overlay = overlayStore.get()): boolean {
-  return overlay === null && !sessionStore.get() && !tourSeenStore.get();
+  return (
+    overlay === null &&
+    !sessionStore.get() &&
+    !tourSeenStore.get() &&
+    isChoiceCurrent(cookieStore.get())
+  );
 }
 
 export interface ToastItem {
