@@ -162,13 +162,29 @@ export async function grantedPosition(): Promise<Position | null> {
   }
 }
 
-export async function requestedPosition(): Promise<Position | null> {
-  if (!navigator.geolocation) return null;
-  try {
-    return await currentPosition();
-  } catch {
-    return null;
-  }
+export interface PositionRequest {
+  at: Position | null;
+  refused: boolean;
+}
+
+export function requestedPosition(): Promise<PositionRequest> {
+  if (!navigator.geolocation)
+    return Promise.resolve({ at: null, refused: false });
+  return new Promise((resolve) =>
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          at: [position.coords.latitude, position.coords.longitude],
+          refused: false,
+        }),
+      (error) =>
+        resolve({
+          at: null,
+          refused: error.code === error.PERMISSION_DENIED,
+        }),
+      { maximumAge: POSITION_MAX_AGE_MS, timeout: POSITION_TIMEOUT_MS },
+    ),
+  );
 }
 
 /** Where a listing happens: its venue when known, otherwise its city. */

@@ -54,14 +54,14 @@ import {
   switchToOutside,
   takesPromptInLink,
 } from '../lib/askTools';
-import { cityStore } from '../lib/preferences';
+import { cityStore, subscriptionStore } from '../lib/preferences';
 import { paths, useRoute } from '../lib/router';
 import { createStore, useStore } from '../lib/store';
 import { plural, titleCase } from '../lib/text';
 import type { Listing } from '../lib/types';
-import { closeOverlay, openOverlay, overlayStore } from '../lib/ui';
+import { closeOverlay, openDigest, openOverlay, overlayStore } from '../lib/ui';
 import { cn } from '../lib/utils';
-import { EmailStep } from './EmailStep';
+import { EmailStep, TermsConsent } from './EmailStep';
 import { Icon } from './Icon';
 import { Link } from './Link';
 import { listingFace } from './ListingCard';
@@ -1050,8 +1050,31 @@ function Body() {
   );
 }
 
+function chooseInterestsThenAsk(): void {
+  track('digest_opened', { placement: 'assistant' });
+  openDigest('assistant');
+}
+
+function JoinWithKnownEmail() {
+  const [agreed, setAgreed] = useState(false);
+  return (
+    <div className="grid gap-3">
+      <TermsConsent agreed={agreed} onChange={setAgreed} />
+      <Button
+        type="button"
+        disabled={!agreed}
+        onClick={chooseInterestsThenAsk}
+        className="h-[50px] text-[15px] font-bold"
+      >
+        Choose your interests
+      </Button>
+    </div>
+  );
+}
+
 function MembrsBody() {
   const session = useStore(sessionStore);
+  const joined = useStore(subscriptionStore);
   const state = useStore(assistantStore);
   const known = Boolean(session?.accessToken);
 
@@ -1062,20 +1085,25 @@ function MembrsBody() {
         <p className="text-fg-3 text-[15px]">{ASSISTANT_UNAVAILABLE}</p>
       </Centered>
     );
-  if (!known)
+  if (!known || !joined)
     return (
       <Centered>
         <AskHero />
         <p className="text-fg-3 max-w-xs text-[15px]">
-          Enter your email to ask membrs about events, opportunities and
+          Join the weekly email to ask membrs about events, opportunities and
           deadlines.
         </p>
         <div className="w-full max-w-xs">
-          <EmailStep
-            actionLabel="Continue"
-            onContinue={() => undefined}
-            placement="assistant"
-          />
+          {known ? (
+            <JoinWithKnownEmail />
+          ) : (
+            <EmailStep
+              actionLabel="Continue"
+              onContinue={chooseInterestsThenAsk}
+              placement="assistant"
+              askTerms
+            />
+          )}
         </div>
         <div className="text-fg-3 flex items-center gap-3 text-[15px]">
           <ToolMenu />

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { track, type SignInPlacement } from '../lib/analytics';
 import {
@@ -10,7 +11,9 @@ import {
 import { isValidEmail } from '../lib/email';
 import { messageOf } from '../lib/http';
 import { useStore } from '../lib/store';
+import { paths } from '../lib/router';
 import { toast } from '../lib/ui';
+import { Link } from './Link';
 
 /**
  * What every feature that needs to know the reader uses to ask for their
@@ -92,14 +95,17 @@ export function EmailStep({
   onContinue,
   placement,
   inputClassName = '',
+  askTerms = false,
 }: {
   actionLabel: string;
   onContinue: () => void;
   placement: SignInPlacement;
   inputClassName?: string;
+  askTerms?: boolean;
 }) {
   const { email, setEmail, busy, ready, ensureKnown } =
     useReaderEmail(placement);
+  const [agreed, setAgreed] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -113,9 +119,10 @@ export function EmailStep({
         onChange={setEmail}
         className={inputClassName}
       />
+      {askTerms && <TermsConsent agreed={agreed} onChange={setAgreed} />}
       <button
         type="submit"
-        disabled={!ready || busy}
+        disabled={!ready || busy || (askTerms && !agreed)}
         className="bg-brand hover:bg-brand-hover flex h-[50px] items-center justify-center gap-3 rounded-md px-4 text-[15px] font-bold text-white transition-[translate,scale,background-color] duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {busy && (
@@ -124,5 +131,41 @@ export function EmailStep({
         {actionLabel}
       </button>
     </form>
+  );
+}
+
+export function TermsConsent({
+  agreed,
+  onChange,
+}: {
+  agreed: boolean;
+  onChange: (agreed: boolean) => void;
+}) {
+  return (
+    <label className="text-fg-3 flex items-start gap-2.5 text-left text-[13px] leading-snug">
+      <Checkbox
+        checked={agreed}
+        onCheckedChange={(state) => onChange(state === true)}
+        aria-label="I agree to the Terms of Service and Privacy Policy"
+        className="mt-0.5"
+      />
+      <span>
+        I agree to the{' '}
+        <Link
+          href={paths.legal('terms')}
+          className="text-fg underline underline-offset-2"
+        >
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link
+          href={paths.legal('privacy')}
+          className="text-fg underline underline-offset-2"
+        >
+          Privacy Policy
+        </Link>
+        , and to the weekly email.
+      </span>
+    </label>
   );
 }

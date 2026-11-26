@@ -9,6 +9,7 @@ import {
 } from './geo';
 import { cityStore } from './preferences';
 import { createStore } from './store';
+import { toast } from './ui';
 import type { Listing } from './types';
 
 export type LocationChoice = 'unasked' | 'dismissed' | 'granted';
@@ -76,9 +77,15 @@ export function chooseCity(city: string): void {
   if (country) readerCountryStore.set(country);
 }
 
+const LOCATION_REFUSED =
+  'Location is off for membrs. Allow it in your browser settings, then try again.';
+const LOCATION_UNAVAILABLE =
+  'We could not find your location. Try again in a moment.';
+
 export async function shareLocation(): Promise<NearbyPlace | null> {
-  const at = await requestedPosition();
+  const { at, refused } = await requestedPosition();
   locationChoiceStore.set(at ? 'granted' : 'dismissed');
+  if (!at) toast(refused ? LOCATION_REFUSED : LOCATION_UNAVAILABLE);
   return settle(at);
 }
 

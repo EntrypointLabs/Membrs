@@ -439,12 +439,13 @@ export function PhoneFilterBar({
   toolbar,
   children,
 }: {
-  summary: ReactNode;
+  summary?: ReactNode;
   onClear?: () => void;
   sort?: ReactNode;
   toolbar?: ReactNode;
   children?: ReactNode;
 }) {
+  const hasRow = Boolean(summary || onClear || sort);
   return (
     <>
       <TitleBar>
@@ -456,21 +457,23 @@ export function PhoneFilterBar({
         )}
       </TitleBar>
       {toolbar}
-      <div
-        className="mt-1 flex min-h-11 items-center justify-between gap-4 md:hidden"
-        {...area('filters')}
-      >
-        <div className="flex min-w-0 items-baseline gap-4">
-          {summary}
-          {onClear && (
-            <ClearFilters
-              onClear={onClear}
-              className="text-[15px] whitespace-nowrap"
-            />
-          )}
+      {hasRow && (
+        <div
+          className="mt-1 flex min-h-11 items-center justify-between gap-4 md:hidden"
+          {...area('filters')}
+        >
+          <div className="flex min-w-0 items-baseline gap-4">
+            {summary}
+            {onClear && (
+              <ClearFilters
+                onClear={onClear}
+                className="text-[15px] whitespace-nowrap"
+              />
+            )}
+          </div>
+          {sort}
         </div>
-        {sort}
-      </div>
+      )}
     </>
   );
 }

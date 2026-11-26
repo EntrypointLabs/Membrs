@@ -239,3 +239,11 @@ body {
 html[data-typing] {
   --tab-bar-space: 0px;
 }
+
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}

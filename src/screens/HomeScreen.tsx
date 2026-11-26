@@ -335,7 +335,7 @@ function HappeningSoon({ items: all }: { items: Listing[] }) {
   const items = all.slice(0, HOME_LIST);
   if (!items.length) return null;
   return (
-    <section className="mt-12 md:hidden" {...area('happening_soon')}>
+    <section className="mt-6 md:hidden" {...area('happening_soon')}>
       <PhoneSectionHead
         title="Happening Soon"
         href={paths.feed('events')}

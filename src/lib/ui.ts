@@ -21,8 +21,17 @@ export function openOverlay(overlay: Exclude<Overlay, null>): void {
  * The single way into the weekly email: the city and interests card, which
  * asks for the reader's email there if the browser does not know it yet.
  */
-export function openDigest(): void {
+let resumeAfterDigest: Overlay = null;
+
+export function openDigest(resume: Overlay = null): void {
+  resumeAfterDigest = resume;
   overlayStore.set('prefs');
+}
+
+export function finishDigest(): void {
+  const next = resumeAfterDigest;
+  resumeAfterDigest = null;
+  overlayStore.set(next);
 }
 
 function rememberReader(): void {

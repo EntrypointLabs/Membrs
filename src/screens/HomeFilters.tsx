@@ -27,16 +27,14 @@ export function useHomeFilters(toolbar: ReactNode) {
   const clear = isFiltered
     ? () => setSearchParams({ ...cleared, page: null })
     : undefined;
-  const tallies = (compact: boolean) => (
+  const tallies = (
     <>
       <Tally
-        compact={compact}
         count={count('event')}
         noun={['event', 'events']}
         href={paths.feed('events')}
       />
       <Tally
-        compact={compact}
         count={count('opportunity')}
         noun={['opportunity', 'opportunities']}
         href={paths.feed('opportunities')}
@@ -46,12 +44,8 @@ export function useHomeFilters(toolbar: ReactNode) {
 
   const line = (
     <>
-      <PhoneFilterBar
-        toolbar={toolbar}
-        summary={tallies(true)}
-        onClear={clear}
-      />
-      <FilterLine summary={tallies(false)} onClear={clear}>
+      <PhoneFilterBar toolbar={toolbar} onClear={clear} />
+      <FilterLine summary={tallies} onClear={clear}>
         {lineFacets.map(menu)}
         <MoreFilters active={panelActive}>{panelFacets.map(menu)}</MoreFilters>
       </FilterLine>

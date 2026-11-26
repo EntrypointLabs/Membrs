@@ -14,7 +14,7 @@ import {
   themeStore,
 } from '../lib/preferences';
 import { useStore } from '../lib/store';
-import { closeOverlay, toast } from '../lib/ui';
+import { closeOverlay, finishDigest, toast } from '../lib/ui';
 import { ReaderEmailField, useReaderEmail } from './EmailStep';
 import { PreferenceAccordions } from './InterestPicker';
 
@@ -86,7 +86,7 @@ export function PreferencesModal() {
     });
     chooseCity(city);
     subscriptionStore.set({ email, city });
-    closeOverlay();
+    finishDigest();
     void refreshForReader();
     toast(
       delivery === 'queued'
