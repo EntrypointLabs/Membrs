@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import photos from '../generated/photos.json';
 import { track } from '../lib/analytics';
+import { isResizedPreset, resizedPhoto } from '../lib/images';
 import { tagFill } from '../lib/palette';
 import { Icon } from './Icon';
 
@@ -77,7 +78,12 @@ export function Photo({
   cover,
 }: PhotoProps) {
   const [failed, setFailed] = useState(false);
+  const [resizeFailed, setResizeFailed] = useState(false);
   const meta = MANIFEST[id];
+  const resized =
+    src && !resizeFailed && isResizedPreset(size)
+      ? resizedPhoto(src, size)
+      : null;
   if (src && !failed)
     return (
       <div
@@ -85,12 +91,21 @@ export function Photo({
         style={meta ? { backgroundImage: `url(${meta.blur})` } : undefined}
       >
         <img
-          src={src}
+          key={resized ? 'resized' : 'original'}
+          src={resized?.src ?? src}
+          srcSet={resized?.srcSet}
+          width={resized?.width}
+          height={resized?.height}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
+          decoding={priority ? 'auto' : 'async'}
+          fetchPriority={priority ? 'high' : 'auto'}
           referrerPolicy="no-referrer"
           onError={(e) => {
+            if (resized) {
+              setResizeFailed(true);
+              return;
+            }
             track(
               'image_failed',
               { photo: id, src_host: hostOf(src) },
