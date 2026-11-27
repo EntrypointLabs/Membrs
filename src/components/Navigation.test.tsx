@@ -38,10 +38,10 @@ describe('MobileTabBar', () => {
 });
 
 describe('FeedSearch', () => {
-  it('opens search and offers Ask membrs', () => {
+  it('opens search and leaves Ask to the tab bar', () => {
     const html = renderToStaticMarkup(<FeedSearch />);
     expect(hrefs(html)).toEqual([paths.search()]);
-    expect(html).toContain('aria-label="Ask membrs"');
+    expect(html).not.toContain('aria-label="Ask membrs"');
   });
 });
 
