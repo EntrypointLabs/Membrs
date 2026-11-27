@@ -31,6 +31,8 @@ export const interestsStore = createStore<string[]>('membrs.interests', [
   'Grants',
 ]);
 
+export const readerLinkStore = createStore<boolean>('membrs.readerLink', false);
+
 export const tourSeenStore = createStore<boolean>('membrs.tour', false);
 
 export function toggleInterest(name: string): void {

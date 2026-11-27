@@ -6,11 +6,14 @@ import { initAnalytics } from './lib/analytics';
 import { loadAccount, loadCatalogue } from './lib/api';
 import { flushOutbox } from './lib/outbox';
 import { keepServedListing } from './lib/served';
+import { adoptReaderLink } from './lib/readerLink';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
 }
+
+adoptReaderLink();
 
 keepServedListing(
   rootElement,

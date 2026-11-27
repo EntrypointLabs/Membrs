@@ -1,14 +1,13 @@
 import { area } from '../lib/analytics';
-import { forYou, forYouStore } from '../lib/api';
+import { useForYou } from '../lib/readerLink';
 import { paths } from '../lib/router';
-import { useStore } from '../lib/store';
 import { openOverlay } from '../lib/ui';
 import { PageTitle } from '../components/PageTitle';
 import { TitleBar } from '../components/TitleBar';
 import { ListingResults } from './FeedLayout';
 
 export function ForYouScreen() {
-  const items = forYou(useStore(forYouStore));
+  const items = useForYou();
   return (
     <div className="page pt-0 md:pt-16">
       <TitleBar desktop>

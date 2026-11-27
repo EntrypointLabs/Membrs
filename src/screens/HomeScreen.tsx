@@ -5,8 +5,6 @@ import { area, context, track } from '../lib/analytics';
 import {
   alternated,
   closingSoon,
-  forYou,
-  forYouStore,
   heroPicks,
   launchCities,
   listings,
@@ -24,7 +22,8 @@ import { useIsPhone } from '../lib/media';
 import { justAdded } from '../lib/filters';
 import { placement } from '../lib/placement';
 import { openStateNow } from '../lib/hours';
-import { cityStore, subscriptionStore } from '../lib/preferences';
+import { cityStore } from '../lib/preferences';
+import { useForYou, usePersonalised } from '../lib/readerLink';
 import { paths } from '../lib/router';
 import { useStore } from '../lib/store';
 import { openOverlay } from '../lib/ui';
@@ -34,7 +33,7 @@ import { FeedSearch } from '../components/FeedSearch';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { UseMyLocation } from '../components/UseMyLocation';
 import { HomeShelves, LocalShelves, useShelfInputs } from './HomeShelves';
-import { localShelves } from '../lib/homeShelves';
+import { localShelves, SHELF_SIZE } from '../lib/homeShelves';
 import { PagedGrid } from '../components/PagedGrid';
 import {
   HOME_LIST,
@@ -128,6 +127,10 @@ function WebSections() {
     POPULAR_PANEL,
   );
   const page = placement([...picks, ...panel]);
+  const matches = useForYou();
+  const personal = usePersonalised()
+    ? page.take(distinctFamilies(matches, page.placed()), SHELF_SIZE)
+    : [];
   const popular = page.take(
     distinctFamilies(
       mostPopular(POPULAR_SIZE * 2, new Set(), popularKind),
@@ -162,6 +165,11 @@ function WebSections() {
           <MostPopular items={panel} />
         </section>
       )}
+      {personal.length > 0 && (
+        <LocalShelves
+          shelves={[{ id: 'for-you', title: 'For You', items: personal }]}
+        />
+      )}
       <PopularSection
         items={popular}
         kind={popularKind}
@@ -184,13 +192,16 @@ function WebSections() {
 
 function PhoneSections() {
   const country = useStore(readerCountryStore);
-  const matches = useStore(forYouStore);
-  const subscribed = useStore(subscriptionStore);
+  const matches = useForYou();
+  const personalised = usePersonalised();
   const page = placement();
   const soon = page.take(
     alternated<Listing>(within(3, 'event'), closingSoon()),
     HOME_LIST,
   );
+  const picked = personalised
+    ? page.take(distinctFamilies(matches, page.placed()), HOME_LIST)
+    : [];
   const popular = page.take(
     distinctFamilies(mostPopular(HOME_LIST * 3), page.placed()),
     HOME_LIST,
@@ -201,16 +212,12 @@ function PhoneSections() {
   );
   const local = localShelves(useShelfInputs(page.placed()));
   page.take(local.flatMap((shelf) => shelf.items.slice(0, HOME_LIST)));
-  const picked = subscribed ? page.take(forYou(matches), HOME_LIST) : [];
   const week = page.take(within(7), HOME_LIST);
   const month = page.take(within(30), HOME_LIST);
   return (
     <>
       <HappeningSoon items={soon} />
-      <PhoneList title="Popular" items={popular} />
-      <PhoneList title="Just Added" items={fresh} />
-      <LocalShelves key={country} shelves={local} />
-      {subscribed && (
+      {personalised && (
         <PhoneList
           title="For You"
           items={picked}
@@ -218,6 +225,9 @@ function PhoneSections() {
           link="See all"
         />
       )}
+      <PhoneList title="Popular" items={popular} />
+      <PhoneList title="Just Added" items={fresh} />
+      <LocalShelves key={country} shelves={local} />
       <PhoneList
         title="This Week"
         items={week}

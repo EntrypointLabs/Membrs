@@ -2,7 +2,12 @@ import { API_BASE } from './config';
 import { clearAllDrafts } from './drafts';
 import { isValidEmail } from './email';
 import { apiFetch, dataOf } from './http';
-import { fieldsStore, interestsStore, subscriptionStore } from './preferences';
+import {
+  fieldsStore,
+  interestsStore,
+  readerLinkStore,
+  subscriptionStore,
+} from './preferences';
 import { readStored } from './storage';
 import { createStore } from './store';
 
@@ -179,6 +184,7 @@ export function onSignOut(hook: () => void): () => void {
 function forgetReader(): void {
   subscriptionStore.set(null);
   interestsStore.reset();
+  readerLinkStore.reset();
   fieldsStore.reset();
   clearAllDrafts();
   signOutHooks.forEach((hook) => hook());
