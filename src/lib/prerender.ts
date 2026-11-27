@@ -136,7 +136,8 @@ function homeGraph(): object[] {
     {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
-      name: nameOf({ page: 'home' }),
+      name: SITE_NAME,
+      alternateName: ['membrs', 'membrs.xyz'],
       url,
       description: SITE_DESCRIPTION,
       potentialAction: {
@@ -151,9 +152,11 @@ function homeGraph(): object[] {
     {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: nameOf({ page: 'home' }),
+      name: SITE_NAME,
+      alternateName: 'membrs',
       url,
-      logo: absoluteUrl('/favicon.svg'),
+      logo: absoluteUrl('/logo.png'),
+      description: SITE_DESCRIPTION,
     },
   ];
 }
