@@ -131,14 +131,43 @@ describe('feed filters', () => {
     expect(sortKeyOf('reward', ['soonest', 'recent'])).toBe('popular');
   });
 
-  it('offers every city listed, but not a country named as a city', () => {
+  it('groups places by their state, with online listings in one bucket', () => {
     const items = [
-      opportunityListing({ id: 'x', city: 'Ibadan', country: 'NG' }),
-      opportunityListing({ id: 'y', city: 'Nigeria', country: 'NG' }),
-      opportunityListing({ id: 'z', city: ' ', country: 'NG' }),
+      opportunityListing({
+        id: 'w',
+        city: 'Ife',
+        country: 'NG',
+        state: 'Osun',
+      }),
+      opportunityListing({
+        id: 'x',
+        city: 'Osogbo',
+        country: 'NG',
+        state: 'Osun',
+      }),
+      opportunityListing({
+        id: 'y',
+        city: 'Gbagada Expressway',
+        country: 'NG',
+        state: 'Lagos',
+      }),
+      opportunityListing({
+        id: 'z',
+        city: 'Lagos',
+        country: 'NG',
+        state: 'Online',
+      }),
+      opportunityListing({
+        id: 'v',
+        city: 'Nigeria',
+        country: 'NG',
+        state: ' ',
+      }),
     ];
     expect(optionsOf(cityFacet, items, [cityFacet], {})).toEqual([
-      { value: 'Ibadan', label: 'Ibadan', count: 1 },
+      { value: 'Osun', label: 'Osun', count: 2 },
+      { value: 'Lagos', label: 'Lagos', count: 1 },
+      { value: 'Online', label: 'Online', count: 1 },
     ]);
   });
 });
