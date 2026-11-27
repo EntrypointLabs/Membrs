@@ -73,13 +73,7 @@ export async function startReaderSession(value: string): Promise<Session> {
     sessionStore.set(session);
     return session;
   }
-  const res = await apiFetch('/v1/auth/email', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email }),
-  }).catch(() => {
-    throw new EmailNotAcceptedError();
-  });
+  const res = await postEmailWithRetries(email);
   const issued = await dataOf<IssuedSession>(
     res,
     new EmailNotAcceptedError().message,
@@ -87,6 +81,27 @@ export async function startReaderSession(value: string): Promise<Session> {
   const session = { at: Date.now(), ...issued };
   sessionStore.set(session);
   return session;
+}
+
+const EMAIL_ATTEMPTS = 3;
+const EMAIL_RETRY_DELAY_MS = 600;
+
+async function postEmailWithRetries(email: string): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    const res = await apiFetch('/v1/auth/email', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).catch(() => null);
+    const failedOnOurSide = !res || res.status >= 500;
+    if (!failedOnOurSide || attempt === EMAIL_ATTEMPTS) {
+      if (!res) throw new EmailNotAcceptedError();
+      return res;
+    }
+    await new Promise((done) =>
+      setTimeout(done, EMAIL_RETRY_DELAY_MS * attempt),
+    );
+  }
 }
 
 export class SignedOutError extends Error {
