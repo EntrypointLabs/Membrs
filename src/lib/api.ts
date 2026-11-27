@@ -205,6 +205,10 @@ export function chooseReaderPlace(label: string): boolean {
   return true;
 }
 
+export function adoptReaderCity(city: string): void {
+  if (!chooseReaderPlace(city)) cityStore.set(city);
+}
+
 export function canAttend(listing: Listing): boolean {
   const country = readerCountryStore.get();
   return (
@@ -311,6 +315,18 @@ export function forYou(
     matching.filter((l) => l.kind === 'event'),
     matching.filter((l) => l.kind === 'opportunity'),
   );
+}
+
+export function interestMatches(
+  labels: string[],
+  pool: Listing[] = catalogue,
+): string[] {
+  const picks = interestPicks(labels);
+  return pool
+    .filter((l) =>
+      picks.some((p) => p.kind === l.kind && p.category === l.category),
+    )
+    .map((l) => l.id);
 }
 
 export function inCity(
@@ -726,7 +742,7 @@ export async function loadAccount(): Promise<void> {
     if (digest.ok) {
       const pref = ((await digest.json()) as { data: RemoteNewsletter }).data;
       const city = pref.city ?? cityStore.get();
-      if (pref.city && !chooseReaderPlace(pref.city)) cityStore.set(pref.city);
+      if (pref.city) adoptReaderCity(pref.city);
       fieldsStore.set(fieldsFromDigest(pref.interests ?? []));
       subscriptionStore.set(
         pref.subscribed

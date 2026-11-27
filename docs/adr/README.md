@@ -22,3 +22,4 @@ contested. Routine choices do not need one.
 | [0011](./0011-sections-open-on-a-rail-and-groups.md)       | Sections open on a rail and time groups     | Accepted |
 | [0012](./0012-served-by-the-backend.md)                    | The backend serves the site                 | Accepted |
 | [0013](./0013-posthog-analytics-follows-cookie-consent.md) | PostHog analytics follow cookie consent     | Accepted |
+| [0014](./0014-email-links-carry-reader-interests.md)       | Email links carry the reader's interests    | Accepted |
