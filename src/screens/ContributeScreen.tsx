@@ -24,7 +24,7 @@ import {
   PHOTO_TYPES,
   contributeForm,
   contributionSlot,
-  feed,
+  useFeed,
   submitAdRequest,
   submitContribution,
   uploadPhoto,
@@ -1096,9 +1096,11 @@ function AdPreview({
   city?: string;
   photo: string | null;
 }) {
-  const after = feed(
-    placement === 'Opportunities' ? 'opportunity' : 'event',
-  ).slice(0, 1);
+  const after =
+    useFeed({
+      kind: placement === 'Opportunities' ? 'opportunity' : 'event',
+      limit: 1,
+    }).data?.items ?? [];
   return (
     <section>
       <p className={cn(LABEL, 'mb-1')}>Preview</p>

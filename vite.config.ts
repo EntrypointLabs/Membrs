@@ -1,8 +1,7 @@
 import { fileURLToPath } from 'node:url';
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { CATALOGUE_PATH } from './src/lib/catalogue-path';
 
 /**
  * Analytics go to /ingest on our own origin and are forwarded to PostHog, so
@@ -25,33 +24,12 @@ function posthogProxy(region: string) {
   };
 }
 
-function preloadCatalogue(apiBase: string | undefined): Plugin {
-  return {
-    name: 'membrs:preload-catalogue',
-    transformIndexHtml: () =>
-      apiBase
-        ? [
-            {
-              tag: 'link',
-              attrs: {
-                rel: 'preload',
-                href: `${apiBase}${CATALOGUE_PATH}`,
-                as: 'fetch',
-                crossorigin: '',
-              },
-              injectTo: 'head-prepend',
-            },
-          ]
-        : [],
-  };
-}
-
 export default defineConfig(({ mode }) => {
   const root = fileURLToPath(new URL('.', import.meta.url));
   const env = loadEnv(mode, root);
   const analytics = posthogProxy(env.VITE_POSTHOG_REGION ?? 'us');
   return {
-    plugins: [react(), tailwindcss(), preloadCatalogue(env.VITE_API_BASE)],
+    plugins: [react(), tailwindcss()],
     // A single React instance, so hooks always resolve to the same copy.
     resolve: {
       dedupe: ['react', 'react-dom'],

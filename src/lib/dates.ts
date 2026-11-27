@@ -1,8 +1,8 @@
 import type {
   DayLabel,
-  EventListing,
-  Listing,
-  OpportunityListing,
+  EventSummary,
+  ListingSummary,
+  OpportunitySummary,
 } from './types';
 
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -62,7 +62,7 @@ export function clockMinutes(time: string): number | null {
   return ((Number(match[1]) % 12) + (pm ? 12 : 0)) * 60 + Number(match[2]);
 }
 
-export function eventOffset(event: EventListing): number {
+export function eventOffset(event: EventSummary): number {
   if (!event.startsAt) return zoneWallClock(Date.now()) - Date.now();
   const starts = Date.parse(event.startsAt);
   const month = MONTHS.indexOf(event.date.month);
@@ -78,52 +78,8 @@ export function eventOffset(event: EventListing): number {
   return zoneWallClock(starts) - starts;
 }
 
-export function eventLocalDay(event: EventListing, at: number): number {
+export function eventLocalDay(event: EventSummary, at: number): number {
   return dayNumber(at + eventOffset(event));
-}
-
-export function hasStarted(event: EventListing, now = Date.now()): boolean {
-  if (!event.startsAt || clockMinutes(event.time) === null) return false;
-  return Date.parse(event.startsAt) <= now;
-}
-
-export function isOver(event: EventListing, now = Date.now()): boolean {
-  if (event.endsAt) return Date.parse(event.endsAt) <= now;
-  if (!hasStarted(event, now)) return false;
-  return Date.parse(event.startsAt ?? '') + DEFAULT_EVENT_MS <= now;
-}
-
-function deadlineDay(opportunity: OpportunityListing): number | null {
-  const { day, month, label } = opportunity.deadline;
-  const year = Number(label.slice(-4));
-  const monthIndex = MONTHS.indexOf(month);
-  if (!day || monthIndex < 0 || !Number.isInteger(year)) return null;
-  return dayNumber(Date.UTC(year, monthIndex, day));
-}
-
-function asOf(listing: Listing, now: number): Listing | null {
-  if (listing.kind === 'opportunity') {
-    const deadline = deadlineDay(listing);
-    if (deadline === null) return listing;
-    const daysLeft = deadline - dayNumber(zoneWallClock(now));
-    return daysLeft < 0 ? null : { ...listing, daysLeft };
-  }
-  if (!listing.startsAt) return listing;
-  const today = eventLocalDay(listing, now);
-  const lastDay = eventLocalDay(
-    listing,
-    Date.parse(listing.endsAt ?? listing.startsAt),
-  );
-  if (lastDay < today || isOver(listing, now)) return null;
-  const inDays = Math.max(
-    0,
-    eventLocalDay(listing, Date.parse(listing.startsAt)) - today,
-  );
-  return { ...listing, inDays };
-}
-
-export function stillOpen(listings: Listing[], today = new Date()): Listing[] {
-  return listings.flatMap((listing) => asOf(listing, today.getTime()) ?? []);
 }
 
 export interface CalendarToday {
@@ -158,13 +114,13 @@ export function weekendDays(today = calendarToday()): [number, number] {
  * when it lands on the coming Saturday or Sunday. Anything further out has no
  * tag, so the tags stay rare enough to mean something.
  */
-export function eventTag(event: EventListing): string {
+export function eventTag(event: EventSummary): string {
   if (event.inDays === 0) return 'Tonight';
   if (event.inDays === 1) return 'Tomorrow';
   return isThisWeekend(event) ? 'This Weekend' : '';
 }
 
-export function eventDay(event: EventListing, year = false): string {
+export function eventDay(event: EventSummary, year = false): string {
   if (event.runUntil) return runDays(event.date, event.runUntil);
   const starts = event.startsAt ? new Date(event.startsAt) : null;
   const differs = starts && starts.getFullYear() !== new Date().getFullYear();
@@ -196,58 +152,24 @@ export function deadlineUrgency(daysLeft: number): Urgency {
   return 'later';
 }
 
-/** Soonest first: events by days away, opportunities by days left. */
-export function soonness(listing: Listing): number {
-  return listing.kind === 'event' ? listing.inDays : listing.daysLeft;
-}
-
-function dateKey(listing: Listing): [number, number] {
-  if (listing.kind === 'opportunity')
-    return [hasDeadline(listing) ? listing.daysLeft : Infinity, 0];
-  return [listing.inDays, listing.startsAt ? Date.parse(listing.startsAt) : 0];
-}
-
-export function bySoonest(a: Listing, b: Listing): number {
-  const [aDay, aTime] = dateKey(a);
-  const [bDay, bTime] = dateKey(b);
-  return (aDay === bDay ? 0 : aDay - bDay) || aTime - bTime;
-}
-
-const NEUTRAL_POPULARITY = 50;
-
-export function byPopularity(a: Listing, b: Listing): number {
-  return (
-    (b.popularity ?? NEUTRAL_POPULARITY) -
-      (a.popularity ?? NEUTRAL_POPULARITY) || bySoonest(a, b)
-  );
-}
-
-export function hasDeadline(opportunity: OpportunityListing): boolean {
+export function hasDeadline(opportunity: OpportunitySummary): boolean {
   return opportunity.deadline.day > 0;
 }
 
-export function closesLine(opportunity: OpportunityListing): string {
+export function closesLine(opportunity: OpportunitySummary): string {
   return hasDeadline(opportunity)
     ? `Closes ${shortDay(opportunity.deadline)}`
     : 'No deadline';
 }
 
 /** One line for when a listing happens or closes. */
-export function whenLine(listing: Listing): string {
+export function whenLine(listing: ListingSummary): string {
   return listing.kind === 'event'
     ? `${eventDay(listing)}, ${listing.time}`
     : closesLine(listing);
 }
 
-const COMING_SOON_DAYS = 30;
-
-export function isComingSoon(listing: Listing): boolean {
-  if (listing.kind === 'event')
-    return listing.inDays >= 0 && listing.inDays <= COMING_SOON_DAYS;
-  return hasDeadline(listing) && listing.daysLeft >= 0;
-}
-
-export function isThisWeekend(event: EventListing): boolean {
+export function isThisWeekend(event: EventSummary): boolean {
   const [saturday, sunday] = weekendDays();
   return event.inDays >= saturday && event.inDays <= sunday;
 }
@@ -259,14 +181,14 @@ export interface UrgencyLabel {
 
 const CLOSING_LABEL_DAYS = 7;
 
-function eventUrgencyLabel(event: EventListing): UrgencyLabel | null {
+function eventUrgencyLabel(event: EventSummary): UrgencyLabel | null {
   const text = eventTag(event);
   if (!text) return null;
   return { text, urgency: event.inDays === 0 ? 'now' : 'soon' };
 }
 
 function closingUrgencyLabel(
-  opportunity: OpportunityListing,
+  opportunity: OpportunitySummary,
 ): UrgencyLabel | null {
   const left = opportunity.daysLeft;
   if (!hasDeadline(opportunity) || left < 0 || left > CLOSING_LABEL_DAYS)
@@ -278,13 +200,13 @@ function closingUrgencyLabel(
   return { text, urgency: deadlineUrgency(left) };
 }
 
-export function isNewToday(listing: Listing, now = Date.now()): boolean {
+export function isNewToday(listing: ListingSummary, now = Date.now()): boolean {
   const listed = Date.parse(listing.listedAt ?? '');
   return Number.isFinite(listed) && now - listed >= 0 && now - listed < DAY_MS;
 }
 
 export function urgencyLabel(
-  listing: Listing,
+  listing: ListingSummary,
   now = Date.now(),
 ): UrgencyLabel | null {
   const timed =

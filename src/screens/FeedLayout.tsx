@@ -17,7 +17,8 @@ import {
   useLocation,
   useSearchParam,
 } from '../lib/router';
-import type { Listing } from '../lib/types';
+import type { FeedPage, ListingSummary, Section } from '../lib/types';
+import { useFeedAt, useSectionItems, type SectionPath } from '../lib/api';
 import { groupByView, type View } from '../lib/views';
 import { FeedSearch } from '../components/FeedSearch';
 import { HeadingCount } from '../components/HeadingCount';
@@ -274,7 +275,7 @@ export function ListingResults({
   items,
   empty,
 }: {
-  items: Listing[];
+  items: ListingSummary[];
   empty?: string;
 }) {
   const paged = usePagedList(items);
@@ -584,4 +585,224 @@ export function MoreFilters({
       )}
     </div>
   );
+}
+
+export type WindowPath = (window: { offset: number; limit: number }) => string;
+
+interface RemoteFeedBodyProps {
+  page: FeedPage;
+  filtered: boolean;
+  noun: [string, string];
+  path: WindowPath;
+  sectionPath: SectionPath;
+  row: (item: ListingSummary) => ReactNode;
+  card: (item: ListingSummary) => ReactNode;
+}
+
+export function RemoteFeedBody({
+  page,
+  filtered,
+  noun,
+  path,
+  sectionPath,
+  row,
+  card,
+}: RemoteFeedBodyProps) {
+  const location = useLocation();
+  if (page.total === 0) return <Empty />;
+  if (filtered)
+    return (
+      <div {...area('results')}>
+        <RemoteResults page={page} path={path} noun={noun[1]} row={row} grid />
+      </div>
+    );
+  const rails = page.sections.filter((s) => !s.view);
+  return (
+    <>
+      {rails.map((rail, position) => (
+        <RemoteLeadRail
+          key={rail.id}
+          rail={rail}
+          noun={noun}
+          card={card}
+          sectionPath={sectionPath}
+          lead={position === 0}
+          className={position === 0 ? 'mt-2 md:mt-10' : 'mt-10 md:mt-16'}
+        />
+      ))}
+      {page.sections
+        .filter((s) => s.view)
+        .map((group) => {
+          const extra = group.total - group.items.length;
+          const view = group.view ?? '';
+          return (
+            <section
+              key={group.id}
+              className="mt-10 md:mt-16"
+              {...area('time_group')}
+              {...context({ view })}
+            >
+              <GroupHeading
+                title={group.title}
+                count={group.total}
+                more={
+                  extra > 0
+                    ? {
+                        label: String(extra),
+                        aria: `${extra} more ${extra === 1 ? noun[0] : noun[1]}`,
+                        href: searchHref(location, {
+                          view,
+                          type: null,
+                          page: null,
+                        }),
+                        onClick: () =>
+                          track('view_more_clicked', { view, hidden: extra }),
+                      }
+                    : undefined
+                }
+              />
+              <TileGrid>
+                {group.items.map((i) => (
+                  <div key={i.id}>{row(i)}</div>
+                ))}
+              </TileGrid>
+            </section>
+          );
+        })}
+    </>
+  );
+}
+
+function RemoteLeadRail({
+  rail,
+  noun,
+  card,
+  sectionPath,
+  lead,
+  className,
+}: {
+  rail: Section;
+  noun: [string, string];
+  card: (item: ListingSummary) => ReactNode;
+  sectionPath: SectionPath;
+  lead: boolean;
+  className: string;
+}) {
+  const [page, setPage] = useState(1);
+  const { items } = useSectionItems(rail, page, RAIL_PAGE, sectionPath);
+  return (
+    <section
+      className={className}
+      {...area('lead_rail')}
+      {...context({ rail: rail.title })}
+    >
+      <GroupHeading title={rail.title} count={rail.total} />
+      <div className="md:hidden">
+        <Rail swipe={lead}>{rail.items.map(card)}</Rail>
+      </div>
+      <div className="hidden md:block">
+        <Rail>{items.map(card)}</Rail>
+        <Pager
+          page={page}
+          pages={Math.ceil(rail.total / RAIL_PAGE)}
+          total={rail.total}
+          noun={noun[1]}
+          onChange={setPage}
+        />
+      </div>
+    </section>
+  );
+}
+
+function RemoteChunk({
+  path,
+  row,
+}: {
+  path: string;
+  row: (item: ListingSummary) => ReactNode;
+}) {
+  const chunk = useFeedAt(path);
+  return (
+    <>
+      {chunk.data?.items.map((i) => (
+        <div key={i.id}>{row(i)}</div>
+      ))}
+    </>
+  );
+}
+
+export function RemoteResults({
+  page,
+  path,
+  noun,
+  row,
+  grid = false,
+}: {
+  page: FeedPage;
+  path: WindowPath;
+  noun: string;
+  row: (item: ListingSummary) => ReactNode;
+  grid?: boolean;
+}) {
+  const phone = useIsPhone();
+  const identity = path({ offset: 0, limit: PAGE_SIZE });
+  const [loaded, setLoaded] = useState({ identity, chunks: 1 });
+  const chunks = loaded.identity === identity ? loaded.chunks : 1;
+  const pages = Math.ceil(page.total / PAGE_SIZE);
+  const current = clampPage(useSearchParam('page'), pages);
+  if (page.total === 0) return <Empty />;
+  const rows = (
+    <>
+      {page.items.map((i) => (
+        <div key={i.id}>{row(i)}</div>
+      ))}
+      {phone &&
+        Array.from({ length: chunks - 1 }, (_, n) => (
+          <RemoteChunk
+            key={n}
+            path={path({ offset: (n + 1) * PAGE_SIZE, limit: PAGE_SIZE })}
+            row={row}
+          />
+        ))}
+    </>
+  );
+  const shown = Math.min(chunks * PAGE_SIZE, page.total);
+  const more =
+    shown < page.total
+      ? (from: Element) => {
+          track(
+            'list_extended',
+            {
+              shown: Math.min(shown + PAGE_SIZE, page.total),
+              total: page.total,
+            },
+            from,
+          );
+          setLoaded({ identity, chunks: chunks + 1 });
+        }
+      : null;
+  return (
+    <>
+      {grid ? <TileGrid>{rows}</TileGrid> : rows}
+      {phone ? (
+        <ScrollMore more={more} />
+      ) : (
+        <Pager
+          page={current}
+          pages={pages}
+          total={page.total}
+          noun={noun}
+          onChange={(p) => setSearchParams({ page: String(p) })}
+        />
+      )}
+    </>
+  );
+}
+
+export function webPageWindow(
+  raw: string | null,
+  phone: boolean,
+): { offset: number; limit: number } {
+  const page = Math.max(1, Number.parseInt(raw ?? '1', 10) || 1);
+  return { offset: phone ? 0 : (page - 1) * PAGE_SIZE, limit: PAGE_SIZE };
 }

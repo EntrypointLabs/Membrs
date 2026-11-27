@@ -8,7 +8,7 @@ import {
 } from '../lib/analytics';
 import { closesLine, eventDay } from '../lib/dates';
 import { paths } from '../lib/router';
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 import { Icon } from './Icon';
 import { Kicker } from './Kicker';
 import { Link } from './Link';
@@ -37,7 +37,7 @@ function photoReady(url: string): Promise<void> {
  * The home page's lead story: a few picks that rotate every six seconds.
  * The text sits below the photo, never on it, so every photo stays readable.
  */
-export function HeroCarousel({ picks }: { picks: Listing[] }) {
+export function HeroCarousel({ picks }: { picks: ListingSummary[] }) {
   const [index, setIndex] = useState(0);
   const [held, setHeld] = useState(false);
   const [stopped, setStopped] = useState(false);

@@ -204,3 +204,106 @@ export interface Taxonomy {
     place: string[];
   };
 }
+
+type SummaryBase = Pick<
+  ListingBase,
+  | 'id'
+  | 'slug'
+  | 'title'
+  | 'category'
+  | 'city'
+  | 'organiser'
+  | 'photo'
+  | 'photoUrl'
+  | 'listedAt'
+> & { blurb?: string };
+
+export type EventSummary = SummaryBase &
+  Pick<
+    EventListing,
+    | 'kind'
+    | 'date'
+    | 'time'
+    | 'startsAt'
+    | 'endsAt'
+    | 'inDays'
+    | 'price'
+    | 'free'
+    | 'mode'
+    | 'runLength'
+    | 'runUntil'
+  >;
+
+export type OpportunitySummary = SummaryBase &
+  Pick<
+    OpportunityListing,
+    | 'kind'
+    | 'deadline'
+    | 'daysLeft'
+    | 'closingSoon'
+    | 'award'
+    | 'remote'
+    | 'mode'
+    | 'sector'
+  >;
+
+export type ListingSummary = EventSummary | OpportunitySummary;
+
+export interface FacetOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+export interface FacetMenu {
+  param: string;
+  label: string;
+  picked: string | null;
+  options: FacetOption[];
+}
+
+export interface Section {
+  id: string;
+  title: string;
+  about?: string;
+  view?: string;
+  tabs?: string[];
+  total: number;
+  items: ListingSummary[];
+}
+
+export interface FeedPage {
+  total: number;
+  items: ListingSummary[];
+  facets: FacetMenu[];
+  sections: Section[];
+}
+
+export interface HomePage {
+  counts: Record<ListingKind, number>;
+  sections: Section[];
+}
+
+export interface CityCount {
+  name: string;
+  country: string;
+  count: number;
+  cover: string;
+}
+
+export interface CatalogueSummary {
+  counts: Record<ListingKind, number>;
+  categories: {
+    kind: ListingKind;
+    name: string;
+    slug: string;
+    count: number;
+    cover: string;
+  }[];
+  cities: CityCount[];
+}
+
+export interface ListingDetail {
+  listing: Listing;
+  similar: ListingSummary[];
+}

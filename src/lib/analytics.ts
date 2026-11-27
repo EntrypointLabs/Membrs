@@ -17,7 +17,7 @@ import {
 } from './preferences';
 import { parseRoute, type Route } from './router';
 import type { Store } from './store';
-import type { ContributeKind, Listing, Place, Promo } from './types';
+import type { ContributeKind, ListingSummary, Place, Promo } from './types';
 import { overlayStore, toastStore, type Overlay } from './ui';
 
 /**
@@ -49,7 +49,7 @@ const API_HOST = '/ingest';
 /** The attribute PostHog's autocapture already reads off clicked elements. */
 const PREFIX = 'data-ph-capture-attribute-';
 
-export type ItemKind = Listing['kind'] | 'place' | 'promo';
+export type ItemKind = ListingSummary['kind'] | 'place' | 'promo';
 
 // A type, not an interface, so it also fits context()'s plain record.
 export type ItemRef = {
@@ -323,7 +323,7 @@ export function contextOf(el: Element | null | undefined): Properties {
 }
 
 export const itemRef = {
-  listing: (l: Listing): ItemRef => ({
+  listing: (l: ListingSummary): ItemRef => ({
     item_kind: l.kind,
     item_id: l.id,
     item_title: l.title,

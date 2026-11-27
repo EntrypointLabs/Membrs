@@ -1,21 +1,25 @@
 import {
   categories,
-  listings,
+  feedPath,
   places as allPlaces,
   taxonomy,
+  useFeed,
+  useSummary,
+  type FeedParams,
 } from '../lib/api';
 import { area, track } from '../lib/analytics';
-import { byPopularity } from '../lib/dates';
-import { paths, useSearchParam, type FeedKind } from '../lib/router';
-import { EVENT_VIEWS, findView, OPPORTUNITY_VIEWS } from '../lib/views';
+import { useIsPhone } from '../lib/media';
+import { paths, useRoute, useSearchParam, type FeedKind } from '../lib/router';
 import { plural, slugify, titleCase } from '../lib/text';
 import { CategoryLabel } from '../components/CategoryLabel';
 import { Link } from '../components/Link';
 import { Photo } from '../components/Photo';
-import { FeedPicker, viewOptions } from '../components/FeedPicker';
+import { FeedPicker } from '../components/FeedPicker';
+import { ListingRow } from '../components/ListingRow';
+import { RemoteGate } from '../components/CatalogueGate';
 import { PageTitle } from '../components/PageTitle';
 import { TitleBar } from '../components/TitleBar';
-import { ListingResults } from './FeedLayout';
+import { RemoteResults, webPageWindow } from './FeedLayout';
 import { NotFoundScreen } from './NotFoundScreen';
 
 /** Big photo tiles, one per category, with the name and a count on the photo. */
@@ -26,6 +30,7 @@ export function CategoryTiles({
   kind: 'event' | 'opportunity';
   limit?: number;
 }) {
+  useSummary();
   const all = categories().filter((c) => c.kind === kind);
   const list = limit
     ? [...all].sort((a, b) => b.count - a.count).slice(0, limit)
@@ -139,36 +144,51 @@ function TypeList({ feed }: { feed: 'places' | 'promos' }) {
 
 export function CategoryScreen({ slug }: { slug: string }) {
   const known = categories().find((c) => c.slug === slug);
-  const all = listings()
-    .filter((l) => slugify(l.category) === slug || l.category === known?.name)
-    .sort(byPopularity);
-  const events = all.filter((l) => l.kind === 'event').length;
-  const kind =
-    known?.kind ?? (events * 2 >= all.length ? 'event' : 'opportunity');
-  const views = kind === 'event' ? EVENT_VIEWS : OPPORTUNITY_VIEWS;
-  const view = findView(views, useSearchParam('view'));
-  const items = view ? all.filter(view.test) : all;
-  const name = known?.name ?? all[0]?.category;
-  if (!name) return <NotFoundScreen />;
+  const route = useRoute();
+  const phone = useIsPhone();
+  const kind = known?.kind === 'place' ? 'all' : (known?.kind ?? 'all');
+  const view = useSearchParam('view');
+  const request: FeedParams = {
+    kind,
+    picks: { type: slug, view },
+    ...webPageWindow(useSearchParam('page'), phone),
+  };
+  const remote = useFeed(request);
+  const page = remote.data;
+  const views = page?.facets.find((f) => f.param === 'view');
+  const matched = page?.facets.find((f) => f.param === 'type')?.picked === slug;
+  const name = known?.name ?? (matched ? page?.items[0]?.category : undefined);
+  if (page && !name) return <NotFoundScreen />;
+  const title = titleCase(name ?? '');
   return (
     <div className="page pt-0 md:pt-16">
       <TitleBar desktop>
         <FeedPicker
-          title={kind === 'event' ? 'Events' : 'Opportunities'}
-          placeholder={titleCase(name)}
-          allLabel={`All ${titleCase(name)}`}
-          sheetTitle={titleCase(name)}
+          title={kind === 'opportunity' ? 'Opportunities' : 'Events'}
+          placeholder={title}
+          allLabel={`All ${title}`}
+          sheetTitle={title}
           typeLabel="Categories"
-          views={viewOptions(views, all)}
+          views={(views?.options ?? []).filter((o) => o.count)}
           types={[]}
-          view={view ? view.id : null}
+          view={views?.picked ?? null}
           type={null}
-          total={all.length}
+          total={page?.total ?? 0}
         />
       </TitleBar>
-      <div {...area('category_listings')}>
-        <ListingResults items={items} />
-      </div>
+      <RemoteGate route={route} remote={remote}>
+        {(loaded) => (
+          <div {...area('category_listings')}>
+            <RemoteResults
+              page={loaded}
+              path={(window) => feedPath({ ...request, ...window })}
+              noun="listings"
+              row={(l) => <ListingRow listing={l} />}
+              grid
+            />
+          </div>
+        )}
+      </RemoteGate>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { XIcon } from 'lucide-react';
 import { track } from '../lib/analytics';
-import { catalogueStore, listings, refreshForReader } from '../lib/api';
+import { catalogueStore, knownListings, refreshForReader } from '../lib/api';
 import { useDialog } from '../lib/focus';
 import { locationChoiceStore, shareLocation } from '../lib/location';
 import { cookieStore } from '../lib/cookies';
@@ -129,7 +129,7 @@ export function OnboardingTour() {
   const overlay = useStore(overlayStore);
   const { status } = useStore(catalogueStore);
   // The tour points at shelves, so it waits for a catalogue that has some.
-  if (status !== 'ready' || !listings().length || !tourDue(overlay))
+  if (status !== 'ready' || !knownListings().length || !tourDue(overlay))
     return null;
   return <Tour />;
 }

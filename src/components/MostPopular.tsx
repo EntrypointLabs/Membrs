@@ -2,7 +2,7 @@ import { area, itemRef, trackItemOpened } from '../lib/analytics';
 import { closesLine, eventDay } from '../lib/dates';
 import { paths } from '../lib/router';
 import { cn } from '../lib/utils';
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 import { Meta } from './ListingCard';
 import { Link } from './Link';
 import { Photo } from './Photo';
@@ -14,7 +14,7 @@ import { cardTags, listingTags } from './Tags';
  * The card is never shorter than the title, so a short list cannot leave the
  * title hanging below it.
  */
-export function MostPopular({ items }: { items: Listing[] }) {
+export function MostPopular({ items }: { items: ListingSummary[] }) {
   if (!items.length) return null;
   return (
     <aside
@@ -42,7 +42,7 @@ export function RankedList({
   items,
   className = '',
 }: {
-  items: Listing[];
+  items: ListingSummary[];
   className?: string;
 }) {
   return (

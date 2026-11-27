@@ -1,29 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { catalogueCities, countryOfCity, nearbyPlaceOf } from './location';
-import { eventListing, opportunityListing } from './testing';
+import { countryOfCity, nearbyPlaceOf } from './location';
 
-const POOL = [
-  eventListing({ id: 'a', city: 'Nairobi', country: 'KE' }),
-  eventListing({ id: 'b', city: 'Nairobi', country: 'KE' }),
-  opportunityListing({ id: 'c', city: 'Accra', country: 'GH' }),
+const CITIES = [
+  { name: 'Nairobi', country: 'KE', count: 2, cover: '' },
+  { name: 'Accra', country: 'GH', count: 1, cover: '' },
 ];
 
 describe('location', () => {
-  it('lists each city in the catalogue once', () => {
-    expect(catalogueCities(POOL)).toEqual(['Nairobi', 'Accra']);
+  it('names the country the catalogue lists a city under', () => {
+    expect(countryOfCity('Nairobi', CITIES)).toBe('KE');
+    expect(countryOfCity('Lisbon', CITIES)).toBe('');
   });
 
-  it('reads a city country from its listings', () => {
-    expect(countryOfCity('Nairobi', POOL)).toBe('KE');
-    expect(countryOfCity('Lisbon', POOL)).toBe('');
-  });
-
-  it('places a reader in the nearest city the catalogue has', () => {
-    expect(nearbyPlaceOf([-1.28, 36.81], POOL)).toMatchObject({
+  it('settles on the nearest catalogue city and the ones around it', () => {
+    expect(nearbyPlaceOf([-1.28, 36.81], CITIES)).toMatchObject({
       city: 'Nairobi',
       country: 'KE',
     });
-    expect(nearbyPlaceOf([-1.28, 36.81], POOL)?.around).toContain('Nairobi');
-    expect(nearbyPlaceOf([51.5, -0.12], POOL)).toBeNull();
+    expect(nearbyPlaceOf([-1.28, 36.81], CITIES)?.around).toContain('Nairobi');
+    expect(nearbyPlaceOf([51.5, -0.12], CITIES)).toBeNull();
   });
 });

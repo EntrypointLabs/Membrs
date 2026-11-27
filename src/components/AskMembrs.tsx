@@ -17,7 +17,12 @@ import {
   track,
   trackItemOpened,
 } from '../lib/analytics';
-import { categories, feed, listingByKey } from '../lib/api';
+import {
+  categories,
+  knownListings,
+  listingByKey,
+  useListingsByIds,
+} from '../lib/api';
 import {
   ASSISTANT_UNAVAILABLE,
   ask,
@@ -58,7 +63,6 @@ import { cityStore, subscriptionStore } from '../lib/preferences';
 import { paths, useRoute } from '../lib/router';
 import { createStore, useStore } from '../lib/store';
 import { plural, titleCase } from '../lib/text';
-import type { Listing } from '../lib/types';
 import { closeOverlay, openDigest, openOverlay, overlayStore } from '../lib/ui';
 import { cn } from '../lib/utils';
 import { EmailStep, TermsConsent } from './EmailStep';
@@ -282,9 +286,7 @@ function Typing() {
 }
 
 function ListingCards({ ids }: { ids: string[] }) {
-  const found = ids
-    .map((id) => listingByKey(id))
-    .filter((l): l is Listing => Boolean(l));
+  const found = useListingsByIds(ids);
   if (!found.length) return null;
   return (
     <div className="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 *:w-[min(220px,62%)] *:shrink-0 *:snap-start">
@@ -559,8 +561,9 @@ function useStarterPhotos(picks: QuickQuestion[], city: string) {
     const used = new Set<string>();
     return kinds.split(',').map((kind) => {
       if (kind !== 'event' && kind !== 'opportunity') return null;
-      const pool = feed(kind).filter(
-        (listing) => listing.photoUrl && !used.has(listing.id),
+      const pool = knownListings().filter(
+        (listing) =>
+          listing.kind === kind && listing.photoUrl && !used.has(listing.id),
       );
       const found =
         pool.find((listing) => listing.city === city) ?? pool[0] ?? null;

@@ -3,38 +3,39 @@ import { shown } from '../lib/sections';
 import { useEffect, useState } from 'react';
 import { area, context, track } from '../lib/analytics';
 import {
-  alternated,
-  closingSoon,
-  forYou,
   forYouStore,
-  heroPicks,
+  homePath,
   launchCities,
-  listings,
-  attendable,
-  mostPopular,
   places,
   promos,
-  within,
   readerCountryStore,
+  useHome,
+  useSectionItems,
+  windowedPath,
+  type HomeParams,
+  type SectionPath,
 } from '../lib/api';
-import { chooseCity, readGrantedLocation } from '../lib/location';
+import { chooseCity, nearbyStore, readGrantedLocation } from '../lib/location';
 import { africanCountry } from '../lib/africa';
-import { distinctFamilies } from '../lib/families';
 import { useIsPhone } from '../lib/media';
-import { justAdded } from '../lib/filters';
-import { placement } from '../lib/placement';
 import { openStateNow } from '../lib/hours';
 import { cityStore, subscriptionStore } from '../lib/preferences';
-import { paths } from '../lib/router';
+import { paths, useRoute } from '../lib/router';
 import { useStore } from '../lib/store';
+import { homeParamsOf, type HomeTabs, type Reader } from '../lib/homeParams';
 import { openOverlay } from '../lib/ui';
-import type { Listing, OpportunityListing } from '../lib/types';
+import { viewedStore } from '../lib/viewed';
+import type {
+  HomePage,
+  ListingKind,
+  OpportunitySummary,
+  Section,
+} from '../lib/types';
 import { DeadlineRow } from '../components/DeadlineRow';
 import { FeedSearch } from '../components/FeedSearch';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { UseMyLocation } from '../components/UseMyLocation';
-import { HomeShelves, LocalShelves, useShelfInputs } from './HomeShelves';
-import { localShelves } from '../lib/homeShelves';
+import { HomeShelves, LocalShelves } from './HomeShelves';
 import { PagedGrid } from '../components/PagedGrid';
 import {
   HOME_LIST,
@@ -49,11 +50,13 @@ import { Icon } from '../components/Icon';
 import { Link } from '../components/Link';
 import { ListingCard } from '../components/ListingCard';
 import { MostPopular } from '../components/MostPopular';
-import { Pager, pageOf } from '../components/Pager';
+import { Pager } from '../components/Pager';
 import { PlaceCard } from '../components/PlaceCard';
 import { PlaceRow } from '../components/PlaceRow';
 import { PromoCard } from '../components/PromoCard';
 import { Rail } from '../components/Rail';
+import { RemoteGate } from '../components/CatalogueGate';
+import { SectionGrid } from '../components/SectionGrid';
 import { SectionHeader } from '../components/SectionHeader';
 import { Select } from '../components/Select';
 import { Tabs } from '../components/Tabs';
@@ -61,11 +64,11 @@ import { TitleBar } from '../components/TitleBar';
 import { CategoryTiles } from './CategoriesScreen';
 import { Empty } from './FeedLayout';
 import { cn } from '../lib/utils';
-import { PAGE_SIZE, POPULAR_SIZE } from '../lib/config';
+import { PAGE_SIZE } from '../lib/config';
 
 type Range = 'week' | 'month';
 
-type KindFilter = 'all' | Listing['kind'];
+type KindFilter = 'all' | ListingKind;
 
 const KIND_TABS: { value: KindFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -73,16 +76,70 @@ const KIND_TABS: { value: KindFilter; label: string }[] = [
   { value: 'opportunity', label: 'Opportunities' },
 ];
 
-const POPULAR_PANEL = 10;
+const WEB_RAILS = new Set([
+  'hero',
+  'popularPanel',
+  'popular',
+  'justAdded',
+  'week',
+  'closing',
+]);
+const PHONE_RAILS = new Set(['soon', 'popular', 'justAdded', 'week', 'month']);
+const LOCAL_SHELVES = new Set(['nearby', 'country']);
+
+type Tabbed = HomeTabs;
+
+function useHomeParams(phone: boolean, tabs: Tabbed): HomeParams {
+  const reader: Reader = {
+    city: useStore(cityStore),
+    country: useStore(readerCountryStore),
+    nearby: useStore(nearbyStore),
+    viewed: useStore(viewedStore),
+  };
+  return homeParamsOf(phone, reader, tabs);
+}
+
+export interface HomeSections {
+  find: (id: string) => Section | undefined;
+  local: Section[];
+  shelves: Section[];
+  pathOf: SectionPath;
+}
+
+function homeSections(
+  page: HomePage,
+  shownPath: string,
+  rails: ReadonlySet<string>,
+): HomeSections {
+  return {
+    find: (id) => page.sections.find((s) => s.id === id),
+    local: page.sections.filter((s) => LOCAL_SHELVES.has(s.id)),
+    shelves: page.sections.filter(
+      (s) => !rails.has(s.id) && !LOCAL_SHELVES.has(s.id),
+    ),
+    pathOf: (window) => windowedPath(shownPath, window),
+  };
+}
 
 export function HomeScreen() {
   const city = useStore(cityStore);
-  useStore(readerCountryStore);
   useLocationOnVisit();
   const phone = useIsPhone();
+  const route = useRoute();
+  const [tabs, setTabs] = useState<Tabbed>({
+    popular: 'all',
+    range: 'week',
+    weekKind: 'all',
+  });
+  const params = useHomeParams(phone, tabs);
+  const remote = useHome(params);
+  const shownPath = remote.shownPath ?? homePath(params);
   const toolbar = <MobileTop city={city} />;
   const filters = useHomeFilters(toolbar);
-  const listed = listings().length > 0;
+  const counts = remote.data?.counts;
+  const listed = counts
+    ? counts.event + counts.opportunity > 0
+    : remote.status !== 'ready';
 
   return (
     <div className="page">
@@ -107,42 +164,39 @@ export function HomeScreen() {
           {filters.results}
           <CategoriesSection />
         </>
-      ) : phone ? (
-        <PhoneSections />
       ) : (
-        <WebSections />
+        <RemoteGate route={route} remote={remote}>
+          {(page) =>
+            phone ? (
+              <PhoneSections
+                sections={homeSections(page, shownPath, PHONE_RAILS)}
+              />
+            ) : (
+              <WebSections
+                sections={homeSections(page, shownPath, WEB_RAILS)}
+                tabs={tabs}
+                onTabs={setTabs}
+              />
+            )
+          }
+        </RemoteGate>
       )}
     </div>
   );
 }
 
-function WebSections() {
+function WebSections({
+  sections,
+  tabs,
+  onTabs,
+}: {
+  sections: HomeSections;
+  tabs: Tabbed;
+  onTabs: (tabs: Tabbed) => void;
+}) {
   const country = useStore(readerCountryStore);
-  const [popularKind, setPopularKind] = useState<KindFilter>('all');
-  const [range, setRange] = useState<Range>('week');
-  const [weekKind, setWeekKind] = useState<KindFilter>('all');
-  const picks = heroPicks(3);
-  const panel = distinctFamilies(
-    mostPopular(POPULAR_PANEL * 2, idsOf(picks)),
-    picks,
-    POPULAR_PANEL,
-  );
-  const page = placement([...picks, ...panel]);
-  const popular = page.take(
-    distinctFamilies(
-      mostPopular(POPULAR_SIZE * 2, new Set(), popularKind),
-      page.placed(),
-    ),
-    POPULAR_SIZE,
-  );
-  const fresh = page.take(
-    distinctFamilies(justAdded(attendable()), page.placed()),
-    POPULAR_SIZE,
-  );
-  const local = localShelves(useShelfInputs(page.placed()));
-  page.take(local.flatMap((shelf) => shelf.items));
-  const closing = page.take(closingSoon());
-  const week = page.take(within(range === 'week' ? 7 : 30, weekKind));
+  const picks = sections.find('hero')?.items ?? [];
+  const panel = sections.find('popularPanel')?.items ?? [];
   return (
     <>
       {(picks.length > 0 || panel.length > 0) && (
@@ -163,92 +217,88 @@ function WebSections() {
         </section>
       )}
       <PopularSection
-        items={popular}
-        kind={popularKind}
-        onKind={setPopularKind}
+        section={sections.find('popular')}
+        pathOf={sections.pathOf}
+        kind={tabs.popular}
+        onKind={(popular) => onTabs({ ...tabs, popular })}
       />
-      <JustAddedSection items={fresh} />
-      <LocalShelves key={country} shelves={local} />
+      <JustAddedSection
+        section={sections.find('justAdded')}
+        pathOf={sections.pathOf}
+      />
+      <LocalShelves
+        key={country}
+        shelves={sections.local}
+        pathOf={sections.pathOf}
+      />
       <ThisWeek
-        items={week}
-        range={range}
-        onRange={setRange}
-        kind={weekKind}
-        onKind={setWeekKind}
+        section={sections.find('week')}
+        pathOf={sections.pathOf}
+        range={tabs.range}
+        onRange={(range) => onTabs({ ...tabs, range })}
+        kind={tabs.weekKind}
+        onKind={(weekKind) => onTabs({ ...tabs, weekKind })}
       />
-      <ClosingSoon items={closing} />
-      <LaterSections shown={page.placed()} />
+      <ClosingSoon
+        section={sections.find('closing')}
+        pathOf={sections.pathOf}
+      />
+      <LaterSections sections={sections} />
     </>
   );
 }
 
-function PhoneSections() {
+function PhoneSections({ sections }: { sections: HomeSections }) {
   const country = useStore(readerCountryStore);
   const matches = useStore(forYouStore);
   const subscribed = useStore(subscriptionStore);
-  const page = placement();
-  const soon = page.take(
-    alternated<Listing>(within(3, 'event'), closingSoon()),
-    HOME_LIST,
-  );
-  const popular = page.take(
-    distinctFamilies(mostPopular(HOME_LIST * 3), page.placed()),
-    HOME_LIST,
-  );
-  const fresh = page.take(
-    distinctFamilies(justAdded(attendable()), page.placed()),
-    HOME_LIST,
-  );
-  const local = localShelves(useShelfInputs(page.placed()));
-  page.take(local.flatMap((shelf) => shelf.items.slice(0, HOME_LIST)));
-  const picked = subscribed ? page.take(forYou(matches), HOME_LIST) : [];
-  const week = page.take(within(7), HOME_LIST);
-  const month = page.take(within(30), HOME_LIST);
+  const list = (id: string) => sections.find(id);
   return (
     <>
-      <HappeningSoon items={soon} />
-      <PhoneList title="Popular" items={popular} />
-      <PhoneList title="Just Added" items={fresh} />
-      <LocalShelves key={country} shelves={local} />
+      <HappeningSoon section={list('soon')} />
+      <PhoneList title="Popular" items={list('popular')?.items ?? []} />
+      <PhoneList title="Just Added" items={list('justAdded')?.items ?? []} />
+      <LocalShelves
+        key={country}
+        shelves={sections.local}
+        pathOf={sections.pathOf}
+      />
       {subscribed && (
         <PhoneList
           title="For You"
-          items={picked}
+          items={matches.slice(0, HOME_LIST)}
+          count={matches.length}
           href={paths.forYou()}
           link="See all"
         />
       )}
       <PhoneList
         title="This Week"
-        items={week}
+        items={list('week')?.items ?? []}
         href={paths.feed('events')}
         link="Events"
         tour="week"
       />
       <PhoneList
         title="This Month"
-        items={month}
+        items={list('month')?.items ?? []}
         href={paths.feed('opportunities')}
         link="Opportunities"
       />
-      <LaterSections shown={page.placed()} />
+      <LaterSections sections={sections} />
     </>
   );
 }
 
-function LaterSections({ shown: placed }: { shown: Listing[] }) {
+function LaterSections({ sections }: { sections: HomeSections }) {
   return (
     <>
       {shown('places') && <PlacesToGo />}
       {shown('promos') && <PromosSection />}
       <CategoriesSection />
-      <HomeShelves shown={placed} />
+      <HomeShelves shelves={sections.shelves} pathOf={sections.pathOf} />
     </>
   );
-}
-
-function idsOf(listings: Listing[]): Set<string> {
-  return new Set(listings.map((l) => l.id));
 }
 
 function MobileTop({ city }: { city: string }) {
@@ -331,16 +381,16 @@ function withCity<T extends { value: string; label: string }>(
     : [...options, { value: city, label: city }];
 }
 
-function HappeningSoon({ items: all }: { items: Listing[] }) {
-  const items = all.slice(0, HOME_LIST);
-  if (!items.length) return null;
+function HappeningSoon({ section }: { section: Section | undefined }) {
+  const items = section?.items.slice(0, HOME_LIST) ?? [];
+  if (!section || !items.length) return null;
   return (
     <section className="mt-6 md:hidden" {...area('happening_soon')}>
       <PhoneSectionHead
         title="Happening Soon"
         href={paths.feed('events')}
         link="Events"
-        count={all.length}
+        count={section.total}
       />
       <Rail swipe>
         {items.map((l) => (
@@ -352,21 +402,23 @@ function HappeningSoon({ items: all }: { items: Listing[] }) {
 }
 
 function PopularSection({
-  items,
+  section,
+  pathOf,
   kind,
   onKind,
 }: {
-  items: Listing[];
+  section: Section | undefined;
+  pathOf: SectionPath;
   kind: KindFilter;
   onKind: (kind: KindFilter) => void;
 }) {
   const [page, setPage] = useState(1);
-  if (!items.length && kind === 'all') return null;
+  if (!section || (!section.total && kind === 'all')) return null;
   return (
     <section className="mt-[clamp(140px,11vw,200px)]" {...area('popular')}>
       <SectionHeader
         title="Popular"
-        count={items.length}
+        count={section.total}
         actions={
           <Tabs
             label="Show"
@@ -379,8 +431,9 @@ function PopularSection({
           />
         }
       />
-      <PagedGrid
-        items={items}
+      <SectionGrid
+        section={section}
+        pathOf={pathOf}
         page={page}
         onPage={setPage}
         render={(l) => <ListingCard key={l.id} listing={l} mixed />}
@@ -389,14 +442,21 @@ function PopularSection({
   );
 }
 
-function JustAddedSection({ items }: { items: Listing[] }) {
+function JustAddedSection({
+  section,
+  pathOf,
+}: {
+  section: Section | undefined;
+  pathOf: SectionPath;
+}) {
   const [page, setPage] = useState(1);
-  if (!items.length) return null;
+  if (!section?.total) return null;
   return (
     <section className="mt-[clamp(140px,11vw,200px)]" {...area('just_added')}>
-      <SectionHeader title="Just Added" count={items.length} />
-      <PagedGrid
-        items={items}
+      <SectionHeader title="Just Added" count={section.total} />
+      <SectionGrid
+        section={section}
+        pathOf={pathOf}
         page={page}
         onPage={setPage}
         render={(l) => <ListingCard key={l.id} listing={l} mixed />}
@@ -406,21 +466,27 @@ function JustAddedSection({ items }: { items: Listing[] }) {
 }
 
 function ThisWeek({
-  items,
+  section,
+  pathOf,
   range,
   onRange,
   kind,
   onKind,
 }: {
-  items: Listing[];
+  section: Section | undefined;
+  pathOf: SectionPath;
   range: Range;
   onRange: (range: Range) => void;
   kind: KindFilter;
   onKind: (kind: KindFilter) => void;
 }) {
   const [page, setPage] = useState(1);
-  const pages = Math.ceil(items.length / PAGE_SIZE);
-  if (!items.length && kind === 'all' && range === 'week') return null;
+  const empty: Section = { id: 'week', title: '', total: 0, items: [] };
+  const shownSection = section ?? empty;
+  const { items } = useSectionItems(shownSection, page, PAGE_SIZE, pathOf);
+  const total = shownSection.total;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (!total && kind === 'all' && range === 'week') return null;
   return (
     <section
       className="mt-16 hidden md:mt-[clamp(140px,11vw,200px)] md:block"
@@ -445,7 +511,7 @@ function ThisWeek({
                 </button>
               ))}
             </span>
-            <HeadingCount count={items.length} />
+            <HeadingCount count={total} />
           </h2>
         </div>
         <div>
@@ -462,26 +528,29 @@ function ThisWeek({
       </header>
       <div data-tour="week">
         <Rail>
-          {pageOf(items, page, PAGE_SIZE).map((l) => (
+          {items.map((l) => (
             <ListingCard key={l.id} listing={l} mixed />
           ))}
         </Rail>
       </div>
-      <Pager
-        page={page}
-        pages={pages}
-        total={items.length}
-        onChange={setPage}
-      />
+      <Pager page={page} pages={pages} total={total} onChange={setPage} />
     </section>
   );
 }
 
-function ClosingSoon({ items: listed }: { items: Listing[] }) {
+function ClosingSoon({
+  section,
+  pathOf,
+}: {
+  section: Section | undefined;
+  pathOf: SectionPath;
+}) {
   const [page, setPage] = useState(1);
-  const items = listed as OpportunityListing[];
-  const pages = Math.ceil(items.length / HOME_LIST);
-  if (!items.length) return null;
+  const empty: Section = { id: 'closing', title: '', total: 0, items: [] };
+  const { items } = useSectionItems(section ?? empty, page, HOME_LIST, pathOf);
+  const total = section?.total ?? 0;
+  const pages = Math.ceil(total / HOME_LIST);
+  if (!total) return null;
   return (
     <section
       data-tour="closing"
@@ -492,7 +561,7 @@ function ClosingSoon({ items: listed }: { items: Listing[] }) {
         <div className="lg:top-bar self-start lg:sticky">
           <h2 className="text-[44px] font-semibold tracking-tight">
             Closing Soon
-            <HeadingCount count={items.length} />
+            <HeadingCount count={total} />
           </h2>
           <Link
             href={paths.feed('opportunities')}
@@ -514,16 +583,11 @@ function ClosingSoon({ items: listed }: { items: Listing[] }) {
         </div>
         <div>
           <div className="border-line border-t">
-            {pageOf(items, page, HOME_LIST).map((l) => (
+            {(items as OpportunitySummary[]).map((l) => (
               <DeadlineRow key={l.id} listing={l} />
             ))}
           </div>
-          <Pager
-            page={page}
-            pages={pages}
-            total={items.length}
-            onChange={setPage}
-          />
+          <Pager page={page} pages={pages} total={total} onChange={setPage} />
         </div>
       </div>
     </section>

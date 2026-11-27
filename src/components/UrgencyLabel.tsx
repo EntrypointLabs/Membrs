@@ -1,5 +1,5 @@
 import { urgencyLabel } from '../lib/dates';
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 
 export const URGENCY_COLOR = {
   now: 'text-urgent',
@@ -7,7 +7,7 @@ export const URGENCY_COLOR = {
   later: 'text-accent',
 } as const;
 
-export function UrgencyLabel({ listing }: { listing: Listing }) {
+export function UrgencyLabel({ listing }: { listing: ListingSummary }) {
   const label = urgencyLabel(listing);
   if (!label) return null;
   return (

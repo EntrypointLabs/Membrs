@@ -1,43 +1,46 @@
 import type { ReactNode } from 'react';
 import { area, context } from '../lib/analytics';
-import { catalogueStore, loadCatalogue } from '../lib/api';
 import { GRID_COLUMNS } from '../lib/config';
 import type { Route } from '../lib/router';
 import { servedListing, type ServedListing } from '../lib/served';
-import { useStore } from '../lib/store';
+import type { ResourceStatus } from '../lib/resources';
 import { Button } from './ui/button';
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from './ui/empty';
 import { Skeleton } from './ui/skeleton';
 
 export const CATALOGUE_FAILED = 'The listings could not load.';
 
-/**
- * Holds a screen back until the catalogue has loaded, so no screen renders
- * from an empty catalogue and shows zero counts or bare shelves. While it
- * loads the reader sees the screen's shape; if it fails for good, one calm
- * message with a Retry.
- */
-export function CatalogueGate({
+interface Loadable<T> {
+  status: ResourceStatus;
+  data: T | undefined;
+  retry: () => void;
+}
+
+export function RemoteGate<T>({
   route,
+  remote,
   children,
 }: {
   route: Route;
-  children: ReactNode;
+  remote: Loadable<T>;
+  children: (data: T) => ReactNode;
 }) {
-  const { status } = useStore(catalogueStore);
-  if (status === 'ready') return children;
-  const failed = status === 'failed';
+  if (remote.data !== undefined) return children(remote.data);
+  const failed = remote.status === 'failed';
   const served = route.page === 'listing' ? servedListing(route.id) : null;
-  if (served) return <ServedListingPage listing={served} failed={failed} />;
-  if (failed) return <CatalogueFailed />;
+  if (served)
+    return (
+      <ServedListingPage
+        listing={served}
+        failed={failed}
+        retry={remote.retry}
+      />
+    );
+  if (failed) return <CatalogueFailed retry={remote.retry} />;
   return <CatalogueSkeleton route={route} />;
 }
 
-function retry() {
-  void loadCatalogue();
-}
-
-function RetryButton() {
+function RetryButton({ retry }: { retry: () => void }) {
   return (
     <Button
       type="button"
@@ -51,7 +54,7 @@ function RetryButton() {
   );
 }
 
-export function CatalogueFailed() {
+export function CatalogueFailed({ retry }: { retry: () => void }) {
   return (
     <div className="page" {...area('catalogue_gate')}>
       <Empty role="alert" className="min-h-[50vh]">
@@ -61,7 +64,7 @@ export function CatalogueFailed() {
           </EmptyTitle>
         </EmptyHeader>
         <EmptyContent>
-          <RetryButton />
+          <RetryButton retry={retry} />
         </EmptyContent>
       </Empty>
     </div>
@@ -74,9 +77,11 @@ const DETAIL_TITLE =
 function ServedListingPage({
   listing,
   failed,
+  retry,
 }: {
   listing: ServedListing;
   failed: boolean;
+  retry: () => void;
 }) {
   return (
     <div className="page pt-7 md:pt-10" {...area('catalogue_gate')}>
@@ -87,7 +92,7 @@ function ServedListingPage({
       {failed ? (
         <div role="alert" className="mt-10 flex flex-wrap items-center gap-4">
           <p className="text-fg-3">The rest of this listing could not load.</p>
-          <RetryButton />
+          <RetryButton retry={retry} />
         </div>
       ) : (
         <Skeleton className="rounded-photo mt-10 aspect-[2/1]" />
