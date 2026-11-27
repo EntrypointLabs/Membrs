@@ -165,16 +165,18 @@ export function viewFacet<T extends Listing>(
   };
 }
 
-function namesACity(listing: Listing): boolean {
-  const city = listing.city.trim();
-  if (!city) return false;
-  return !listing.country || city !== countryName(listing.country);
-}
-
+/**
+ * Listings are grouped by the state or region they sit in, so a reader who has
+ * never heard of Ife still finds it under Osun. The card keeps the city.
+ * The param stays `city` so links already shared keep their place in the URL.
+ */
 export const cityFacet: Facet = {
   param: 'city',
-  label: 'City',
-  values: (l) => (namesACity(l) ? [l.city.trim()] : []),
+  label: 'Location',
+  values: (l) => {
+    const state = l.state?.trim();
+    return state ? [state] : [];
+  },
   name: (value) => value,
 };
 
