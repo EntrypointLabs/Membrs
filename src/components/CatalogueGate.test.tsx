@@ -1,35 +1,25 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CATALOGUE_FAILED, RemoteGate } from './CatalogueGate';
+import { keepServedListing } from '../lib/served';
 
-async function gate() {
-  vi.resetModules();
-  vi.stubEnv('VITE_API_BASE', 'http://api.test/api');
-  const api = await import('../lib/api');
-  const served = await import('../lib/served');
-  const { CatalogueGate, CATALOGUE_FAILED } = await import('./CatalogueGate');
-  return { api, served, CatalogueGate, CATALOGUE_FAILED };
-}
+afterEach(cleanup);
 
-beforeEach(() => {
-  vi.unstubAllEnvs();
-  vi.unstubAllGlobals();
-});
+const loading = {
+  status: 'loading' as const,
+  data: undefined,
+  retry: () => {},
+};
+const failed = { status: 'failed' as const, data: undefined, retry: () => {} };
 
-afterEach(() => {
-  cleanup();
-  vi.unstubAllEnvs();
-  vi.unstubAllGlobals();
-});
-
-describe('CatalogueGate', () => {
-  it('shows the screen shape while loading, never counts or the screen', async () => {
-    const { CatalogueGate } = await gate();
+describe('RemoteGate', () => {
+  it('shows the screen shape while loading, never counts or the screen', () => {
     const html = renderToStaticMarkup(
-      <CatalogueGate route={{ page: 'home' }}>
-        <p>screen</p>
-      </CatalogueGate>,
+      <RemoteGate route={{ page: 'home' }} remote={loading}>
+        {() => <p>screen</p>}
+      </RemoteGate>,
     );
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain('data-slot="skeleton"');
@@ -37,49 +27,29 @@ describe('CatalogueGate', () => {
     expect(html).not.toMatch(/>0</);
   });
 
-  it('shows one failure message with a Retry that loads again', async () => {
-    const { api, CatalogueGate, CATALOGUE_FAILED } = await gate();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))),
-    );
-    await api.loadCatalogue(new Date(), []);
+  it('shows one failure message with a Retry that loads again', () => {
+    const retry = vi.fn();
     const view = render(
-      <CatalogueGate route={{ page: 'home' }}>
-        <p>screen</p>
-      </CatalogueGate>,
+      <RemoteGate route={{ page: 'home' }} remote={{ ...failed, retry }}>
+        {() => <p>screen</p>}
+      </RemoteGate>,
     );
     expect(view.getAllByRole('alert')).toHaveLength(1);
     expect(view.getByRole('alert').textContent).toContain(CATALOGUE_FAILED);
     expect(view.queryByText('screen')).toBeNull();
-
-    const fetch = vi.fn(() =>
-      Promise.resolve(new Response('[]', { status: 200 })),
-    );
-    vi.stubGlobal('fetch', fetch);
-    await act(async () => {
-      fireEvent.click(view.getByRole('button', { name: 'Retry' }));
-      await api.loadCatalogue();
-    });
-    expect(fetch).toHaveBeenCalled();
-    expect(view.getByText('screen')).toBeTruthy();
+    fireEvent.click(view.getByRole('button', { name: 'Retry' }));
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the served title of a listing page when the API is down', async () => {
-    const { api, served, CatalogueGate, CATALOGUE_FAILED } = await gate();
+  it('keeps the served title of a listing page when the API is down', () => {
     const root = document.createElement('div');
     root.innerHTML =
       '<main><h1>Jazz Night</h1><p>Live jazz on the island.</p></main>';
-    served.keepServedListing(root, '/listing/jazz-night');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response('{}', { status: 503 }))),
-    );
-    await api.loadCatalogue(new Date(), []);
+    keepServedListing(root, '/listing/jazz-night');
     const html = renderToStaticMarkup(
-      <CatalogueGate route={{ page: 'listing', id: 'jazz-night' }}>
-        <p>screen</p>
-      </CatalogueGate>,
+      <RemoteGate route={{ page: 'listing', id: 'jazz-night' }} remote={failed}>
+        {() => <p>screen</p>}
+      </RemoteGate>,
     );
     expect(html).toContain('Jazz Night');
     expect(html).toContain('Live jazz on the island.');
@@ -87,25 +57,25 @@ describe('CatalogueGate', () => {
     expect(html).not.toContain(CATALOGUE_FAILED);
 
     const other = renderToStaticMarkup(
-      <CatalogueGate route={{ page: 'listing', id: 'something-else' }}>
-        <p>screen</p>
-      </CatalogueGate>,
+      <RemoteGate
+        route={{ page: 'listing', id: 'something-else' }}
+        remote={failed}
+      >
+        {() => <p>screen</p>}
+      </RemoteGate>,
     );
     expect(other).toContain(CATALOGUE_FAILED);
   });
 
-  it('renders the screen once the catalogue is ready', async () => {
-    const { api, CatalogueGate } = await gate();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response('[]', { status: 200 }))),
-    );
-    await api.loadCatalogue();
+  it('renders the screen with its data once it is in', () => {
     const html = renderToStaticMarkup(
-      <CatalogueGate route={{ page: 'home' }}>
-        <p>screen</p>
-      </CatalogueGate>,
+      <RemoteGate
+        route={{ page: 'home' }}
+        remote={{ status: 'ready', data: 'loaded', retry: () => {} }}
+      >
+        {(data) => <p>{data}</p>}
+      </RemoteGate>,
     );
-    expect(html).toBe('<p>screen</p>');
+    expect(html).toBe('<p>loaded</p>');
   });
 });

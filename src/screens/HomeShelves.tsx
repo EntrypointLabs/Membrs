@@ -1,63 +1,50 @@
 import { Fragment, useCallback, useState } from 'react';
 import { area, context } from '../lib/analytics';
-import { attendable, readerCountryStore } from '../lib/api';
-import { readerPlaceOf } from '../lib/africa';
-import { cityStore } from '../lib/preferences';
-import {
-  homeShelves,
-  type HomeShelf,
-  type ShelfInputs,
-} from '../lib/homeShelves';
-import { nearbyStore, positionStore } from '../lib/location';
-import { useStore } from '../lib/store';
-import type { Listing } from '../lib/types';
-import { viewedStore } from '../lib/viewed';
+import { useSectionItems, type SectionPath } from '../lib/api';
+import { PAGE_SIZE } from '../lib/config';
+import type { Section } from '../lib/types';
 import { ListingCard } from '../components/ListingCard';
-import { PagedGrid } from '../components/PagedGrid';
 import { PhoneList } from '../components/PhoneList';
 import { ScrollMore } from '../components/ScrollMore';
+import { SectionGrid } from '../components/SectionGrid';
 import { SectionHeader } from '../components/SectionHeader';
 import { Tabs } from '../components/Tabs';
 
 const SHELVES_AT_ONCE = 3;
+const ALL_CATEGORIES = 'All';
+const PHONE_SHELF = 5;
 
-export function useShelfInputs(shown: Listing[]): ShelfInputs {
-  const nearby = useStore(nearbyStore);
-  const position = useStore(positionStore);
-  const viewed = useStore(viewedStore);
-  const city = useStore(cityStore);
-  const country = useStore(readerCountryStore);
-  return {
-    pool: attendable(),
-    nearby,
-    picked: readerPlaceOf(city, country),
-    position,
-    viewed: Array.isArray(viewed) ? viewed : [],
-    shown,
-  };
-}
-
-export function LocalShelves({ shelves }: { shelves: HomeShelf[] }) {
+export function LocalShelves({
+  shelves,
+  pathOf,
+}: {
+  shelves: Section[];
+  pathOf: SectionPath;
+}) {
   return (
     <>
       {shelves.map((shelf) => (
         <Fragment key={shelf.id}>
-          <PhoneList
-            title={shelf.title}
-            items={shelf.items}
-            aside={shelf.about}
-            areaName="home_shelf"
+          <PhoneShelf shelf={shelf} pathOf={pathOf} />
+          <Shelf
+            shelf={shelf}
+            pathOf={pathOf}
+            aside
+            className="max-md:hidden"
           />
-          <Shelf shelf={shelf} aside className="max-md:hidden" />
         </Fragment>
       ))}
     </>
   );
 }
 
-export function HomeShelves({ shown }: { shown: Listing[] }) {
-  const inputs = useShelfInputs(shown);
-  const shelves = homeShelves(inputs);
+export function HomeShelves({
+  shelves,
+  pathOf,
+}: {
+  shelves: Section[];
+  pathOf: SectionPath;
+}) {
   const [count, setCount] = useState(SHELVES_AT_ONCE);
   const loadMore = useCallback(
     () => setCount((more) => more + SHELVES_AT_ONCE),
@@ -66,49 +53,51 @@ export function HomeShelves({ shown }: { shown: Listing[] }) {
   return (
     <>
       {shelves.slice(0, count).map((shelf) => (
-        <Shelf key={shelf.id} shelf={shelf} />
+        <Fragment key={shelf.id}>
+          <PhoneShelf shelf={shelf} pathOf={pathOf} />
+          <Shelf shelf={shelf} pathOf={pathOf} className="max-md:hidden" />
+        </Fragment>
       ))}
       <ScrollMore more={count < shelves.length ? loadMore : null} />
     </>
   );
 }
 
-const ALL_CATEGORIES = 'All';
-const MOST_CATEGORY_TABS = 6;
-
-/** The categories with the most listings on a shelf, biggest first, after All. */
-export function categoryTabs(items: Listing[]): string[] {
-  const counts = new Map<string, number>();
-  for (const l of items)
-    counts.set(l.category, (counts.get(l.category) ?? 0) + 1);
-  const biggest = [...counts]
-    .filter(([category]) => category)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, MOST_CATEGORY_TABS)
-    .map(([category]) => category);
-  return [ALL_CATEGORIES, ...biggest];
+function PhoneShelf({
+  shelf,
+  pathOf,
+}: {
+  shelf: Section;
+  pathOf: SectionPath;
+}) {
+  const { items } = useSectionItems(shelf, 1, PHONE_SHELF, pathOf);
+  return (
+    <PhoneList
+      title={shelf.title}
+      items={items}
+      count={shelf.total}
+      aside={shelf.about}
+      areaName="home_shelf"
+    />
+  );
 }
 
-/**
- * One shelf as a grid of cards. With aside, the shelf's place sits on the
- * right of the heading next to any tabs rather than under the title.
- */
 function Shelf({
   shelf,
+  pathOf,
   aside = false,
   className = '',
 }: {
-  shelf: HomeShelf;
+  shelf: Section;
+  pathOf: SectionPath;
   aside?: boolean;
   className?: string;
 }) {
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState(ALL_CATEGORIES);
-  const tabs = shelf.distances ? categoryTabs(shelf.items) : [];
-  const items =
-    category === ALL_CATEGORIES
-      ? shelf.items
-      : shelf.items.filter((l) => l.category === category);
+  const tabs = shelf.tabs?.length ? [ALL_CATEGORIES, ...shelf.tabs] : [];
+  const picked = category === ALL_CATEGORIES ? undefined : category;
+  const { total } = useSectionItems(shelf, page, PAGE_SIZE, pathOf, picked);
   return (
     <section
       className={`mt-12 md:mt-[clamp(140px,11vw,200px)] ${className}`}
@@ -118,7 +107,7 @@ function Shelf({
       <SectionHeader
         title={shelf.title}
         body={aside ? undefined : shelf.about}
-        count={items.length}
+        count={total}
         actions={
           (aside && shelf.about) || tabs.length > 2 ? (
             <>
@@ -140,10 +129,12 @@ function Shelf({
           ) : undefined
         }
       />
-      <PagedGrid
-        items={items}
+      <SectionGrid
+        section={shelf}
+        pathOf={pathOf}
         page={page}
         onPage={setPage}
+        category={picked}
         render={(l) => <ListingCard key={l.id} listing={l} mixed />}
       />
     </section>

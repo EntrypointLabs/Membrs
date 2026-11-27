@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { forYou, interestMatches } from './api';
+import { homePath } from './api';
+import { homeParamsOf, readerNow } from './homeParams';
 import { cityStore, interestsStore, readerLinkStore } from './preferences';
 import { adoptReaderLink, readerLinkOf, withoutReaderLink } from './readerLink';
-import { eventListing, opportunityListing } from './testing';
 
 describe('a personalised link from the email', () => {
   beforeEach(() => {
@@ -56,15 +56,21 @@ describe('a personalised link from the email', () => {
     expect(window.location.search).toBe('?kind=event');
   });
 
-  it('matches listings by kind and category, as the for-you endpoint does', () => {
-    const pool = [
-      eventListing({ id: 'gig', category: 'Music' }),
-      eventListing({ id: 'talk', category: 'Tech' }),
-      opportunityListing({ id: 'grant', category: 'Grants' }),
-      opportunityListing({ id: 'job', category: 'Jobs' }),
-    ];
-    const ids = interestMatches(['Music', 'Grants'], pool);
-    expect(ids.sort()).toEqual(['gig', 'grant']);
-    expect(forYou(ids, pool).map((l) => l.id)).toEqual(['gig', 'grant']);
+  it('sends the linked interests with the first home request', () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/?for=music,grants,beaches&in=Lagos',
+    );
+    adoptReaderLink();
+    const path = homePath(homeParamsOf(false, readerNow()));
+    expect(new URLSearchParams(path.split('?')[1]).get('interests')).toBe(
+      'event:Music,opportunity:Grants',
+    );
+    expect(window.location.search).toBe('');
+  });
+
+  it('keeps the default picks out of a plain visit', () => {
+    expect(homeParamsOf(false, readerNow()).interests).toEqual([]);
   });
 });

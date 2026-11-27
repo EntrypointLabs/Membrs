@@ -1,7 +1,7 @@
 import { itemRef, trackItemOpened } from '../lib/analytics';
 import { deadlineUrgency } from '../lib/dates';
 import { paths } from '../lib/router';
-import type { OpportunityListing } from '../lib/types';
+import type { OpportunitySummary } from '../lib/types';
 import { Kicker } from './Kicker';
 import { Link } from './Link';
 import { URGENCY_COLOR } from './UrgencyLabel';
@@ -10,7 +10,7 @@ import { URGENCY_COLOR } from './UrgencyLabel';
  * A Closing Soon row. The countdown leads in its urgency colour with no box
  * around it: red for three days or less, amber for a week, blue after that.
  */
-export function DeadlineRow({ listing }: { listing: OpportunityListing }) {
+export function DeadlineRow({ listing }: { listing: OpportunitySummary }) {
   return (
     <Link
       href={paths.listing(listing.slug)}

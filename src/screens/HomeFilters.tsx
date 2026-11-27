@@ -1,41 +1,52 @@
-import { type ReactNode, useMemo } from 'react';
-import { feed } from '../lib/api';
-import { kindFacet, SHARED_FACETS } from '../lib/filters';
+import type { ReactNode } from 'react';
+import { feedPath, useFeed, type FeedParams } from '../lib/api';
+import { useIsPhone } from '../lib/media';
 import { paths, setSearchParams } from '../lib/router';
-import type { Listing } from '../lib/types';
-import { ListingCard } from '../components/ListingCard';
+import type { FeedPage, ListingKind } from '../lib/types';
 import { ListingRow } from '../components/ListingRow';
 import {
-  FeedBody,
   FilterLine,
   MoreFilters,
   PhoneFilterBar,
+  RemoteResults,
   Tally,
+  webPageWindow,
 } from './FeedLayout';
 import { useFacetFilters } from './useFacetFilters';
 
-const FACETS = [kindFacet, ...SHARED_FACETS];
-const ON_THE_LINE = new Set(['kind', 'city']);
+const ON_THE_LINE = new Set(['listing', 'state']);
+
+function kindCount(page: FeedPage | undefined, kind: ListingKind): number {
+  const menu = page?.facets.find((f) => f.param === 'listing');
+  return menu?.options.find((o) => o.value === kind)?.count ?? 0;
+}
 
 export function useHomeFilters(toolbar: ReactNode) {
-  const all = useMemo(() => feed(), []);
-  const { menu, items, active, lineFacets, panelFacets, panelActive, cleared } =
-    useFacetFilters(all, FACETS, ON_THE_LINE);
+  const phone = useIsPhone();
+  const url = useFacetFilters(undefined, ON_THE_LINE);
+  const request: FeedParams = {
+    kind: 'all',
+    picks: url.picks,
+    ...(url.requested
+      ? webPageWindow(url.query.get('page'), phone)
+      : { limit: 0 }),
+  };
+  const remote = useFeed(request);
+  const { menu, lineFacets, panelFacets, panelActive, cleared, active } =
+    useFacetFilters(remote.data?.facets, ON_THE_LINE);
   const isFiltered = active.length > 0;
-  const count = (kind: Listing['kind']) =>
-    items.filter((l) => l.kind === kind).length;
   const clear = isFiltered
     ? () => setSearchParams({ ...cleared, page: null })
     : undefined;
   const tallies = (
     <>
       <Tally
-        count={count('event')}
+        count={kindCount(remote.data, 'event')}
         noun={['event', 'events']}
         href={paths.feed('events')}
       />
       <Tally
-        count={count('opportunity')}
+        count={kindCount(remote.data, 'opportunity')}
         noun={['opportunity', 'opportunities']}
         href={paths.feed('opportunities')}
       />
@@ -52,20 +63,18 @@ export function useHomeFilters(toolbar: ReactNode) {
     </>
   );
 
-  const results = isFiltered ? (
-    <div className="mt-10">
-      <FeedBody
-        items={items}
-        views={[]}
-        filtered
-        noun={['listing', 'listings']}
-        keyOf={(l) => l.id}
-        row={(l) => <ListingRow listing={l} />}
-        rails={[]}
-        card={(l) => <ListingCard key={l.id} listing={l} />}
-      />
-    </div>
-  ) : null;
+  const results =
+    isFiltered && remote.data ? (
+      <div className="mt-10">
+        <RemoteResults
+          page={remote.data}
+          path={(window) => feedPath({ ...request, ...window })}
+          noun="listings"
+          row={(l) => <ListingRow listing={l} />}
+          grid
+        />
+      </div>
+    ) : null;
 
   return { line, results };
 }

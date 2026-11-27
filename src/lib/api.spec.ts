@@ -1,207 +1,37 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
-import listingsFixture from '../fixtures/listings.json';
-import type { Listing } from './types';
+import { describe, expect, it } from 'vitest';
+import { categories, homePath, type HomeParams } from './api';
 
-type Api = typeof import('./api');
-let api: Api;
-
-beforeAll(async () => {
-  vi.useFakeTimers({ toFake: ['Date'] });
-  vi.setSystemTime(new Date('2026-11-08T08:00:00'));
-  vi.resetModules();
-  vi.stubEnv('VITE_API_BASE', 'http://api.test/api');
-  vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
-    const body = String(input).endsWith('/v1/listings')
-      ? listingsFixture
-      : { data: { establishments: [], deals: [], total: 0 } };
-    return Promise.resolve(new Response(JSON.stringify(body)));
-  });
-  api = await import('./api');
-  await api.loadCatalogue();
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
-  vi.unstubAllEnvs();
-});
+const READER: HomeParams = {
+  layout: 'web',
+  country: 'NG',
+  state: 'Lagos',
+  viewed: [],
+};
 
 describe('catalogue', () => {
   it('carries the categories', () => {
-    expect(api.categories().length).toBeGreaterThan(0);
+    expect(categories().length).toBeGreaterThan(0);
   });
 });
 
-describe('feeds', () => {
-  it('alternates two lists, letting the longer one run on', () => {
-    expect(api.alternated([1, 3, 5, 7], [2, 4])).toEqual([1, 2, 3, 4, 5, 7]);
+describe('homePath', () => {
+  it('leaves default tabs out, so the first visit and the prefetch share one address', () => {
+    expect(
+      homePath({ ...READER, popular: 'all', range: 'week', weekKind: 'all' }),
+    ).toBe(homePath(READER));
+    expect(homePath(READER)).toBe(
+      '/v1/listings/home?layout=web&country=NG&state=Lagos',
+    );
   });
 
-  it('mixes events and opportunities in the all view', () => {
-    const kinds = api.within(30).map((l) => l.kind);
-    const pairs = Math.min(
-      kinds.filter((k) => k === 'event').length,
-      kinds.filter((k) => k === 'opportunity').length,
-    );
-    expect(kinds.slice(0, pairs * 2)).toEqual(
-      Array.from({ length: pairs * 2 }, (_, i) =>
-        i % 2 ? 'opportunity' : 'event',
+  it('asks for one section page by id and window', () => {
+    expect(
+      homePath(
+        { ...READER, near: 'Ikeja', around: ['Ikeja', 'Yaba'] },
+        { id: 'nearby', offset: 12, limit: 12, category: 'Music' },
       ),
+    ).toBe(
+      '/v1/listings/home?layout=web&country=NG&state=Lagos&near=Ikeja&around=Ikeja%2CYaba&section=nearby&offset=12&limit=12&category=Music',
     );
-  });
-
-  it('filters by kind', () => {
-    expect(api.feed('event').every((l) => l.kind === 'event')).toBe(true);
-  });
-
-  it('sorts closing soon by nearest deadline', () => {
-    const days = api
-      .closingSoon()
-      .map((l) => (l.kind === 'opportunity' ? l.daysLeft : -1));
-    expect(days).toEqual([...days].sort((a, b) => a - b));
-  });
-
-  it('keeps Most Popular clear of what the carousel already shows', () => {
-    const first = api.mostPopular(1)[0]!;
-    expect(
-      api.mostPopular(7, new Set([first.id])).map((l) => l.id),
-    ).not.toContain(first.id);
-  });
-
-  it("orders Popular by each listing's popularity, highest first", () => {
-    const scores = api.mostPopular(10).map((l) => l.popularity ?? 50);
-    expect(scores).toEqual([...scores].sort((a, b) => b - a));
-  });
-
-  it('keeps Popular to one kind when asked', () => {
-    expect(
-      api
-        .mostPopular(10, new Set(), 'opportunity')
-        .every((l) => l.kind === 'opportunity'),
-    ).toBe(true);
-  });
-
-  it('fills Most Popular to the full count when few listings are trending', () => {
-    const count = Math.min(10, api.listings().length);
-    expect(api.mostPopular(count)).toHaveLength(count);
-  });
-
-  it('never suggests the listing you are on', () => {
-    const l = api.listings()[0]!;
-    expect(api.similar(l).map((s) => s.id)).not.toContain(l.id);
-  });
-});
-
-function sample(
-  kind: 'event' | 'opportunity',
-  id: string,
-  days: number,
-  extra: Partial<Listing> = {},
-): Listing {
-  const base = (listingsFixture as Listing[]).find((l) => l.kind === kind)!;
-  const when =
-    kind === 'event'
-      ? { inDays: days, trending: false }
-      : { daysLeft: days, trending: false };
-  return {
-    ...base,
-    ...when,
-    id,
-    title: `Sample ${id}`,
-    listedRank: 0,
-    ...extra,
-  } as Listing;
-}
-
-describe('heroPicks', () => {
-  it('leads with the most popular events in the next sixty days', () => {
-    const pool = [
-      sample('event', 'far-first', 734, { popularity: 99 }),
-      sample('event', 'soon', 5, { popularity: 60 }),
-      sample('event', 'popular', 20, { popularity: 90 }),
-      sample('event', 'later', 40, { popularity: 40 }),
-    ];
-    expect(api.heroPicks(3, pool).map((l) => l.id)).toEqual([
-      'popular',
-      'soon',
-      'later',
-    ]);
-  });
-
-  it('shows one stop of a tour, not every city', () => {
-    const pool = [
-      sample('event', 'atlanta', 5, { title: 'Tyla: The A*POP World Tour' }),
-      sample('event', 'houston', 6, { title: 'Tyla: The A*POP World Tour' }),
-      sample('event', 'wizkid', 7, { title: 'Wizkid Live' }),
-    ];
-    expect(api.heroPicks(3, pool).map((l) => l.id)).toEqual([
-      'atlanta',
-      'wizkid',
-    ]);
-  });
-
-  it('only reaches past sixty days when nothing sooner is left', () => {
-    const pool = [
-      sample('event', 'far', 400),
-      sample('event', 'farther', 734),
-      sample('event', 'near', 10),
-    ];
-    expect(api.heroPicks(3, pool).map((l) => l.id)).toEqual([
-      'near',
-      'far',
-      'farther',
-    ]);
-  });
-
-  it('never picks opportunities', () => {
-    const pool = [sample('opportunity', 'o', 1), sample('event', 'e', 30)];
-    expect(api.heroPicks(3, pool).map((l) => l.id)).toEqual(['e']);
-  });
-});
-
-describe('similar', () => {
-  const shown = sample('event', 'shown', 3, { category: 'Music' });
-
-  it('keeps to the same kind, same category first, soonest first', () => {
-    const pool = [
-      shown,
-      sample('opportunity', 'other-kind', 1, { category: 'Music' }),
-      sample('event', 'other-cat', 2, { category: 'Business' }),
-      sample('event', 'music-late', 30, { category: 'Music' }),
-      sample('event', 'music-soon', 4, { category: 'Music' }),
-    ];
-    expect(api.similar(shown, 3, pool).map((l) => l.id)).toEqual([
-      'music-soon',
-      'music-late',
-      'other-cat',
-    ]);
-  });
-
-  it('puts listings over a year out behind near ones', () => {
-    const pool = [
-      shown,
-      sample('event', 'music-2028', 734, { category: 'Music' }),
-      sample('event', 'business-soon', 6, { category: 'Business' }),
-    ];
-    expect(api.similar(shown, 3, pool).map((l) => l.id)).toEqual([
-      'business-soon',
-      'music-2028',
-    ]);
-  });
-});
-
-describe('forYou', () => {
-  it('keeps only the matched listings, soonest first, alternating kinds', () => {
-    const pool = [
-      sample('event', 'music-late', 9),
-      sample('event', 'film', 1),
-      sample('opportunity', 'grant', 3),
-      sample('event', 'music-soon', 2),
-      sample('opportunity', 'job', 1),
-    ];
-    expect(
-      api.forYou(['music-late', 'grant', 'music-soon'], pool).map((l) => l.id),
-    ).toEqual(['music-soon', 'grant', 'music-late']);
-  });
-
-  it('is empty without matches', () => {
-    expect(api.forYou([])).toEqual([]);
   });
 });

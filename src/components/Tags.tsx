@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { SECTION_TAGS, tagFill } from '../lib/palette';
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 
 type Section = keyof typeof SECTION_TAGS;
 
@@ -55,7 +55,7 @@ export function cardTags(
 }
 
 /** The names a listing is tagged with: its category, and an opportunity's sector. */
-export function listingTags(listing: Listing): string[] {
+export function listingTags(listing: ListingSummary): string[] {
   return listing.kind === 'opportunity' && listing.sector
     ? [listing.category, listing.sector]
     : [listing.category];

@@ -1,15 +1,21 @@
 import { useEffect } from 'react';
 import { area, context, itemRef, track, type Events } from '../lib/analytics';
-import { listingByKey, similar } from '../lib/api';
+import { useListing } from '../lib/api';
 import { downloadIcs, googleCalendarHref } from '../lib/calendar';
 import { eventDay, hasDeadline } from '../lib/dates';
-import { countryName } from '../lib/filters';
-import { navigate, paths } from '../lib/router';
+import { countryName } from '../lib/text';
+import { navigate, paths, useRoute } from '../lib/router';
 import { useStore } from '../lib/store';
 import { openOverlay, overlayStore, toast } from '../lib/ui';
 import { rememberViewed } from '../lib/viewed';
 import { daysLeftLine, distinctParts, slugify, sourceName } from '../lib/text';
-import type { EventListing, Listing, OpportunityListing } from '../lib/types';
+import type {
+  EventListing,
+  Listing,
+  ListingDetail,
+  OpportunityListing,
+} from '../lib/types';
+import { RemoteGate } from '../components/CatalogueGate';
 import { ListingCard, priceKnown, shownPrice } from '../components/ListingCard';
 import { Icon } from '../components/Icon';
 import { Rail } from '../components/Rail';
@@ -36,16 +42,24 @@ import { NotFoundScreen } from './NotFoundScreen';
 import { MembrsMark } from '../components/MembrsMark';
 
 export function ListingScreen({ id }: { id: string }) {
-  const listing = listingByKey(id);
+  const route = useRoute();
+  const remote = useListing(id);
+  if (remote.notFound) return <NotFoundScreen />;
+  return (
+    <RemoteGate route={route} remote={remote}>
+      {(detail) => <ListingPage id={id} detail={detail} />}
+    </RemoteGate>
+  );
+}
+
+function ListingPage({ id, detail }: { id: string; detail: ListingDetail }) {
+  const { listing, similar: more } = detail;
   useEffect(() => {
-    if (!listing) return;
     rememberViewed(listing.id);
     if (listing.slug && id !== listing.slug)
       navigate(paths.listing(listing.slug), { replace: true });
   }, [listing, id]);
-  if (!listing) return <NotFoundScreen />;
   const feed = listing.kind === 'event' ? 'events' : 'opportunities';
-  const more = similar(listing);
   const item = itemRef.listing(listing);
   return (
     <div className="page max-md:pt-0 md:pt-10" {...context(item)}>

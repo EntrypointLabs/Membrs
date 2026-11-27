@@ -24,7 +24,7 @@ A reader who opens a link from their digest lands on a site that does not know t
 
 Chosen option: **"Interests in the URL"**. `for` holds the event and opportunity interest slugs (`slugify` of the labels), `in` holds the city. Listing links carry nothing.
 
-`src/lib/readerLink.ts` reads the link before the first render, puts the labels in `interestsStore`, the city through `adoptReaderCity`, sets `readerLinkStore`, and replaces the address without the two parameters. The home page then leads with a For You shelf, built from `forYou()` over listings matching the picks by kind and category, the same rule `/me/for-you` uses.
+`src/lib/readerLink.ts` reads the link before the first render, puts the labels in `interestsStore`, the city through `adoptReaderCity`, sets `readerLinkStore`, and replaces the address without the two parameters. `src/lib/homeParams.ts` sends those picks as `interests=event:Music,opportunity:Jobs` with the prefetched first `listings/home` request, since `main.tsx` runs the link before the prefetch, and the server answers a `forYou` section ranked by the same function as `/me/for-you`. The For You screen asks for that section windowed when there is no session. Nothing ranks in the client.
 
 The city rides in `in`, not `city`, because `city` is already a feed filter: on the home page it would swap the shelves for a filtered list. `for` is also the opportunity eligibility filter, so it is only consumed when at least one slug names an interest; `?for=NG` is left alone.
 

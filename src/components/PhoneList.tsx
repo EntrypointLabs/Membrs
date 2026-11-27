@@ -1,6 +1,6 @@
 import { area, track } from '../lib/analytics';
 import { titleCase } from '../lib/text';
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 import { HeadingCount } from './HeadingCount';
 import { Icon } from './Icon';
 import { Link } from './Link';
@@ -46,10 +46,12 @@ export function PhoneList({
   link,
   tour,
   aside,
+  count,
   areaName = title.toLowerCase().replace(/\s+/g, '_'),
 }: {
   title: string;
-  items: Listing[];
+  items: ListingSummary[];
+  count?: number;
   href?: string;
   link?: string;
   tour?: string;
@@ -64,7 +66,7 @@ export function PhoneList({
         title={title}
         href={href}
         link={link}
-        count={items.length}
+        count={count ?? items.length}
         aside={aside}
       />
       <div>

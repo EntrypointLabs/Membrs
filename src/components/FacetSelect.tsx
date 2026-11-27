@@ -1,4 +1,4 @@
-import type { FacetOption } from '../lib/filters';
+import type { FacetOption } from '../lib/types';
 import { Select } from './Select';
 
 const NONE = 'all';

@@ -1,4 +1,4 @@
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 import { listingTags, Tags } from './Tags';
 
 /**
@@ -12,7 +12,7 @@ export function Kicker({
   mixed = false,
   className = '',
 }: {
-  listing: Listing;
+  listing: ListingSummary;
   mixed?: boolean;
   className?: string;
 }) {

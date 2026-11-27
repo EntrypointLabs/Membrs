@@ -12,9 +12,9 @@ import {
   categoryBySlug,
   listingByKey,
   searchCataloguePage,
-  searchLocally,
+  useFeed,
+  useSummary,
 } from '../lib/api';
-import { optionsOf, SHARED_FACETS, typeFacet } from '../lib/filters';
 import type { SearchHit } from '../lib/search';
 import { useIsPhone } from '../lib/media';
 import { navigate, parseRoute, paths } from '../lib/router';
@@ -40,8 +40,9 @@ import { SearchTile } from '../components/SearchTile';
 import { FilterChips, MoreFilters } from './FeedLayout';
 import { useFacetFilters } from './useFacetFilters';
 
-const FACETS = [typeFacet, ...SHARED_FACETS];
-const ON_THE_LINE = new Set(['type', 'city']);
+const ON_THE_LINE = new Set(['type', 'state']);
+const SEARCH_START_POPULAR = 8;
+const MOST_SEARCH_IDS = 100;
 
 interface Found {
   query: string;
@@ -71,7 +72,7 @@ export function SearchScreen({ query: raw }: { query: string }) {
   const [text, setText] = useState(raw);
   const [found, setFound] = useState<Found>(() => ({
     query,
-    hits: searchLocally(query),
+    hits: [],
     pages: 1,
     more: false,
     loading: false,
@@ -97,28 +98,34 @@ export function SearchScreen({ query: raw }: { query: string }) {
       current = false;
     };
   }, [query]);
-  const hits = found.query === query ? found.hits : searchLocally(query);
-  const more = found.query === query && found.more;
+  const settled = found.query === query;
+  const hits = settled ? found.hits : [];
+  const more = settled && found.more;
   const phone = useIsPhone();
-  const listingHits = hits.flatMap((h) =>
-    h.kind === 'listing' ? [h.item] : [],
+  const listingIds = hits.flatMap((h) =>
+    h.kind === 'listing' ? [h.item.id] : [],
   );
-  const {
-    picks,
-    menu,
-    chip,
-    items: kept,
-    active,
-  } = useFacetFilters(listingHits, FACETS, ON_THE_LINE);
-  const keptIds = new Set(kept.map((l) => l.id));
+  const url = useFacetFilters(undefined, ON_THE_LINE);
+  const narrowed = useFeed(
+    listingIds.length
+      ? {
+          kind: 'all',
+          ids: listingIds.slice(0, MOST_SEARCH_IDS),
+          picks: url.picks,
+          limit: MOST_SEARCH_IDS,
+        }
+      : null,
+  );
+  const { menu, chip, active, facets } = useFacetFilters(
+    narrowed.data?.facets,
+    ON_THE_LINE,
+  );
+  const keptIds = new Set(narrowed.data?.items.map((l) => l.id));
   const shown =
     !phone && active.length
       ? hits.filter((h) => h.kind === 'listing' && keptIds.has(h.item.id))
       : hits;
-  const chips = FACETS.some(
-    (f) =>
-      picks[f.param] || optionsOf(f, listingHits, FACETS, picks).length > 0,
-  );
+  const chips = facets.some((f) => f.picked || f.options.length > 0);
   const showMore = () => {
     setFound((f) => ({ ...f, loading: true }));
     void searchCataloguePage(query, found.pages).then((next) => {
@@ -194,9 +201,9 @@ export function SearchScreen({ query: raw }: { query: string }) {
             {chips && (
               <FilterChips className="mt-6 hidden flex-wrap md:flex">
                 <MoreFilters align="start" active={active.length}>
-                  {FACETS.map(menu)}
+                  {facets.map(menu)}
                 </MoreFilters>
-                {FACETS.map(chip)}
+                {facets.map(chip)}
               </FilterChips>
             )}
             <p className="text-fg-3 border-line mt-2 border-b pb-5 text-[15px] md:mt-8">
@@ -204,7 +211,7 @@ export function SearchScreen({ query: raw }: { query: string }) {
                 ? `Showing ${shown.length} for “${query}”`
                 : `${plural(shown.length, 'result')} for “${query}”`}
             </p>
-            {shown.length === 0 && (
+            {settled && shown.length === 0 && (
               <p className="text-fg-3 py-20 text-center text-lg">
                 Nothing matched. Try a city, a category or fewer words.
               </p>
@@ -240,9 +247,12 @@ export function SearchScreen({ query: raw }: { query: string }) {
 
 function SearchStart() {
   const recent = useStore(recentSearches);
+  const summary = useSummary().data;
+  const popular =
+    useFeed({ kind: 'all', limit: SEARCH_START_POPULAR }).data?.items ?? [];
   return (
     <div className="mt-2 space-y-10 md:mt-12 md:space-y-12">
-      {searchShelves(recent).map((shelf) => (
+      {searchShelves(recent, summary, popular).map((shelf) => (
         <section
           key={shelf.title}
           {...area('search_shelf')}

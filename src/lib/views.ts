@@ -1,12 +1,5 @@
 import { openStateNow } from './hours';
-import { calendarToday, hasStarted, weekendDays } from './dates';
-import type {
-  EventListing,
-  Listing,
-  OpportunityListing,
-  Place,
-  Promo,
-} from './types';
+import type { Place, Promo } from './types';
 
 /**
  * Time views: the slices each section is grouped into (Tonight, Closing Next
@@ -19,101 +12,6 @@ export interface View<T> {
   label: string;
   test: (item: T) => boolean;
 }
-
-const isEvent = (l: Listing): l is EventListing => l.kind === 'event';
-const isOpportunity = (l: Listing): l is OpportunityListing =>
-  l.kind === 'opportunity';
-const WEEK_DAYS = 7;
-
-export const EVENT_VIEWS: View<Listing>[] = [
-  {
-    id: 'now',
-    label: 'Happening Now',
-    test: (l) => isEvent(l) && l.inDays === 0 && hasStarted(l),
-  },
-  {
-    id: 'tonight',
-    label: 'Tonight',
-    test: (l) => isEvent(l) && l.inDays === 0 && !hasStarted(l),
-  },
-  {
-    id: 'tomorrow',
-    label: 'Tomorrow',
-    test: (l) => isEvent(l) && l.inDays === 1,
-  },
-  {
-    id: 'weekend',
-    label: 'This Weekend',
-    test: (l) => {
-      const [saturday, sunday] = weekendDays();
-      return isEvent(l) && l.inDays >= saturday && l.inDays <= sunday;
-    },
-  },
-  {
-    id: 'week',
-    label: 'Next 7 Days',
-    test: (l) => isEvent(l) && l.inDays <= WEEK_DAYS,
-  },
-  {
-    id: 'month',
-    label: 'Later This Month',
-    test: (l) =>
-      isEvent(l) &&
-      l.inDays > WEEK_DAYS &&
-      l.inDays <= calendarToday().daysLeftInMonth,
-  },
-  {
-    id: 'later',
-    label: 'Further Ahead',
-    test: (l) =>
-      isEvent(l) &&
-      l.inDays > Math.max(WEEK_DAYS, calendarToday().daysLeftInMonth),
-  },
-];
-
-function weekEnds(): { thisWeek: number; nextWeek: number } {
-  const thisWeek = 6 - calendarToday().weekday;
-  return { thisWeek, nextWeek: thisWeek + WEEK_DAYS };
-}
-
-export const OPPORTUNITY_VIEWS: View<Listing>[] = [
-  {
-    id: 'three',
-    label: 'Closing in 3 Days',
-    test: (l) => isOpportunity(l) && l.daysLeft <= 3,
-  },
-  {
-    id: 'week',
-    label: 'Closing This Week',
-    test: (l) => isOpportunity(l) && l.daysLeft <= weekEnds().thisWeek,
-  },
-  {
-    id: 'next',
-    label: 'Closing Next Week',
-    test: (l) => {
-      const { thisWeek, nextWeek } = weekEnds();
-      return (
-        isOpportunity(l) && l.daysLeft > thisWeek && l.daysLeft <= nextWeek
-      );
-    },
-  },
-  {
-    id: 'month',
-    label: 'Later This Month',
-    test: (l) =>
-      isOpportunity(l) &&
-      l.daysLeft > weekEnds().nextWeek &&
-      l.daysLeft <= calendarToday().daysLeftInMonth,
-  },
-  {
-    id: 'later',
-    label: 'Further Ahead',
-    test: (l) =>
-      isOpportunity(l) &&
-      l.daysLeft >
-        Math.max(weekEnds().nextWeek, calendarToday().daysLeftInMonth),
-  },
-];
 
 export const PLACE_VIEWS: View<Place>[] = [
   { id: 'now', label: 'Open Now', test: (p) => openStateNow(p).open },

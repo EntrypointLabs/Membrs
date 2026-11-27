@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import listingsFixture from '../fixtures/listings.json';
-import placesFixture from '../fixtures/places.json';
-import promosFixture from '../fixtures/promos.json';
 
 const BASE = 'http://api.test/api';
 
@@ -20,10 +18,6 @@ function mockFetch(handler: Handler) {
   );
   vi.stubGlobal('fetch', fn);
   return fn;
-}
-
-function upcoming<T extends object>(listing: T): T {
-  return { ...listing, startsAt: '2099-01-03T19:00:00Z', endsAt: null };
 }
 
 async function live() {
@@ -59,102 +53,126 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function page(items: unknown[]) {
+  return json({
+    data: { total: items.length, items, facets: [], sections: [] },
+  });
+}
+
+const FEED = `${BASE}/v1/listings/feed?kind=event&limit=12`;
+
 describe('without VITE_API_BASE', () => {
   it('never calls the network and shows no sample data', async () => {
     vi.resetModules();
     vi.stubEnv('VITE_API_BASE', '');
     const fetch = mockFetch(() => json([]));
     const api = await import('./api');
-    await api.loadCatalogue();
+    await api.loadVenuesIfShown();
+    await api.loadSummary();
     await api.submitContribution('event', { name: 'x' });
     await api.subscribe({ email: 'a', city: 'Lagos', interests: ['Music'] });
     expect(fetch).not.toHaveBeenCalled();
-    expect(api.listings()).toHaveLength(0);
+    expect(api.knownListings()).toHaveLength(0);
     expect(api.places()).toHaveLength(0);
     expect(api.promos()).toHaveLength(0);
   });
 });
 
-describe('loadCatalogue', () => {
-  it('fetches only listings while places and promos are hidden', async () => {
+describe('loadResource', () => {
+  async function resources() {
     const { api } = await live();
-    const listing = upcoming({ ...listingsFixture[0]!, id: 'live-1' });
-    const fetch = mockFetch(() => json([listing]));
-    await api.loadCatalogue();
-    expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
-      `${BASE}/v1/listings`,
-    ]);
-    expect(api.listings().map((l) => l.id)).toEqual(['live-1']);
-    expect(api.catalogueStore.get().status).toBe('ready');
+    const loaded = await import('./resources');
+    return { api, loaded };
+  }
+
+  it('remembers every listing a page carries, so a card can open it', async () => {
+    const { api, loaded } = await resources();
+    const listing = { ...listingsFixture[0]!, id: 'live-1', slug: 'live-one' };
+    mockFetch(() => page([listing]));
+    await loaded.loadResource(feedPathOf(api));
+    expect(api.listingByKey('live-1')?.title).toBe(listing.title);
+    expect(api.listingByKey('live-one')?.id).toBe('live-1');
   });
 
-  it('reports a failed load so the site can offer a retry', async () => {
-    const { api } = await live();
+  it('reports a failed load and loads again on retry', async () => {
+    const { api, loaded } = await resources();
     mockFetch(() => {
       throw new TypeError('Failed to fetch');
     });
-    await api.loadCatalogue(new Date(), []);
+    await expect(loaded.loadResource(feedPathOf(api), [])).rejects.toThrow();
     expect(api.catalogueStore.get().status).toBe('failed');
-    mockFetch(() => json([upcoming({ ...listingsFixture[0]!, id: 'again' })]));
-    await api.loadCatalogue(new Date(), []);
-    expect(api.catalogueStore.get().status).toBe('ready');
-    expect(api.listings().map((l) => l.id)).toEqual(['again']);
+    mockFetch(() => page([]));
+    loaded.retryResource(feedPathOf(api));
+    await vi.waitFor(() =>
+      expect(api.catalogueStore.get().status).toBe('ready'),
+    );
   });
 
-  it('retries a down API with backoff and stays loading meanwhile', async () => {
-    const { api } = await live();
+  it('retries a down API with backoff', async () => {
+    const { api, loaded } = await resources();
     let calls = 0;
-    const listing = upcoming({ ...listingsFixture[0]!, id: 'late' });
-    mockFetch(() => (++calls < 3 ? json({}, 503) : json([listing])));
-    const seen: string[] = [];
-    api.catalogueStore.subscribe(() =>
-      seen.push(api.catalogueStore.get().status),
-    );
-    await api.loadCatalogue(new Date(), [1, 1, 1]);
+    mockFetch(() => (++calls < 3 ? json({}, 503) : page([])));
+    await loaded.loadResource(feedPathOf(api), [1, 1, 1]);
     expect(calls).toBe(3);
-    expect(seen).toEqual(['loading', 'ready']);
-    expect(api.listings().map((l) => l.id)).toEqual(['late']);
+    expect(api.catalogueStore.get().status).toBe('ready');
   });
 
   it('settles on failed once every retry has failed', async () => {
-    const { api } = await live();
+    const { api, loaded } = await resources();
     const fetch = mockFetch(() => json({}, 500));
-    await api.loadCatalogue(new Date(), [1, 1]);
+    await expect(
+      loaded.loadResource(feedPathOf(api), [1, 1]),
+    ).rejects.toThrow();
     expect(fetch).toHaveBeenCalledTimes(3);
     expect(api.catalogueStore.get().status).toBe('failed');
-    expect(api.listings()).toHaveLength(0);
   });
 
   it('does not retry an answer a retry cannot change', async () => {
-    const { api } = await live();
+    const { api, loaded } = await resources();
     const fetch = mockFetch(() => json({}, 404));
-    await api.loadCatalogue(new Date(), [1, 1]);
+    await expect(
+      loaded.loadResource(feedPathOf(api), [1, 1]),
+    ).rejects.toThrow();
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(api.catalogueStore.get().status).toBe('failed');
   });
 
   it('joins a load already running instead of starting another', async () => {
-    const { api } = await live();
-    const fetch = mockFetch(() => json([]));
-    await Promise.all([api.loadCatalogue(), api.loadCatalogue()]);
+    const { api, loaded } = await resources();
+    const fetch = mockFetch(() => page([]));
+    await Promise.all([
+      loaded.loadResource(feedPathOf(api)),
+      loaded.loadResource(feedPathOf(api)),
+    ]);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('is ready but empty when the API lists nothing', async () => {
+  it('asks for one canonical address however the picks are ordered', async () => {
     const { api } = await live();
-    mockFetch(() => json([]));
-    await api.loadCatalogue();
-    expect(api.catalogueStore.get().status).toBe('ready');
-    expect(api.listings()).toHaveLength(0);
+    const one = api.feedPath({
+      kind: 'event',
+      picks: { state: 'Lagos', type: 'music' },
+    });
+    const two = api.feedPath({
+      kind: 'event',
+      picks: { type: 'music', state: 'Lagos' },
+    });
+    expect(one).toBe(two);
+    expect(one).toBe('/v1/listings/feed?kind=event&state=Lagos&type=music');
   });
+});
 
-  it('swaps in live listings, places and promos when shown', async () => {
+function feedPathOf(api: typeof import('./api')): string {
+  const path = api.feedPath({ kind: 'event', limit: 12 });
+  expect(`${BASE}${path}`).toBe(FEED);
+  return path;
+}
+
+describe('venues', () => {
+  it('loads places and promos only when they are shown', async () => {
     vi.doMock('./sections', () => ({ shown: () => true }));
     const { api } = await live();
     vi.doUnmock('./sections');
-    const listing = upcoming({ ...listingsFixture[0]!, id: 'live-1' });
     const fetch = mockFetch((url) => {
-      if (url === `${BASE}/v1/listings`) return json([listing]);
       if (url.startsWith(`${BASE}/v1/establishments`))
         return json({
           data: {
@@ -190,61 +208,39 @@ describe('loadCatalogue', () => {
         },
       });
     });
-    await api.loadCatalogue();
+    await api.loadVenuesIfShown();
     expect(fetch).toHaveBeenCalledWith(
       `${BASE}/v1/establishments?limit=100&offset=0`,
       expect.anything(),
     );
-    expect(api.listings().map((l) => l.id)).toEqual(['live-1']);
-    expect(api.listingByKey('live-1')).toBeDefined();
-    await vi.waitFor(() => expect(api.places()).toHaveLength(1));
     expect(api.places().map((p) => p.type)).toEqual(['Parks & gardens']);
     expect(api.promos()[0]).toMatchObject({
       merchant: 'Freedom Park',
       code: 'PARK',
     });
-    const music = api.categories().find((c) => c.name === 'Music');
-    expect(music?.count).toBe(0);
   });
 
-  it('shows no made-up listings when the API is down', async () => {
+  it('counts categories from the catalogue summary', async () => {
     const { api } = await live();
-    mockFetch(() => {
-      throw new TypeError('Failed to fetch');
-    });
-    await api.loadCatalogue(new Date(), []);
-    expect(api.listings()).toHaveLength(0);
-    expect(api.places()).toHaveLength(0);
-    expect(api.promos()).toHaveLength(0);
-  });
-
-  it('drops live listings that have already happened', async () => {
-    const { api } = await live();
-    const past = { ...listingsFixture[0]!, id: 'past' };
-    mockFetch((url) =>
-      url === `${BASE}/v1/listings`
-        ? json([past, upcoming({ ...past, id: 'next' })])
-        : json({ data: { establishments: [], deals: [], total: 0 } }),
+    mockFetch(() =>
+      json({
+        data: {
+          counts: { event: 4, opportunity: 0 },
+          categories: [
+            {
+              kind: 'event',
+              name: 'Music',
+              slug: 'music',
+              count: 4,
+              cover: '',
+            },
+          ],
+          cities: [],
+        },
+      }),
     );
-    await api.loadCatalogue();
-    expect(api.listings().map((l) => l.id)).toEqual(['next']);
-  });
-
-  it('shows no sample places or promos when the API has none', async () => {
-    const { api } = await live();
-    mockFetch((url) => {
-      if (url === `${BASE}/v1/listings`)
-        return json({ error: { code: 'x' } }, 500);
-      if (url.includes('establishments'))
-        return json({
-          data: { establishments: [], total: 0, limit: 100, offset: 0 },
-        });
-      return json({ data: { deals: [], total: 0, limit: 100, offset: 0 } });
-    });
-    await api.loadCatalogue(new Date(), []);
-    expect(api.listings()).toHaveLength(0);
-    expect(api.places()).toHaveLength(0);
-    expect(api.promos()).toHaveLength(0);
+    await api.loadSummary();
+    expect(api.categories().find((c) => c.name === 'Music')?.count).toBe(4);
   });
 });
 
@@ -428,7 +424,7 @@ describe('writes', () => {
     });
     mockFetch((url) =>
       url.endsWith('/v1/me/for-you')
-        ? json([{ id: 'comedy-night' }])
+        ? json([{ id: 'comedy-night', slug: 'comedy-night', kind: 'event' }])
         : url.endsWith('/v1/me/interests')
           ? json({
               data: { interests: [{ kind: 'event', category: 'Comedy' }] },
@@ -444,7 +440,7 @@ describe('writes', () => {
     );
     await api.loadAccount();
     expect(prefs.interestsStore.get()).toEqual(['Comedy']);
-    expect(api.forYouStore.get()).toEqual(['comedy-night']);
+    expect(api.forYouStore.get().map((l) => l.id)).toEqual(['comedy-night']);
     expect(prefs.cityStore.get()).toBe('Abuja');
     expect(prefs.subscriptionStore.get()).toEqual({
       email: 'reader@example.com',
@@ -510,50 +506,40 @@ describe('startReaderSession', () => {
   });
 });
 
-describe('searchCatalogue', () => {
-  it('ranks known items by the API score and skips hidden sections', async () => {
+describe('searchCataloguePage', () => {
+  it('ranks listings by the API score, resolves them in one feed call and skips hidden sections', async () => {
     const { api } = await live();
-    const listing = upcoming(listingsFixture[0]!);
-    const place = placesFixture[0]!;
-    const promo = promosFixture[0]!;
-    mockFetch(() => json([listing]));
-    await api.loadCatalogue();
+    const listing = { ...listingsFixture[0]!, id: 'found', slug: 'found' };
     const fetch = mockFetch((url) => {
+      if (url.includes('/v1/listings/feed')) return page([listing]);
       const results = url.includes('/v1/events/search')
-        ? [{ id: listing.id, score: 0.01 }]
-        : url.includes('/v1/establishments/search')
-          ? [
-              { id: place.id, score: 0.03 },
-              { id: 'unknown', score: 0.5 },
-            ]
-          : url.includes('/v1/deals/search')
-            ? [{ id: promo.id, score: 0.02 }]
-            : [];
+        ? [{ id: 'found', score: 0.01 }]
+        : [];
       return json({ data: { query: 'lagos', results } });
     });
-    const hits = await api.searchCatalogue(' lagos ');
-    expect(fetch).toHaveBeenCalledWith(
-      `${BASE}/v1/opportunities/search?q=lagos&limit=50`,
-      expect.anything(),
-    );
+    const { hits } = await api.searchCataloguePage(' lagos ', 0);
     const searched = fetch.mock.calls.map(([url]) => String(url));
+    expect(searched).toContain(
+      `${BASE}/v1/opportunities/search?q=lagos&limit=50`,
+    );
+    expect(searched).toContain(
+      `${BASE}/v1/listings/feed?kind=all&ids=found&limit=100`,
+    );
     expect(searched.some((u) => u.includes('/v1/establishments/search'))).toBe(
       false,
     );
-    expect(searched.some((u) => u.includes('/v1/deals/search'))).toBe(false);
     expect(hits.map((h) => [h.kind, h.item.id])).toEqual([
-      ['listing', listing.id],
+      ['listing', 'found'],
     ]);
   });
 
-  it('falls back to matching locally when the API fails', async () => {
+  it('finds nothing rather than a stale local guess when the API fails', async () => {
     const { api } = await live();
-    mockFetch(() => json(listingsFixture));
-    await api.loadCatalogue();
     mockFetch(() => json({ error: { code: 'internal' } }, 500));
-    const hits = await api.searchCatalogue('lagos');
-    expect(hits).toEqual(api.searchLocally('lagos'));
-    expect(hits.length).toBeGreaterThan(0);
+    expect(await api.searchCataloguePage('lagos', 0)).toEqual({
+      hits: [],
+      more: false,
+    });
   });
 });
 

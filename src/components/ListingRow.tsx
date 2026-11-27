@@ -1,9 +1,9 @@
 import { itemRef, trackItemOpened } from '../lib/analytics';
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 import { listingFace } from './ListingCard';
 import { MediaRow } from './MediaRow';
 
-export function ListingRow({ listing }: { listing: Listing }) {
+export function ListingRow({ listing }: { listing: ListingSummary }) {
   return (
     <MediaRow
       {...listingFace(listing)}

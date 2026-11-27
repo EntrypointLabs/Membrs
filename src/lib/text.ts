@@ -139,3 +139,13 @@ export function distinctParts(lead: string, parts: string[]): string[] {
     return true;
   });
 }
+
+const countryNames = new Intl.DisplayNames(['en'], { type: 'region' });
+
+export function countryName(code: string): string {
+  try {
+    return countryNames.of(code) ?? code;
+  } catch {
+    return code;
+  }
+}

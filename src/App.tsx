@@ -7,7 +7,6 @@ import { applyPageMeta, pageMeta } from './lib/seo';
 import { overlayStore } from './lib/ui';
 import { AskLauncher, AssistantPanel } from './components/AskMembrs';
 import { PreferencesModal } from './components/PreferencesModal';
-import { CatalogueGate } from './components/CatalogueGate';
 import { CookieBanner, CookieSettings } from './components/CookieBanner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Footer } from './components/Footer';
@@ -99,13 +98,7 @@ export function App() {
         {/* An empty, full-height box while a screen chunk loads: no spinner flash. */}
         <ErrorBoundary resetKey={JSON.stringify(route)}>
           <Suspense fallback={<div className="min-h-[70vh]" />}>
-            {route.page === 'legal' || route.page === 'contribute' ? (
-              <Screen route={route} />
-            ) : (
-              <CatalogueGate route={route}>
-                <Screen route={route} />
-              </CatalogueGate>
-            )}
+            <Screen route={route} />
           </Suspense>
         </ErrorBoundary>
       </main>

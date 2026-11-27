@@ -1,120 +1,65 @@
-import { useMemo } from 'react';
-import { feed } from '../lib/api';
-import { CONCERT_CATEGORY } from '../lib/homeShelves';
-import {
-  budgetFacet,
-  cityFacet,
-  countryFacet,
-  deadlineFacet,
-  eligibleFacet,
-  type Facet,
-  fundingFacet,
-  levelFacet,
-  modeFacet,
-  regionFacet,
-  rewardFacet,
-  SORT_NAMES,
-  type SortKey,
-  DEFAULT_SORT,
-  justAdded,
-  sortKeyOf,
-  sortedBy,
-  sourceFacet,
-  topicFacet,
-  typeFacet,
-  viewFacet,
-} from '../lib/filters';
-import { setSearchParams } from '../lib/router';
-import type { Listing } from '../lib/types';
-import { EVENT_VIEWS, OPPORTUNITY_VIEWS } from '../lib/views';
-import { ListingCard, priceKnown } from '../components/ListingCard';
+import { feedPath, useFeed, windowedPath, type FeedParams } from '../lib/api';
+import { useIsPhone } from '../lib/media';
+import { setSearchParams, useRoute } from '../lib/router';
+import type { ListingKind } from '../lib/types';
+import { ListingCard } from '../components/ListingCard';
 import { ListingRow } from '../components/ListingRow';
 import { Select } from '../components/Select';
-import { POPULAR_SIZE } from '../lib/config';
-import { distinctFamilies } from '../lib/families';
+import { RemoteGate } from '../components/CatalogueGate';
 import {
-  FeedBody,
   FilterLine,
   MoreFilters,
   PhoneFilterBar,
+  RemoteFeedBody,
   Tally,
+  webPageWindow,
 } from './FeedLayout';
 import { useFacetFilters } from './useFacetFilters';
 
-const EVENT_SORTS: SortKey[] = ['popular', 'soonest', 'recent', 'title'];
-const OPPORTUNITY_SORTS: SortKey[] = [
-  'popular',
-  'soonest',
-  'reward',
-  'recent',
-  'title',
-];
+type SortKey = 'popular' | 'soonest' | 'recent' | 'reward' | 'title';
 
-/** The facets on the filter line itself; the rest sit under Filters. */
-const ON_THE_LINE = new Set(['type', 'city']);
+const DEFAULT_SORT: SortKey = 'popular';
 
-function facetsFor(kind: Listing['kind']): Facet[] {
-  const where = [topicFacet, regionFacet, countryFacet, sourceFacet];
-  if (kind === 'event') {
-    return [
-      typeFacet,
-      cityFacet,
-      viewFacet('When', EVENT_VIEWS),
-      modeFacet,
-      budgetFacet((l) => l.kind === 'event' && priceKnown(l)),
-      ...where,
-    ];
-  }
-  return [
-    typeFacet,
-    cityFacet,
-    viewFacet('Closing', OPPORTUNITY_VIEWS),
-    deadlineFacet,
-    rewardFacet,
-    fundingFacet,
-    levelFacet,
-    modeFacet,
-    eligibleFacet,
-    ...where,
-  ];
-}
+const SORT_NAMES: Record<SortKey, string> = {
+  popular: 'Most popular',
+  soonest: 'Soonest',
+  recent: 'Recently added',
+  reward: 'Highest reward',
+  title: 'Name (A to Z)',
+};
 
-/**
- * Events and Opportunities. Type and City sit on the filter line;
- * everything else, the order included, lives under Filters. Each menu counts
- * its options against the other filters that are set. With nothing picked
- * the page opens on a rail of cards and the time groups.
- */
-export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
+const SORTS: Record<ListingKind, SortKey[]> = {
+  event: ['popular', 'soonest', 'recent', 'title'],
+  opportunity: ['popular', 'soonest', 'reward', 'recent', 'title'],
+};
+
+const ON_THE_LINE = new Set(['type', 'state']);
+
+export function FeedScreen({ kind }: { kind: ListingKind }) {
   const event = kind === 'event';
-  const views = event ? EVENT_VIEWS : OPPORTUNITY_VIEWS;
-  const sorts = event ? EVENT_SORTS : OPPORTUNITY_SORTS;
-  const all = useMemo(() => feed(kind), [kind]);
-  const facets = facetsFor(kind);
-  const {
-    query,
-    pick,
-    menu,
-    chip,
-    items: matched,
-    active,
-    lineFacets,
-    panelFacets,
-    panelActive,
-    cleared,
-  } = useFacetFilters(all, facets, ON_THE_LINE);
-  const sort = sortKeyOf(query.get('sort'), sorts);
-  const items = sortedBy(matched, sort);
-  const isFiltered = active.length > 0 || sort !== DEFAULT_SORT;
-  const popular = distinctFamilies(items, [], POPULAR_SIZE);
-  const concerts = items.filter(
-    (l) => l.kind === 'event' && l.category === CONCERT_CATEGORY,
-  );
+  const route = useRoute();
+  const phone = useIsPhone();
+  const sorts = SORTS[kind];
+  const url = useFacetFilters(undefined, ON_THE_LINE);
+  const asked = url.query.get('sort');
+  const sort = sorts.find((s) => s === asked) ?? DEFAULT_SORT;
+  const request: FeedParams = {
+    kind,
+    sectioned: sort === DEFAULT_SORT,
+    picks: url.picks,
+    sort: sort === DEFAULT_SORT ? undefined : sort,
+    layout: phone ? 'phone' : 'web',
+    ...webPageWindow(url.query.get('page'), phone),
+  };
+  const remote = useFeed(request);
+  const filters = useFacetFilters(remote.data?.facets, ON_THE_LINE);
+  const { menu, chip, lineFacets, panelFacets, panelActive, cleared } = filters;
+  const isFiltered = filters.active.length > 0 || sort !== DEFAULT_SORT;
   const sortMenu = (className?: string) => (
     <Select
       label="Order"
       value={sort}
-      onChange={(s) => pick('sort', s === DEFAULT_SORT ? null : s)}
+      onChange={(s) => filters.pick('sort', s === DEFAULT_SORT ? null : s)}
       options={sorts.map((s) => ({ value: s, label: SORT_NAMES[s] }))}
       className={className}
     />
@@ -123,13 +68,9 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
     ? ['event', 'events']
     : ['opportunity', 'opportunities'];
   const clear = isFiltered
-    ? () =>
-        setSearchParams({
-          ...cleared,
-          sort: null,
-          page: null,
-        })
+    ? () => setSearchParams({ ...cleared, sort: null, page: null })
     : undefined;
+  const total = remote.data?.total ?? 0;
 
   return (
     <div className="page pt-0 md:pt-14">
@@ -137,39 +78,34 @@ export function FeedScreen({ kind }: { kind: Listing['kind'] }) {
         {event ? 'Events' : 'Opportunities'}
       </h1>
       <PhoneFilterBar
-        summary={<Tally compact count={items.length} noun={noun} />}
+        summary={<Tally compact count={total} noun={noun} />}
         sort={sortMenu('h-10 bg-transparent px-2 text-[15px]')}
         onClear={clear}
       >
-        {facets.map(chip)}
+        {filters.facets.map(chip)}
       </PhoneFilterBar>
-      <FilterLine
-        summary={<Tally count={items.length} noun={noun} />}
-        onClear={clear}
-      >
+      <FilterLine summary={<Tally count={total} noun={noun} />} onClear={clear}>
         {lineFacets.map(menu)}
         <MoreFilters active={panelActive + Number(sort !== DEFAULT_SORT)}>
           {sortMenu()}
           {panelFacets.map(menu)}
         </MoreFilters>
       </FilterLine>
-      <FeedBody
-        items={items}
-        views={views}
-        filtered={isFiltered}
-        noun={noun}
-        keyOf={(l) => l.id}
-        row={(l) => <ListingRow listing={l} />}
-        rails={[
-          { title: 'Popular', items: popular },
-          { title: 'Concerts', items: concerts },
-          {
-            title: 'Just Added',
-            items: justAdded(items).slice(0, POPULAR_SIZE),
-          },
-        ]}
-        card={(l) => <ListingCard key={l.id} listing={l} />}
-      />
+      <RemoteGate route={route} remote={remote}>
+        {(page) => (
+          <RemoteFeedBody
+            page={page}
+            filtered={page.sections.length === 0}
+            noun={noun}
+            path={(window) => feedPath({ ...request, ...window })}
+            sectionPath={(section) =>
+              windowedPath(remote.shownPath ?? feedPath(request), section)
+            }
+            row={(l) => <ListingRow listing={l} />}
+            card={(l) => <ListingCard key={l.id} listing={l} />}
+          />
+        )}
+      </RemoteGate>
     </div>
   );
 }

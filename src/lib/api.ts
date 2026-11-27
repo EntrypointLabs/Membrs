@@ -1,34 +1,10 @@
-import { CATALOGUE_PATH } from './catalogue-path';
-import {
-  API_BASE,
-  CATALOGUE_TIMEOUT_MS,
-  DEFAULT_COUNTRY,
-  GRID_COLUMNS,
-  MAX_PICKS,
-} from './config';
+import { API_BASE, DEFAULT_COUNTRY, MAX_PICKS } from './config';
 import { authorizedFetch, sessionStore } from './auth';
 import { shown } from './sections';
-import {
-  byPopularity,
-  bySoonest,
-  isComingSoon,
-  soonness,
-  stillOpen,
-} from './dates';
-import { collapsedRuns } from './runs';
-import { distinctFamilies } from './families';
 import { createStore } from './store';
-import {
-  apiFetch,
-  dataOf,
-  getData,
-  getJson,
-  getPreloadedJson,
-  MembrsApiError,
-  newIdempotencyKey,
-} from './http';
+import { apiFetch, dataOf, getData, getJson, newIdempotencyKey } from './http';
 import { outboxStore, writeAsReader, type Delivery } from './outbox';
-import { search, type SearchHit } from './search';
+import type { SearchHit } from './search';
 import {
   cityStore,
   fieldsStore,
@@ -46,16 +22,30 @@ import {
   type RemoteInterestPick,
   type RemoteNewsletter,
 } from './remote';
+import {
+  loadResource,
+  rememberResponses,
+  useResource,
+  watchResources,
+  type Remote,
+} from './resources';
 import type {
+  CatalogueSummary,
   Category,
   ContributeForm,
   ContributeKind,
+  FeedPage,
+  HomePage,
   LaunchCity,
   LegalDocument,
   LegalSlug,
   Listing,
+  ListingDetail,
+  ListingKind,
+  ListingSummary,
   Place,
   Promo,
+  Section,
   Taxonomy,
 } from './types';
 import { placeLabel, readerPlaceOf } from './africa';
@@ -88,17 +78,13 @@ const fixtures = {
 
 export { MembrsApiError } from './http';
 
-let catalogue: Listing[] = [];
-let everyNight: Listing[] = [];
 let placeList: Place[] = [];
 let promoList: Promo[] = [];
-let categoryList: Category[] = recount(fixtures.categories, [], []);
+let summary: CatalogueSummary | null = null;
+let categoryList: Category[] = recount(fixtures.categories, null, []);
 
-/* Synchronous reads, for data that ships with the bundle either way. */
-
-export function listings(): Listing[] {
-  return catalogue;
-}
+const known = new Map<string, ListingSummary>();
+const slugs = new Map<string, string>();
 
 export function places(): Place[] {
   return placeList;
@@ -157,13 +143,12 @@ export function searchSuggestions(): string[] {
   return fixtures.meta.searchSuggestions;
 }
 
-/* Lookups. */
+export function listingByKey(key: string): ListingSummary | undefined {
+  return known.get(key) ?? known.get(slugs.get(key) ?? '');
+}
 
-export function listingByKey(key: string): Listing | undefined {
-  return (
-    everyNight.find((l) => l.id === key) ??
-    everyNight.find((l) => l.slug === key)
-  );
+export function knownListings(): ListingSummary[] {
+  return [...known.values()];
 }
 
 export function placeById(id: string): Place | undefined {
@@ -178,25 +163,11 @@ export function categoryBySlug(slug: string): Category | undefined {
   return categoryList.find((c) => c.slug === slug);
 }
 
-/* Derived collections the screens share. */
-
-/** Feed order: listed first wins, ties go to whatever happens soonest. */
-export function feed(kind: Listing['kind'] | 'all' = 'all'): Listing[] {
-  return catalogue
-    .filter((l) => kind === 'all' || l.kind === kind)
-    .sort(byPopularity);
-}
-
 export const readerCountryStore = createStore<string>(
   'membrs.readerCountry',
   DEFAULT_COUNTRY,
 );
 
-/**
- * Saves a place label such as "Lagos, Nigeria" as the reader's state and
- * country. Answers false when the label names no African country, so the
- * caller can fall back to what the catalogue says about that city.
- */
 export function chooseReaderPlace(label: string): boolean {
   const place = readerPlaceOf(label, readerCountryStore.get());
   if (!place.country) return false;
@@ -209,183 +180,272 @@ export function adoptReaderCity(city: string): void {
   if (!chooseReaderPlace(city)) cityStore.set(city);
 }
 
-export function canAttend(listing: Listing): boolean {
-  const country = readerCountryStore.get();
+export const forYouStore = createStore<ListingSummary[]>(null, []);
+
+function isListing(value: unknown): value is ListingSummary {
+  const listing = value as Partial<ListingSummary> | null;
   return (
-    country === '' ||
-    listing.kind !== 'event' ||
-    listing.mode === 'Remote' ||
-    listing.country === '' ||
-    listing.country === country
+    typeof listing?.id === 'string' &&
+    typeof listing.slug === 'string' &&
+    (listing.kind === 'event' || listing.kind === 'opportunity')
   );
 }
 
-export function attendable(): Listing[] {
-  return catalogue.filter(canAttend);
+function rememberListing(listing: ListingSummary): ListingSummary {
+  const shown = withSourcePhoto(listing as Listing) as ListingSummary;
+  const already = known.get(shown.id);
+  if (!already || Object.keys(shown).length >= Object.keys(already).length)
+    known.set(shown.id, shown);
+  slugs.set(shown.slug, shown.id);
+  return shown;
 }
 
-export function within(
-  days: number,
-  kind: Listing['kind'] | 'all' = 'all',
-): Listing[] {
-  if (kind === 'all') {
-    return alternated(within(days, 'event'), within(days, 'opportunity'));
-  }
-  return attendable()
-    .filter((l) => l.kind === kind)
-    .filter((l) => (l.kind === 'event' ? l.inDays : l.daysLeft) <= days)
-    .sort(byPopularity);
-}
-
-export function alternated<T>(first: T[], second: T[]): T[] {
-  const mixed: T[] = [];
-  for (let i = 0; i < Math.max(first.length, second.length); i++) {
-    if (i < first.length) mixed.push(first[i] as T);
-    if (i < second.length) mixed.push(second[i] as T);
-  }
-  return mixed;
-}
-
-export function closingSoon(): Listing[] {
-  return catalogue
-    .filter((l) => l.kind === 'opportunity' && l.closingSoon)
-    .sort(byPopularity);
-}
-
-export function mostPopular(
-  limit: number,
-  skip: ReadonlySet<string> = new Set(),
-  kind: Listing['kind'] | 'all' = 'all',
-): Listing[] {
-  if (kind === 'all') {
-    return alternated(
-      mostPopular(limit, skip, 'event'),
-      mostPopular(limit, skip, 'opportunity'),
-    ).slice(0, limit);
-  }
-  return distinctFamilies(
-    feed(kind).filter(
-      (l) => !skip.has(l.id) && isComingSoon(l) && canAttend(l),
-    ),
-    [],
-    limit,
+function prepared(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(prepared);
+  if (!value || typeof value !== 'object') return value;
+  if (isListing(value)) return rememberListing(value);
+  return Object.fromEntries(
+    Object.entries(value).map(([key, inner]) => [key, prepared(inner)]),
   );
 }
 
-const HERO_HORIZON_DAYS = 60;
-const FAR_OFF_DAYS = 365;
+rememberResponses(prepared);
 
-export function heroPicks(
-  limit = 3,
-  pool: Listing[] = attendable(),
-): Listing[] {
-  const events = pool.filter((l) => l.kind === 'event');
-  const near = events
-    .filter((l) => soonness(l) <= HERO_HORIZON_DAYS)
-    .sort(byPopularity);
-  const later = events
-    .filter((l) => soonness(l) > HERO_HORIZON_DAYS)
-    .sort(byPopularity);
-  return distinctFamilies([...near, ...later], [], limit);
+function queryOf(params: Record<string, string | number | undefined>): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') query.set(key, String(value));
+  }
+  const text = query.toString();
+  return text ? `?${text}` : '';
 }
 
-export function similar(
-  listing: Listing,
-  limit = GRID_COLUMNS,
-  pool: Listing[] = catalogue,
-): Listing[] {
-  const tier = (l: Listing) =>
-    (soonness(l) > FAR_OFF_DAYS ? 2 : 0) +
-    (l.category === listing.category ? 0 : 1);
-  return pool
-    .filter((l) => l.id !== listing.id && l.kind === listing.kind)
-    .sort((a, b) => tier(a) - tier(b) || bySoonest(a, b))
-    .slice(0, limit);
+export interface SectionWindow {
+  id: string;
+  offset: number;
+  limit: number;
+  category?: string;
 }
 
-export const forYouStore = createStore<string[]>(null, []);
+function windowParams(section?: SectionWindow) {
+  return section
+    ? {
+        section: section.id,
+        offset: section.offset,
+        limit: section.limit,
+        category: section.category,
+      }
+    : {};
+}
 
-export function forYou(
-  ids: readonly string[] = forYouStore.get(),
-  pool: Listing[] = catalogue,
-): Listing[] {
-  const picked = new Set(ids);
-  const matching = pool.filter((l) => picked.has(l.id)).sort(byPopularity);
-  return alternated<Listing>(
-    matching.filter((l) => l.kind === 'event'),
-    matching.filter((l) => l.kind === 'opportunity'),
+export function windowedPath(path: string, section: SectionWindow): string {
+  const [base, query = ''] = path.split('?');
+  const params = new URLSearchParams(query);
+  params.delete('category');
+  for (const [key, value] of Object.entries(windowParams(section))) {
+    if (value !== undefined && value !== '') params.set(key, String(value));
+  }
+  return `${base}?${params}`;
+}
+
+export type Layout = 'web' | 'phone';
+
+export interface HomeParams {
+  layout: Layout;
+  country: string;
+  state: string;
+  near?: string;
+  around?: string[];
+  viewed: string[];
+  interests?: string[];
+  popular?: ListingKind | 'all';
+  range?: 'week' | 'month';
+  weekKind?: ListingKind | 'all';
+}
+
+const HOME_PATH = '/v1/listings/home';
+
+export const FOR_YOU_SECTION = 'forYou';
+
+export const LARGEST_SECTION_WINDOW = 100;
+
+export function homePath(params: HomeParams, section?: SectionWindow): string {
+  return `${HOME_PATH}${queryOf({
+    layout: params.layout,
+    country: params.country,
+    state: params.state,
+    near: params.near,
+    around: params.around?.join(','),
+    viewed: params.viewed.join(','),
+    interests: params.interests?.join(','),
+    popular: params.popular === 'all' ? undefined : params.popular,
+    range: params.range === 'week' ? undefined : params.range,
+    weekKind: params.weekKind === 'all' ? undefined : params.weekKind,
+    ...windowParams(section),
+  })}`;
+}
+
+export function prefetchHome(params: HomeParams): void {
+  if (API_BASE) void loadResource(homePath(params)).catch(() => undefined);
+}
+
+export function useHome(params: HomeParams): Remote<HomePage> {
+  return useResource<HomePage>(homePath(params), true);
+}
+
+export function useHomeSection(
+  params: HomeParams | null,
+  section: SectionWindow,
+): Remote<HomePage> {
+  return useResource<HomePage>(params && homePath(params, section));
+}
+
+export interface FeedParams {
+  kind: ListingKind | 'all';
+  sectioned?: boolean;
+  picks?: Record<string, string | null>;
+  sort?: string;
+  ids?: string[];
+  layout?: Layout;
+  offset?: number;
+  limit?: number;
+}
+
+const FEED_SCOPE = new Set([
+  'shape',
+  'kind',
+  'sort',
+  'ids',
+  'layout',
+  'offset',
+  'limit',
+  'section',
+]);
+
+export function feedPath(params: FeedParams, section?: SectionWindow): string {
+  const picks = Object.fromEntries(
+    Object.entries(params.picks ?? {})
+      .filter(([key, value]) => value && !FEED_SCOPE.has(key))
+      .sort(([a], [b]) => a.localeCompare(b)),
+  ) as Record<string, string>;
+  return `/v1/listings/feed${queryOf({
+    shape: params.sectioned ? 'sections' : undefined,
+    kind: params.kind,
+    ...picks,
+    sort: params.sort,
+    ids: params.ids?.join(','),
+    layout: params.layout === 'phone' ? 'phone' : undefined,
+    offset: params.offset || undefined,
+    limit: params.limit,
+    ...windowParams(section),
+  })}`;
+}
+
+export function useFeed(params: FeedParams | null): Remote<FeedPage> {
+  return useResource<FeedPage>(params && feedPath(params), true);
+}
+
+const MOST_IDS = 100;
+
+export function useListingsByIds(ids: string[]): ListingSummary[] {
+  const known = ids.flatMap((id) => {
+    const listing = listingByKey(id);
+    return listing ? [listing] : [];
+  });
+  const missing = known.length < ids.length;
+  const fetched = useFeed(
+    missing
+      ? { kind: 'all', ids: ids.slice(0, MOST_IDS), limit: MOST_IDS }
+      : null,
   );
+  return missing ? (fetched.data?.items ?? known) : known;
 }
 
-export function interestMatches(
-  labels: string[],
-  pool: Listing[] = catalogue,
-): string[] {
-  const picks = interestPicks(labels);
-  return pool
-    .filter((l) =>
-      picks.some((p) => p.kind === l.kind && p.category === l.category),
-    )
-    .map((l) => l.id);
+export function useFeedAt(path: string | null): Remote<FeedPage> {
+  return useResource<FeedPage>(path);
 }
 
-export function inCity(
-  city: string,
-  kind: Listing['kind'] | 'all' = 'all',
-): Listing[] {
-  return catalogue
-    .filter((l) => (kind === 'all' || l.kind === kind) && l.city === city)
-    .sort(byPopularity);
+function useSectionPage(path: string | null): Remote<FeedPage | HomePage> {
+  return useResource<FeedPage | HomePage>(path, true);
 }
 
-export function listingsInCategory(name: string): Listing[] {
-  return catalogue.filter((l) => l.category === name).sort(byPopularity);
+function listingPath(key: string): string {
+  return `/v1/listings/${encodeURIComponent(key)}`;
 }
 
-/* Remote variants, for when VITE_API_BASE points at a backend. */
+export function useListing(key: string): Remote<ListingDetail> {
+  return useResource<ListingDetail>(listingPath(key));
+}
 
-export async function fetchListings(): Promise<Listing[]> {
-  return API_BASE
-    ? getPreloadedJson<Listing[]>(CATALOGUE_PATH, CATALOGUE_TIMEOUT_MS)
-    : catalogue;
+export function loadListing(key: string): Promise<ListingDetail> {
+  return loadResource<ListingDetail>(listingPath(key));
+}
+
+const SUMMARY_PATH = '/v1/listings/summary';
+
+export function useSummary(): Remote<CatalogueSummary> {
+  const remote = useResource<CatalogueSummary>(SUMMARY_PATH);
+  if (remote.data && remote.data !== summary) applySummary(remote.data);
+  return remote;
+}
+
+export async function loadSummary(): Promise<CatalogueSummary | null> {
+  if (!API_BASE) return null;
+  const loaded = await loadResource<CatalogueSummary>(SUMMARY_PATH);
+  applySummary(loaded);
+  return loaded;
+}
+
+function applySummary(loaded: CatalogueSummary): void {
+  summary = loaded;
+  categoryList = recount(fixtures.categories, summary, placeList);
+}
+
+export function catalogueSummary(): CatalogueSummary | null {
+  return summary;
 }
 
 const SEARCH_LIMIT = 50;
 
 const SEARCHABLE = (
   [
-    ['events', (id: string) => listingHit(id)],
-    ['opportunities', (id: string) => listingHit(id)],
-    ['establishments', (id: string) => placeHit(id)],
-    ['deals', (id: string) => promoHit(id)],
+    ['events', 'listing'],
+    ['opportunities', 'listing'],
+    ['establishments', 'place'],
+    ['deals', 'promo'],
   ] as const
 ).filter(([path]) => shown(path));
 
-function listingHit(id: string): Omit<SearchHit, 'score'> | undefined {
-  const item = listingByKey(id);
-  return item && { kind: 'listing', item };
+interface Scored {
+  id: string;
+  score: number;
 }
 
-function placeHit(id: string): Omit<SearchHit, 'score'> | undefined {
-  const item = placeById(id);
-  return item && { kind: 'place', item };
-}
-
-function promoHit(id: string): Omit<SearchHit, 'score'> | undefined {
+function venueHit(kind: 'place' | 'promo', { id, score }: Scored): SearchHit[] {
+  if (kind === 'place') {
+    const item = placeById(id);
+    return item ? [{ kind, item, score }] : [];
+  }
   const item = promoById(id);
-  return item && { kind: 'promo', item };
+  return item ? [{ kind, item, score }] : [];
 }
 
-export function searchLocally(query: string): SearchHit[] {
-  return search(query, {
-    listings: catalogue,
-    places: placeList,
-    promos: promoList,
-  }).filter((hit) => shown(hit.kind));
-}
-
-export async function searchCatalogue(query: string): Promise<SearchHit[]> {
-  return (await searchCataloguePage(query, 0)).hits;
+async function listingHits(scored: Scored[]): Promise<SearchHit[]> {
+  if (!scored.length) return [];
+  const ranked = [...scored].sort((a, b) => b.score - a.score);
+  const page = await loadResource<FeedPage>(
+    feedPath({
+      kind: 'all',
+      ids: ranked.slice(0, MOST_IDS).map((s) => s.id),
+      limit: MOST_IDS,
+    }),
+  );
+  const scores = new Map(ranked.map((s) => [s.id, s.score]));
+  return page.items.map((item) => ({
+    kind: 'listing',
+    item,
+    score: scores.get(item.id) ?? 0,
+  }));
 }
 
 export async function searchCataloguePage(
@@ -393,29 +453,30 @@ export async function searchCataloguePage(
   page: number,
 ): Promise<{ hits: SearchHit[]; more: boolean }> {
   const q = query.trim();
-  if (!API_BASE || !q) return { hits: searchLocally(q), more: false };
+  if (!API_BASE || !q) return { hits: [], more: false };
   const params = new URLSearchParams({ q, limit: String(SEARCH_LIMIT) });
   if (page > 0) params.set('offset', String(page * SEARCH_LIMIT));
   try {
     const pages = await Promise.all(
       SEARCHABLE.map(([path]) =>
-        getData<{ results: { id: string; score: number }[] }>(
-          `/v1/${path}/search?${params}`,
-        ),
+        getData<{ results: Scored[] }>(`/v1/${path}/search?${params}`),
       ),
     );
-    const hits = pages
-      .flatMap((page, i) =>
-        page.results.flatMap(({ id, score }) => {
-          const hit = SEARCHABLE[i]![1](id);
-          return hit ? [{ ...hit, score } as SearchHit] : [];
-        }),
-      )
-      .sort((a, b) => b.score - a.score);
+    const found = pages.map((p, i) => ({
+      kind: SEARCHABLE[i]![1],
+      results: p.results,
+    }));
+    const listings = await listingHits(
+      found.flatMap((f) => (f.kind === 'listing' ? f.results : [])),
+    );
+    const venues = found.flatMap(({ kind, results }) =>
+      kind === 'listing' ? [] : results.flatMap((r) => venueHit(kind, r)),
+    );
+    const hits = [...listings, ...venues].sort((a, b) => b.score - a.score);
     const more = pages.some((p) => p.results.length >= SEARCH_LIMIT);
     return { hits, more };
   } catch {
-    return { hits: page > 0 ? [] : searchLocally(q), more: false };
+    return { hits: [], more: false };
   }
 }
 
@@ -581,7 +642,7 @@ async function allPages<T>(path: string, key: string): Promise<T[]> {
 
 function recount(
   list: Category[],
-  live: Listing[],
+  loaded: CatalogueSummary | null,
   livePlaces: Place[],
 ): Category[] {
   return list.map((c) => {
@@ -590,11 +651,14 @@ function recount(
         ...c,
         count: livePlaces.filter((p) => p.type === c.name).length,
       };
-    const inCategory = live.filter(
-      (l) => l.kind === c.kind && l.category === c.name,
+    const counted = loaded?.categories.find(
+      (l) => l.kind === c.kind && l.name === c.name,
     );
-    const lead = inCategory.filter((l) => l.photoUrl).sort(byPopularity)[0];
-    return { ...c, count: inCategory.length, coverUrl: lead?.photoUrl };
+    return {
+      ...c,
+      count: counted?.count ?? 0,
+      coverUrl: counted?.cover || undefined,
+    };
   });
 }
 
@@ -603,11 +667,11 @@ export type CatalogueStatus = 'loading' | 'ready' | 'failed';
 export const catalogueStore = createStore<{
   status: CatalogueStatus;
   revision: number;
-}>(null, { status: API_BASE ? 'loading' : 'ready', revision: 0 });
+}>(null, { status: 'ready', revision: 0 });
 
-function settle(status: CatalogueStatus): void {
-  catalogueStore.set((prev) => ({ status, revision: prev.revision + 1 }));
-}
+watchResources((status) =>
+  catalogueStore.set((prev) => ({ status, revision: prev.revision + 1 })),
+);
 
 async function loadVenues(now: Date): Promise<void> {
   const [establishments, deals] = await Promise.allSettled([
@@ -629,82 +693,14 @@ async function loadVenues(now: Date): Promise<void> {
       now,
     ),
   );
-  categoryList = recount(fixtures.categories, catalogue, placeList);
-  settle(catalogueStore.get().status);
+  categoryList = recount(fixtures.categories, summary, placeList);
+  catalogueStore.set((prev) => ({ ...prev, revision: prev.revision + 1 }));
 }
 
-/**
- * How long to wait before each automatic retry of a failed catalogue load.
- * A brief outage or a cold backend usually clears within these few seconds,
- * so the reader sees the failure state only when the API stays down.
- */
-export const CATALOGUE_RETRY_DELAYS_MS: readonly number[] = [1000, 3000, 9000];
-
-// A 4xx answer will not change on a retry, so only network errors, timeouts,
-// 5xx and rate limits are tried again.
-function worthRetrying(error: unknown): boolean {
-  return !(
-    error instanceof MembrsApiError &&
-    error.status < 500 &&
-    error.status !== 429
-  );
-}
-
-const wait = (ms: number) => new Promise((done) => setTimeout(done, ms));
-
-async function fetchCatalogue(
-  retryDelays: readonly number[],
-): Promise<Listing[]> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      const listed = await fetchListings();
-      if (!Array.isArray(listed))
-        throw new TypeError('Listings were not a list');
-      return listed;
-    } catch (error) {
-      const delay = retryDelays[attempt];
-      if (delay === undefined || !worthRetrying(error)) throw error;
-      await wait(delay);
-    }
-  }
-}
-
-let loading: Promise<void> | null = null;
-
-/**
- * Loads the catalogue, retrying with backoff before it settles on failed.
- * A call while a load is already running joins it, so a Retry press during
- * the boot load does not start a second one.
- */
-export function loadCatalogue(
-  now = new Date(),
-  retryDelays: readonly number[] = CATALOGUE_RETRY_DELAYS_MS,
-): Promise<void> {
-  if (!API_BASE) return Promise.resolve();
-  loading ??= loadOnce(now, retryDelays).finally(() => {
-    loading = null;
-  });
-  return loading;
-}
-
-async function loadOnce(
-  now: Date,
-  retryDelays: readonly number[],
-): Promise<void> {
-  settle('loading');
-  if (shown('places') || shown('promos')) void loadVenues(now);
-  let status: CatalogueStatus = 'ready';
-  try {
-    const listed = await fetchCatalogue(retryDelays);
-    everyNight = stillOpen(listed.map(withSourcePhoto), now);
-    catalogue = collapsedRuns(everyNight);
-  } catch {
-    everyNight = [];
-    catalogue = [];
-    status = 'failed';
-  }
-  categoryList = recount(fixtures.categories, catalogue, placeList);
-  settle(status);
+export function loadVenuesIfShown(now = new Date()): Promise<void> {
+  if (!API_BASE || !(shown('places') || shown('promos')))
+    return Promise.resolve();
+  return loadVenues(now);
 }
 
 /**
@@ -728,9 +724,8 @@ export async function loadAccount(): Promise<void> {
       authorizedFetch('/v1/me/for-you'),
     ]);
     if (matches.ok) {
-      const listed: unknown = await matches.json();
-      if (Array.isArray(listed))
-        forYouStore.set(listed.map((l: { id: string }) => l.id));
+      const listed: unknown = prepared(await matches.json());
+      if (Array.isArray(listed)) forYouStore.set(listed.filter(isListing));
     }
     if (interests.ok) {
       const body = (await interests.json()) as {
@@ -772,4 +767,41 @@ export async function suggestCities(
   if (!API_BASE || query.trim().length < 2) return [];
   const params = new URLSearchParams({ q: query.trim(), session });
   return getJson<CitySuggestion[]>(`/v1/cities/suggestions?${params}`);
+}
+
+export type SectionPath = (window: SectionWindow) => string;
+
+export function useSectionItems(
+  section: Section,
+  page: number,
+  size: number,
+  pathOf: SectionPath,
+  category?: string,
+): { items: ListingSummary[]; total: number; loading: boolean } {
+  const fromFirstPage =
+    page === 1 &&
+    !category &&
+    section.items.length >= Math.min(size, section.total);
+  const remote = useSectionPage(
+    fromFirstPage
+      ? null
+      : pathOf({
+          id: section.id,
+          offset: (page - 1) * size,
+          limit: size,
+          category,
+        }),
+  );
+  if (fromFirstPage)
+    return {
+      items: section.items.slice(0, size),
+      total: section.total,
+      loading: false,
+    };
+  const fetched = remote.data?.sections[0];
+  return {
+    items: fetched?.items ?? [],
+    total: fetched?.total ?? section.total,
+    loading: remote.status === 'loading' || remote.stale,
+  };
 }

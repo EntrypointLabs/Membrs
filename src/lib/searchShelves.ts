@@ -1,16 +1,14 @@
-import {
-  categories,
-  listings,
-  mostPopular,
-  places,
-  promos,
-  searchLocally,
-} from './api';
+import { categories, places, promos } from './api';
 import { paths } from './router';
 import { shown } from './sections';
 import { createStore } from './store';
 import { plural, slugify } from './text';
-import type { Listing } from './types';
+import type {
+  CatalogueSummary,
+  CityCount,
+  ListingKind,
+  ListingSummary,
+} from './types';
 
 export interface SearchTileData {
   key: string;
@@ -76,66 +74,60 @@ function groupedBy<T>(items: T[], nameOf: (item: T) => string): Group<T>[] {
     .slice(0, SHELF_SIZE);
 }
 
-function bestPictured<T extends { photo: string; photoUrl?: string }>(
-  items: NonEmpty<T>,
-): T {
-  return items.find((i) => i.photoUrl) ?? items[0];
-}
-
-function categoryHref(kind: Listing['kind'], name: string): string {
+function categoryHref(kind: ListingKind, name: string): string {
   return paths.category(
     categories().find((c) => c.kind === kind && c.name === name)?.slug ??
       slugify(name),
   );
 }
 
+function named<T extends { name: string }>(items: T[]): T[] {
+  return items
+    .filter((i) => i.name.trim() && !CATCH_ALL.has(i.name.trim().toLowerCase()))
+    .slice(0, SHELF_SIZE);
+}
+
 function categoryShelf(
+  summary: CatalogueSummary,
   title: string,
-  kind: Listing['kind'],
+  kind: ListingKind,
   noun: string,
 ): SearchShelf {
-  const open = listings().filter((l) => l.kind === kind);
   return {
     title,
-    tiles: groupedBy(open, (l) => l.category).map(({ name, items }) => {
-      const cover = bestPictured(items);
-      return {
-        key: `${kind}:${name}`,
-        label: name,
-        detail: plural(items.length, noun),
-        href: categoryHref(kind, name),
-        photo: cover.photo,
-        photoUrl: cover.photoUrl,
-        tag: name,
-      };
-    }),
+    tiles: named(summary.categories.filter((c) => c.kind === kind)).map(
+      (c) => ({
+        key: `${kind}:${c.name}`,
+        label: c.name,
+        detail: plural(c.count, noun),
+        href: categoryHref(kind, c.name),
+        photo: '',
+        photoUrl: c.cover || undefined,
+        tag: c.name,
+      }),
+    ),
   };
 }
 
-function cityShelf(): SearchShelf {
+function cityShelf(cities: CityCount[]): SearchShelf {
   return {
     title: 'Around Africa',
-    tiles: groupedBy(listings(), (l) => l.city).map(({ name, items }) => {
-      const cover = bestPictured(items);
-      return {
-        key: `city:${name}`,
-        label: name,
-        detail: plural(items.length, 'listing'),
-        href: paths.search(name),
-        photo: cover.photo,
-        photoUrl: cover.photoUrl,
-        tag: name,
-      };
-    }),
+    tiles: named(cities).map((c) => ({
+      key: `city:${c.name}`,
+      label: c.name,
+      detail: plural(c.count, 'listing'),
+      href: paths.search(c.name),
+      photo: '',
+      photoUrl: c.cover || undefined,
+      tag: c.name,
+    })),
   };
 }
 
-function popularShelf(): SearchShelf {
-  const trending = mostPopular(SHELF_SIZE);
-  const picks = trending.length ? trending : listings().slice(0, SHELF_SIZE);
+function popularShelf(popular: ListingSummary[]): SearchShelf {
   return {
     title: 'Popular right now',
-    tiles: picks.map((l) => ({
+    tiles: popular.slice(0, SHELF_SIZE).map((l) => ({
       key: `listing:${l.id}`,
       label: l.title,
       detail: l.category,
@@ -180,28 +172,28 @@ function promoShelf(): SearchShelf | null {
 function recentShelf(recent: string[]): SearchShelf {
   return {
     title: 'Recent searches',
-    tiles: recent.filter(isReaderQuery).map((q) => {
-      const top = searchLocally(q).find((h) => h.kind === 'listing');
-      const cover = top?.kind === 'listing' ? top.item : undefined;
-      return {
-        key: `recent:${q}`,
-        label: q,
-        href: paths.search(q),
-        photo: cover?.photo ?? '',
-        photoUrl: cover?.photoUrl,
-        tag: q,
-      };
-    }),
+    tiles: recent.filter(isReaderQuery).map((q) => ({
+      key: `recent:${q}`,
+      label: q,
+      href: paths.search(q),
+      photo: '',
+      tag: q,
+    })),
   };
 }
 
-export function searchShelves(recent: string[]): SearchShelf[] {
+export function searchShelves(
+  recent: string[],
+  summary: CatalogueSummary | undefined,
+  popular: ListingSummary[],
+): SearchShelf[] {
   return [
     recentShelf(recent),
-    popularShelf(),
-    categoryShelf('Events by category', 'event', 'event'),
-    categoryShelf('Opportunities by type', 'opportunity', 'opening'),
-    cityShelf(),
+    popularShelf(popular),
+    summary && categoryShelf(summary, 'Events by category', 'event', 'event'),
+    summary &&
+      categoryShelf(summary, 'Opportunities by type', 'opportunity', 'opening'),
+    summary && cityShelf(summary.cities),
     placeShelf(),
     promoShelf(),
   ].filter((shelf): shelf is SearchShelf => Boolean(shelf?.tiles.length));

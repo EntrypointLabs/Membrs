@@ -1,20 +1,7 @@
-import { useMemo } from 'react';
-import {
-  adoptReaderCity,
-  forYou,
-  forYouStore,
-  interestMatches,
-  taxonomy,
-} from './api';
-import {
-  interestsStore,
-  readerLinkStore,
-  subscriptionStore,
-} from './preferences';
+import { adoptReaderCity, taxonomy } from './api';
+import { interestsStore, readerLinkStore } from './preferences';
 import { searchHref } from './router';
-import { useStore } from './store';
 import { slugify } from './text';
-import type { Listing } from './types';
 
 export const READER_INTERESTS_PARAM = 'for';
 export const READER_CITY_PARAM = 'in';
@@ -68,24 +55,5 @@ export function adoptReaderLink(): void {
     window.history.state,
     '',
     withoutReaderLink(pathname + search, link) + hash,
-  );
-}
-
-export function usePersonalised(): boolean {
-  const subscribed = useStore(subscriptionStore);
-  const linked = useStore(readerLinkStore);
-  return subscribed !== null || linked;
-}
-
-export function useForYou(): Listing[] {
-  const signedIn = useStore(forYouStore);
-  const interests = useStore(interestsStore);
-  const linked = useStore(readerLinkStore);
-  return useMemo(
-    () =>
-      forYou(
-        signedIn.length || !linked ? signedIn : interestMatches(interests),
-      ),
-    [signedIn, interests, linked],
   );
 }

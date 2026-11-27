@@ -3,21 +3,21 @@ import { closesLine, eventDay } from '../lib/dates';
 import { cn } from '../lib/utils';
 import { paths } from '../lib/router';
 import { priceText } from '../lib/text';
-import type { Listing } from '../lib/types';
+import type { ListingSummary } from '../lib/types';
 import { Icon } from './Icon';
 import { Kicker } from './Kicker';
 import { MediaCard, type MediaFace } from './MediaCard';
 import { UrgencyLabel } from './UrgencyLabel';
 
 /** What a listing costs or pays, the figure on the right of a card. */
-export function priceOf(listing: Listing): string {
+export function priceOf(listing: ListingSummary): string {
   return listing.kind === 'event' ? listing.price : listing.award;
 }
 
 const UNKNOWN_PRICES: ReadonlySet<string> = new Set(['See site', 'See brief']);
 
 /** Whether the source gave a real price or award, rather than a pointer to its site. */
-export function priceKnown(listing: Listing): boolean {
+export function priceKnown(listing: ListingSummary): boolean {
   return !UNKNOWN_PRICES.has(priceOf(listing));
 }
 
@@ -26,18 +26,18 @@ export function priceKnown(listing: Listing): boolean {
  * says so, because a blank looks like a missing field; an opportunity without
  * an award shows nothing.
  */
-export function shownPrice(listing: Listing): string {
+export function shownPrice(listing: ListingSummary): string {
   if (priceKnown(listing)) return priceText(priceOf(listing));
   return listing.kind === 'event' ? 'Tickets soon' : '';
 }
 
 interface ListingCardProps {
-  listing: Listing;
+  listing: ListingSummary;
   /** On a mixed feed (home) the section tag leads: Event, Opportunity. */
   mixed?: boolean;
 }
 
-export function listingFace(listing: Listing, mixed = false): MediaFace {
+export function listingFace(listing: ListingSummary, mixed = false): MediaFace {
   return {
     href: paths.listing(listing.slug),
     photo: listing.photo,
